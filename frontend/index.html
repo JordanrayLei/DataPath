@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI 数据运营平台</title>
+    <link rel="stylesheet" href="/frontend/styles.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">AI</div>
+          <div>
+            <p class="eyebrow">Data Operations Copilot</p>
+            <h1>AI 数据运营平台</h1>
+          </div>
+        </div>
+
+        <nav class="side-nav" aria-label="主要工作区">
+          <button class="nav-item active" type="button" data-view="workspace">
+            <span>01</span>
+            <strong>问数工作台</strong>
+            <small>日常提问、看图表和可信结果</small>
+          </button>
+          <button class="nav-item" type="button" data-view="catalog">
+            <span>02</span>
+            <strong>指标口径</strong>
+            <small>查定义、公式、维度和血缘</small>
+          </button>
+          <button class="nav-item" type="button" data-view="ops">
+            <span>03</span>
+            <strong>质量运营</strong>
+            <small>Badcase、黄金问题和回归</small>
+          </button>
+          <button class="nav-item" type="button" data-view="quality">
+            <span>04</span>
+            <strong>测评监控</strong>
+            <small>发布前质量门禁和趋势</small>
+          </button>
+        </nav>
+
+      </aside>
+
+      <main class="main">
+        <section class="workspace-command" data-view-panel="workspace">
+          <section class="card ask-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Ask Data</p>
+                <h2>自然语言取数</h2>
+              </div>
+              <span class="pill">Demo Workspace</span>
+            </div>
+            <form id="ask-form" class="ask-form">
+              <label for="query">你想看什么数据？</label>
+              <textarea id="query" name="query" rows="4" maxlength="1000">最近一年每月 GMV 趋势如何？</textarea>
+
+              <div class="form-row">
+                <label for="domain">业务域</label>
+                <select id="domain" name="domain">
+                  <option value="auto">自动识别</option>
+                  <option value="sales">电商经营</option>
+                  <option value="advertising">广告投放</option>
+                </select>
+              </div>
+
+              <button id="submit-btn" type="submit">运行分析</button>
+            </form>
+
+            <div class="examples" aria-label="示例问题">
+              <button type="button" data-example="最近一年每月 GMV 趋势如何？">GMV 月趋势</button>
+              <button type="button" data-example="各地区 GMV 排名">地区排名</button>
+              <button type="button" data-example="看看毛利">歧义澄清</button>
+            </div>
+          </section>
+
+          <section class="card pipeline-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="eyebrow">Trace</p>
+                <h2>执行链路</h2>
+              </div>
+              <span id="overall-status" class="status idle">待运行</span>
+            </div>
+            <ol id="pipeline" class="pipeline">
+              <li>提交问题后展示完整链路。</li>
+            </ol>
+          </section>
+        </section>
+
+        <section class="card workspace-guide" data-view-panel="workspace">
+          <div class="card-title-row">
+            <div>
+              <p class="eyebrow">Daily Workflow</p>
+              <h3>日常使用路径</h3>
+              <p class="card-subtitle">默认只呈现业务用户最常用的路径；治理和测评能力放到独立工作区，避免干扰提问。</p>
+            </div>
+            <span class="pill">业务优先</span>
+          </div>
+          <div class="guide-steps">
+            <div>
+              <strong>1. 提问</strong>
+              <small>输入业务问题，系统自动识别指标和查询意图。</small>
+            </div>
+            <div>
+              <strong>2. 看结果</strong>
+              <small>优先查看图表、结论、数据表和 Evidence。</small>
+            </div>
+            <div>
+              <strong>3. 反馈</strong>
+              <small>口径或解释不对时，再提交 Badcase 进入治理闭环。</small>
+            </div>
+          </div>
+        </section>
+
+        <section id="empty-state" class="empty-state" data-view-panel="workspace">
+          <div class="empty-icon">⌁</div>
+          <h3>准备就绪</h3>
+          <p>点击“运行分析”，你会看到从自然语言到可信数据解读的完整闭环。</p>
+        </section>
+
+        <section class="card view-hidden" data-view-panel="quality">
+          <div class="card-title-row">
+            <div>
+              <h3>测评看板</h3>
+              <p class="card-subtitle">展示最新产品评测报告，包括总通过率、产品用例、安全/可信门禁和耗时。</p>
+            </div>
+            <div class="badcase-actions">
+              <button id="evaluation-refresh" type="button">刷新测评报告</button>
+            </div>
+          </div>
+          <div id="evaluation-summary" class="evaluation-summary">
+            <div class="rich-item">测评报告加载中...</div>
+          </div>
+          <div id="evaluation-trend" class="evaluation-trend">
+            <div class="rich-item">Evaluation trend loading...</div>
+          </div>
+          <div class="evaluation-layout">
+            <div>
+              <h4>产品用例</h4>
+              <div id="evaluation-cases" class="evaluation-list"></div>
+            </div>
+            <div>
+              <h4>安全 / 可信门禁</h4>
+              <div id="evaluation-gates" class="evaluation-list"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card view-hidden" data-view-panel="catalog">
+          <div class="card-title-row">
+            <div>
+              <h3>指标口径中心</h3>
+              <p class="card-subtitle">查看指标定义、别名、公式、可用维度、语义模型和血缘字段，避免 AI 取数口径黑盒。</p>
+            </div>
+            <div class="badcase-actions">
+              <select id="metric-domain-filter" aria-label="指标业务域筛选">
+                <option value="ALL">全部业务域</option>
+                <option value="sales">电商经营</option>
+                <option value="advertising">广告投放</option>
+              </select>
+              <button id="metric-refresh" type="button">刷新指标</button>
+            </div>
+          </div>
+          <div id="metric-counts" class="badcase-counts"></div>
+          <div class="metric-layout">
+            <div id="metric-list" class="metric-list">
+              <div class="rich-item">指标加载中...</div>
+            </div>
+            <div id="metric-detail" class="metric-detail">
+              <div class="rich-item">选择一个指标查看口径、公式、维度和血缘。</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card view-hidden" data-view-panel="ops">
+          <div class="card-title-row">
+            <div>
+              <h3>Badcase 看板</h3>
+              <p class="card-subtitle">查看用户反馈，确认问题并标记修复，形成回归集运营闭环。</p>
+            </div>
+            <div class="badcase-actions">
+              <select id="badcase-filter" aria-label="Badcase 状态筛选">
+                <option value="ALL">全部</option>
+                <option value="OPEN">OPEN</option>
+                <option value="CONFIRMED">CONFIRMED</option>
+                <option value="FIXED">FIXED</option>
+                <option value="WONT_FIX">WONT_FIX</option>
+              </select>
+              <button id="badcase-refresh" type="button">刷新</button>
+            </div>
+          </div>
+          <div id="badcase-counts" class="badcase-counts"></div>
+          <div id="badcase-list" class="badcase-list">
+            <div class="rich-item">暂无反馈。</div>
+          </div>
+        </section>
+
+        <section class="card view-hidden" data-view-panel="ops">
+          <div class="card-title-row">
+            <div>
+              <h3>黄金问题集 / 回归评测</h3>
+              <p class="card-subtitle">把确认后的 Badcase 沉淀为可复跑的黄金问题，用于发布前质量门禁。</p>
+            </div>
+            <div class="badcase-actions">
+              <button id="golden-refresh" type="button">刷新黄金集</button>
+              <button id="golden-evaluate" type="button">运行回归评测</button>
+            </div>
+          </div>
+          <div id="golden-counts" class="badcase-counts"></div>
+          <div id="golden-eval-summary" class="rich-item">尚未运行回归评测。</div>
+          <div id="golden-list" class="badcase-list">
+            <div class="rich-item">暂无黄金问题。</div>
+          </div>
+        </section>
+
+        <section id="result" class="result hidden" data-view-panel="workspace">
+          <div class="result-header">
+            <div>
+              <p class="eyebrow">Answer</p>
+              <h2 id="answer-title">查询结果</h2>
+            </div>
+            <div id="trace-badge" class="trace-badge"></div>
+          </div>
+
+          <div id="message" class="message"></div>
+
+          <div class="grid two">
+            <article class="card">
+              <h3>业务解读</h3>
+              <div id="findings" class="rich-list"></div>
+            </article>
+            <article class="card">
+              <h3>口径与建议</h3>
+              <div id="caveats" class="rich-list"></div>
+              <div id="next-actions" class="rich-list"></div>
+            </article>
+          </div>
+
+          <article class="card">
+            <div class="card-title-row">
+              <h3 id="chart-title">图表</h3>
+              <span id="chart-type" class="pill"></span>
+            </div>
+            <div id="chart" class="chart"></div>
+          </article>
+
+          <div class="grid two">
+            <article class="card">
+              <h3>Evidence</h3>
+              <div id="evidence" class="evidence-list"></div>
+            </article>
+            <article class="card">
+              <h3>数据表</h3>
+              <div id="table" class="table-wrap"></div>
+            </article>
+          </div>
+
+          <article class="card">
+            <details>
+              <summary>技术追踪：DSL / Query / Reflection</summary>
+              <pre id="debug-json"></pre>
+            </details>
+          </article>
+
+          <article class="card">
+            <div class="card-title-row">
+              <div>
+                <h3>提交 Badcase 反馈</h3>
+                <p class="card-subtitle">把指标选错、数据异常或解读不可信沉淀为回归集候选。</p>
+              </div>
+              <span id="feedback-status" class="pill">待提交</span>
+            </div>
+            <form id="feedback-form" class="feedback-form">
+              <div class="feedback-grid">
+                <label>
+                  类型
+                  <select id="feedback-type" name="feedback_type">
+                    <option value="METRIC_WRONG">指标选错</option>
+                    <option value="DATA_WRONG">数据不对</option>
+                    <option value="INTERPRETATION_UNTRUSTED">解读不可信</option>
+                    <option value="CHART_WRONG">图表不合适</option>
+                    <option value="PERMISSION_ISSUE">权限/安全问题</option>
+                    <option value="UI_ISSUE">页面体验问题</option>
+                    <option value="OTHER">其他</option>
+                  </select>
+                </label>
+                <label>
+                  严重程度
+                  <select id="feedback-severity" name="severity">
+                    <option value="MEDIUM">中</option>
+                    <option value="LOW">低</option>
+                    <option value="HIGH">高</option>
+                    <option value="CRITICAL">严重</option>
+                  </select>
+                </label>
+              </div>
+              <label>
+                问题描述
+                <textarea id="feedback-message" rows="3" maxlength="2000" placeholder="例如：这里应该识别为毛利率，而不是毛利额。"></textarea>
+              </label>
+              <label>
+                期望表现
+                <textarea id="feedback-expected" rows="2" maxlength="2000" placeholder="例如：希望系统先澄清口径，或者返回另一个指标。"></textarea>
+              </label>
+              <button id="feedback-submit" type="submit">提交反馈</button>
+            </form>
+          </article>
+        </section>
+      </main>
+    </div>
+
+    <script src="/frontend/app.js" type="module"></script>
+  </body>
+</html>

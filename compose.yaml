@@ -1,0 +1,73 @@
+name: data-agent
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-data_agent}
+      POSTGRES_USER: ${POSTGRES_USER:-data_agent}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-data_agent_dev}
+      TZ: Asia/Shanghai
+    ports:
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    restart: unless-stopped
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:25.8
+    environment:
+      CLICKHOUSE_DB: ${CLICKHOUSE_DB:-data_warehouse}
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-data_agent}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-data_agent_dev}
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: '1'
+      TZ: Asia/Shanghai
+    ports:
+      - '${CLICKHOUSE_HTTP_PORT:-8123}:8123'
+      - '${CLICKHOUSE_NATIVE_PORT:-9000}:9000'
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - clickhouse_logs:/var/log/clickhouse-server
+      - ./infra/clickhouse/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: [CMD-SHELL, 'wget --spider -q http://localhost:8123/ping || exit 1']
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 15s
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: [redis-server, --appendonly, 'yes', --requirepass, '${REDIS_PASSWORD:-data_agent_dev}']
+    ports:
+      - '${REDIS_PORT:-6379}:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: [CMD-SHELL, 'redis-cli -a "$${REDIS_PASSWORD:-data_agent_dev}" ping | grep PONG']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-data_agent_dev}
+      TZ: Asia/Shanghai
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  clickhouse_data:
+  clickhouse_logs:
+  redis_data:

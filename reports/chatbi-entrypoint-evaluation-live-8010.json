@@ -1,0 +1,143 @@
+{
+  "generated_at": "2026-07-10T02:34:35.251544+00:00",
+  "target": "http://127.0.0.1:8010",
+  "summary": {
+    "status": "PASS",
+    "passed": 10,
+    "total": 10,
+    "case_passed": 5,
+    "case_total": 5,
+    "gate_passed": 5,
+    "gate_total": 5,
+    "pass_rate": 1.0
+  },
+  "cases": [
+    {
+      "name": "sales_monthly_gmv",
+      "query": "最近一年每月 GMV 趋势如何？",
+      "domain": "auto",
+      "workspace_id": "demo",
+      "passed": true,
+      "errors": [],
+      "latency_ms": 909,
+      "status": "SUCCESS",
+      "message": "查询完成，结果已通过 Reflection 校验。",
+      "query_id": "Q2026071002343237B48C2416",
+      "selected_metric_id": "M_SALES_GMV",
+      "dsl_intent": "trend_query",
+      "chart_type": "line",
+      "row_count": 12,
+      "evidence_count": 3,
+      "reflection_status": "PASS",
+      "compiled": true,
+      "raw_sql_leaked": false
+    },
+    {
+      "name": "sales_region_ranking",
+      "query": "各地区 GMV 排名",
+      "domain": "sales",
+      "workspace_id": "demo",
+      "passed": true,
+      "errors": [],
+      "latency_ms": 237,
+      "status": "SUCCESS",
+      "message": "查询完成，结果已通过 Reflection 校验。",
+      "query_id": "Q202607100234336102094DCD",
+      "selected_metric_id": "M_SALES_GMV",
+      "dsl_intent": "ranking_query",
+      "chart_type": "bar",
+      "row_count": 4,
+      "evidence_count": 5,
+      "reflection_status": "PASS",
+      "compiled": true,
+      "raw_sql_leaked": false
+    },
+    {
+      "name": "ambiguous_gross_profit",
+      "query": "看看毛利",
+      "domain": "sales",
+      "workspace_id": "demo",
+      "passed": true,
+      "errors": [],
+      "latency_ms": 69,
+      "status": "CLARIFY",
+      "message": "请选择正确的指标口径。",
+      "query_id": null,
+      "selected_metric_id": null,
+      "dsl_intent": null,
+      "chart_type": null,
+      "row_count": null,
+      "evidence_count": 0,
+      "reflection_status": null,
+      "compiled": false,
+      "raw_sql_leaked": false
+    },
+    {
+      "name": "unknown_metric_reject",
+      "query": "最近一年每月火星销售指数",
+      "domain": "sales",
+      "workspace_id": "demo",
+      "passed": true,
+      "errors": [],
+      "latency_ms": 72,
+      "status": "REJECT",
+      "message": "没有找到可执行指标，请换一种问法。",
+      "query_id": null,
+      "selected_metric_id": null,
+      "dsl_intent": null,
+      "chart_type": null,
+      "row_count": null,
+      "evidence_count": 0,
+      "reflection_status": null,
+      "compiled": false,
+      "raw_sql_leaked": false
+    },
+    {
+      "name": "workspace_guard",
+      "query": "最近一年每月 GMV 趋势如何？",
+      "domain": "sales",
+      "workspace_id": "private_workspace",
+      "passed": true,
+      "errors": [],
+      "latency_ms": 62,
+      "status": "BLOCKED",
+      "message": "当前演示环境只开放 demo 工作空间。",
+      "query_id": null,
+      "selected_metric_id": null,
+      "dsl_intent": null,
+      "chart_type": null,
+      "row_count": null,
+      "evidence_count": 0,
+      "reflection_status": null,
+      "compiled": false,
+      "raw_sql_leaked": false
+    }
+  ],
+  "gates": [
+    {
+      "name": "internal_service_token_guard",
+      "passed": true,
+      "detail": "Internal endpoint rejected browser-style unauthenticated request."
+    },
+    {
+      "name": "metric_catalog_detail",
+      "passed": true,
+      "detail": "Metric catalog listed M_SALES_GMV with formula, dimensions, and warehouse lineage."
+    },
+    {
+      "name": "badcase_feedback_submission",
+      "passed": true,
+      "detail": "Feedback accepted as regression candidate for query_id=Q2026071002343237B48C2416."
+    },
+    {
+      "name": "badcase_board_lifecycle",
+      "passed": true,
+      "detail": "Feedback fb_78bd634334034dc191576afc was listed and moved to CONFIRMED."
+    },
+    {
+      "name": "golden_question_regression",
+      "passed": true,
+      "detail": "Golden question gq_5b167bbf9c734fdba9a624f4 was created and passed regression evaluation."
+    }
+  ]
+}

@@ -1,0 +1,2294 @@
+app:
+  description: Dify ChatBI AI 编排工作流。LLM 负责意图理解和 DSL 解析；外部服务负责指标检索、规则校验、SQL 编译、数仓执行、结果画像和 Reflection。
+  icon: 📊
+  icon_background: '#E4FBCC'
+  icon_type: emoji
+  mode: workflow
+  name: ChatBI AI 编排器
+  use_icon_as_answer_icon: false
+dependencies: []
+kind: app
+version: 0.6.0
+workflow:
+  conversation_variables: []
+  environment_variables:
+    - description: 确定性 ChatBI 后端服务的基础地址，导入后必须替换。
+      id: env-chatbi-api-base-url
+      name: CHATBI_API_BASE_URL
+      value: http://host.docker.internal:8000/api/chatbi
+      value_type: string
+    - description: Dify 调用 ChatBI 后端使用的服务令牌，导入后必须替换。
+      id: env-chatbi-api-token
+      name: CHATBI_API_TOKEN
+      value: replace-me
+      value_type: secret
+  features:
+    file_upload:
+      allowed_file_extensions:
+        - .JPG
+        - .JPEG
+        - .PNG
+        - .GIF
+        - .WEBP
+        - .SVG
+      allowed_file_types:
+        - image
+      allowed_file_upload_methods:
+        - local_file
+        - remote_url
+      enabled: false
+      fileUploadConfig:
+        attachment_image_file_size_limit: 2
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        file_upload_limit: 20
+        image_file_batch_limit: 10
+        image_file_size_limit: 10
+        single_chunk_attachment_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+          - local_file
+          - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+      - data: {isInIteration: false, isInLoop: false, sourceType: start, targetType: http-request}
+        id: start-source-context-http-target
+        source: start
+        sourceHandle: source
+        target: context_http
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: http-request, targetType: code}
+        id: context-http-source-context-parse-target
+        source: context_http
+        sourceHandle: source
+        target: context_parse
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: code, targetType: if-else}
+        id: context-parse-source-context-gate-target
+        source: context_parse
+        sourceHandle: source
+        target: context_gate
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: llm}
+        id: context-gate-ok-preprocess-target
+        source: context_gate
+        sourceHandle: case_ok
+        target: preprocess_llm
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: end}
+        id: context-gate-false-context-error-end-target
+        source: context_gate
+        sourceHandle: 'false'
+        target: context_error_end
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: llm, targetType: http-request}
+        id: preprocess-source-retrieval-http-target
+        source: preprocess_llm
+        sourceHandle: source
+        target: retrieval_http
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: http-request, targetType: code}
+        id: retrieval-http-source-retrieval-parse-target
+        source: retrieval_http
+        sourceHandle: source
+        target: retrieval_parse
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: code, targetType: if-else}
+        id: retrieval-parse-source-confidence-gate-target
+        source: retrieval_parse
+        sourceHandle: source
+        target: confidence_gate
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: template-transform}
+        id: confidence-gate-pass-pass-context-target
+        source: confidence_gate
+        sourceHandle: case_pass
+        target: pass_context
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: llm}
+        id: confidence-gate-disambiguate-disambiguator-target
+        source: confidence_gate
+        sourceHandle: case_disambiguate
+        target: disambiguate_llm
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: llm, targetType: template-transform}
+        id: disambiguator-source-disambiguate-context-target
+        source: disambiguate_llm
+        sourceHandle: source
+        target: disambiguate_context
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: human-input}
+        id: confidence-gate-clarify-human-clarify-target
+        source: confidence_gate
+        sourceHandle: case_clarify
+        target: metric_clarify
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: human-input, targetType: template-transform}
+        id: metric-clarify-choice1-clarify-context-target
+        source: metric_clarify
+        sourceHandle: choose_candidate_1
+        target: clarify_context
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: human-input, targetType: template-transform}
+        id: metric-clarify-choice2-clarify-context-target
+        source: metric_clarify
+        sourceHandle: choose_candidate_2
+        target: clarify_context
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: human-input, targetType: end}
+        id: metric-clarify-cancel-reject-end-target
+        source: metric_clarify
+        sourceHandle: cancel
+        target: reject_end
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: end}
+        id: confidence-gate-false-reject-end-target
+        source: confidence_gate
+        sourceHandle: 'false'
+        target: reject_end
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: template-transform, targetType: variable-aggregator}
+        id: pass-context-source-resolution-aggregator-target
+        source: pass_context
+        sourceHandle: source
+        target: resolution_aggregator
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: template-transform, targetType: variable-aggregator}
+        id: disambiguate-context-source-resolution-aggregator-target
+        source: disambiguate_context
+        sourceHandle: source
+        target: resolution_aggregator
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: template-transform, targetType: variable-aggregator}
+        id: clarify-context-source-resolution-aggregator-target
+        source: clarify_context
+        sourceHandle: source
+        target: resolution_aggregator
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: variable-aggregator, targetType: llm}
+        id: resolution-aggregator-source-dsl-llm-target
+        source: resolution_aggregator
+        sourceHandle: source
+        target: dsl_llm
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: llm, targetType: http-request}
+        id: dsl-llm-source-dsl-validate-http-target
+        source: dsl_llm
+        sourceHandle: source
+        target: dsl_validate_http
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: http-request, targetType: code}
+        id: dsl-validate-http-source-dsl-validate-parse-target
+        source: dsl_validate_http
+        sourceHandle: source
+        target: dsl_validate_parse
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: code, targetType: if-else}
+        id: dsl-validate-parse-source-dsl-gate-target
+        source: dsl_validate_parse
+        sourceHandle: source
+        target: dsl_gate
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: http-request}
+        id: dsl-gate-valid-compile-http-target
+        source: dsl_gate
+        sourceHandle: case_valid
+        target: compile_http
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: end}
+        id: dsl-gate-clarify-dsl-clarify-end-target
+        source: dsl_gate
+        sourceHandle: case_clarify
+        target: dsl_clarify_end
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: end}
+        id: dsl-gate-deny-dsl-deny-end-target
+        source: dsl_gate
+        sourceHandle: case_deny
+        target: dsl_deny_end
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: end}
+        id: dsl-gate-false-dsl-deny-end-target
+        source: dsl_gate
+        sourceHandle: 'false'
+        target: dsl_deny_end
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: http-request, targetType: code}
+        id: compile-http-source-compile-parse-target
+        source: compile_http
+        sourceHandle: source
+        target: compile_parse
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: code, targetType: if-else}
+        id: compile-parse-source-execution-gate-target
+        source: compile_parse
+        sourceHandle: source
+        target: execution_gate
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: http-request}
+        id: execution-gate-ready-execute-http-target
+        source: execution_gate
+        sourceHandle: case_ready
+        target: execute_http
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: human-input}
+        id: execution-gate-approval-human-approval-target
+        source: execution_gate
+        sourceHandle: case_approval
+        target: execution_approval
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: end}
+        id: execution-gate-false-blocked-end-target
+        source: execution_gate
+        sourceHandle: 'false'
+        target: blocked_end
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: human-input, targetType: http-request}
+        id: execution-approval-approve-execute-http-target
+        source: execution_approval
+        sourceHandle: approve
+        target: execute_http
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: human-input, targetType: end}
+        id: execution-approval-reject-approval-reject-end-target
+        source: execution_approval
+        sourceHandle: reject
+        target: approval_reject_end
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: http-request, targetType: code}
+        id: execute-http-source-execute-parse-target
+        source: execute_http
+        sourceHandle: source
+        target: execute_parse
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: code, targetType: if-else}
+        id: execute-parse-source-execute-gate-target
+        source: execute_parse
+        sourceHandle: source
+        target: execute_gate
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: http-request}
+        id: execute-gate-succeeded-profile-http-target
+        source: execute_gate
+        sourceHandle: case_succeeded
+        target: profile_http
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: end}
+        id: execute-gate-false-execute-failed-end-target
+        source: execute_gate
+        sourceHandle: 'false'
+        target: execute_failed_end
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: http-request, targetType: code}
+        id: profile-http-source-profile-parse-target
+        source: profile_http
+        sourceHandle: source
+        target: profile_parse
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: code, targetType: if-else}
+        id: profile-parse-source-profile-gate-target
+        source: profile_parse
+        sourceHandle: source
+        target: profile_gate
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: http-request}
+        id: profile-gate-ok-interpret-http-target
+        source: profile_gate
+        sourceHandle: case_ok
+        target: interpret_http
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: end}
+        id: profile-gate-false-profile-failed-end-target
+        source: profile_gate
+        sourceHandle: 'false'
+        target: profile_failed_end
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: http-request, targetType: code}
+        id: interpret-http-source-interpret-parse-target
+        source: interpret_http
+        sourceHandle: source
+        target: interpret_parse
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: code, targetType: http-request}
+        id: interpret-parse-source-reflection-http-target
+        source: interpret_parse
+        sourceHandle: source
+        target: reflection_http
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: http-request, targetType: code}
+        id: reflection-http-source-reflection-parse-target
+        source: reflection_http
+        sourceHandle: source
+        target: reflection_parse
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: code, targetType: if-else}
+        id: reflection-parse-source-reflection-gate-target
+        source: reflection_parse
+        sourceHandle: source
+        target: reflection_gate
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: template-transform}
+        id: reflection-gate-pass-final-template-target
+        source: reflection_gate
+        sourceHandle: case_pass
+        target: final_template
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: llm}
+        id: reflection-gate-revise-revision-llm-target
+        source: reflection_gate
+        sourceHandle: case_revise
+        target: revision_llm
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: template-transform}
+        id: reflection-gate-false-data-only-template-target
+        source: reflection_gate
+        sourceHandle: 'false'
+        target: data_only_template
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: template-transform, targetType: end}
+        id: final-template-source-final-end-target
+        source: final_template
+        sourceHandle: source
+        target: final_end
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: llm, targetType: http-request}
+        id: revision-llm-source-revision-reflection-http-target
+        source: revision_llm
+        sourceHandle: source
+        target: revision_reflection_http
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: http-request, targetType: code}
+        id: revision-reflection-http-source-revision-reflection-parse-target
+        source: revision_reflection_http
+        sourceHandle: source
+        target: revision_reflection_parse
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: code, targetType: if-else}
+        id: revision-reflection-parse-source-revision-reflection-gate-target
+        source: revision_reflection_parse
+        sourceHandle: source
+        target: revision_reflection_gate
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: template-transform}
+        id: revision-reflection-gate-pass-revision-template-target
+        source: revision_reflection_gate
+        sourceHandle: case_pass
+        target: revision_template
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: if-else, targetType: template-transform}
+        id: revision-reflection-gate-false-revision-data-only-template-target
+        source: revision_reflection_gate
+        sourceHandle: 'false'
+        target: revision_data_only_template
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: template-transform, targetType: end}
+        id: revision-data-only-template-source-revision-data-only-end-target
+        source: revision_data_only_template
+        sourceHandle: source
+        target: revision_data_only_end
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: template-transform, targetType: end}
+        id: revision-template-source-revision-end-target
+        source: revision_template
+        sourceHandle: source
+        target: revision_end
+        targetHandle: target
+        type: custom
+        zIndex: 0
+      - data: {isInIteration: false, isInLoop: false, sourceType: template-transform, targetType: end}
+        id: data-only-template-source-data-only-end-target
+        source: data_only_template
+        sourceHandle: source
+        target: data_only_end
+        targetHandle: target
+        type: custom
+        zIndex: 0
+    nodes:
+      - data:
+          desc: ChatBI 请求入口。用户身份与权限必须由后端重新加载和校验。
+          selected: false
+          title: 用户输入
+          type: start
+          variables:
+            - label: 用户问题
+              max_length: 4000
+              options: []
+              required: true
+              type: paragraph
+              variable: query
+            - label: 工作空间 ID
+              max_length: 128
+              options: []
+              required: true
+              type: text-input
+              variable: workspace_id
+            - label: 业务域
+              max_length: 128
+              options: []
+              required: true
+              type: text-input
+              variable: biz_domain
+            - label: 会话 ID
+              max_length: 128
+              options: []
+              required: true
+              type: text-input
+              variable: conversation_id
+            - label: 时区
+              max_length: 64
+              options: []
+              required: true
+              type: text-input
+              variable: timezone
+            - label: 身份令牌
+              max_length: 2048
+              options: []
+              required: true
+              type: text-input
+              variable: identity_token
+        height: 220
+        id: start
+        position: {x: 40, y: 420}
+        positionAbsolute: {x: 40, y: 420}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          authorization: {type: no-auth}
+          body:
+            type: json
+            data: |
+              {"workspace_id":"{{#start.workspace_id#}}","conversation_id":"{{#start.conversation_id#}}","identity_token":"{{#start.identity_token#}}"}
+          desc: 加载权威用户身份、权限引用和上一轮查询上下文。
+          headers: |-
+            Authorization: Bearer {{#env.CHATBI_API_TOKEN#}}
+            Content-Type: application/json
+            X-Request-ID: {{#sys.workflow_run_id#}}
+            X-Trace-ID: {{#sys.workflow_run_id#}}
+          method: post
+          params: ''
+          retry_config:
+            enabled: true
+            max_retries: 1
+            retry_interval: 1000
+            exponential_backoff: {enabled: false, multiplier: 2, max_interval: 10000}
+          timeout: {connect: 10, read: 30, write: 30}
+          title: 上下文加载
+          type: http-request
+          url: '{{#env.CHATBI_API_BASE_URL#}}/context/load'
+        height: 130
+        id: context_http
+        position: {x: 350, y: 420}
+        positionAbsolute: {x: 350, y: 420}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |
+            import json
+
+            def main(body: str, status_code: int) -> dict:
+                try:
+                    data = json.loads(body) if body else {}
+                except Exception:
+                    data = {}
+                return {
+                    "context_ok": bool(200 <= int(status_code or 0) < 300 and data),
+                    "context_json": json.dumps(data, ensure_ascii=False),
+                    "operator_id": str(data.get("operator_id", "")),
+                    "last_query_context": json.dumps(data.get("last_query_context", {}), ensure_ascii=False),
+                }
+          code_language: python3
+          desc: 将上下文服务响应转换为稳定的工作流变量。
+          outputs:
+            context_ok: {children: null, type: boolean}
+            context_json: {children: null, type: string}
+            operator_id: {children: null, type: string}
+            last_query_context: {children: null, type: string}
+          selected: false
+          title: 解析上下文
+          type: code
+          variables:
+            - variable: body
+              value_selector: [context_http, body]
+            - variable: status_code
+              value_selector: [context_http, status_code]
+        height: 90
+        id: context_parse
+        position: {x: 650, y: 420}
+        positionAbsolute: {x: 650, y: 420}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          cases:
+            - case_id: case_ok
+              conditions:
+                - comparison_operator: is
+                  id: context-ok-condition
+                  value: true
+                  varType: boolean
+                  variable_selector: [context_parse, context_ok]
+              id: case_ok
+              logical_operator: and
+          desc: 上下文加载失败、身份无效或响应不可解析时必须立即终止。
+          selected: false
+          title: 上下文安全门控
+          type: if-else
+        height: 120
+        id: context_gate
+        position: {x: 650, y: 160}
+        positionAbsolute: {x: 650, y: 160}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: 身份或上下文加载失败时的 fail-closed 终态。
+          outputs:
+            - value_selector: [context_parse, context_ok]
+              value_type: boolean
+              variable: context_ok
+            - value_selector: [context_parse, context_json]
+              value_type: string
+              variable: context_error
+          selected: false
+          title: 上下文加载失败
+          type: end
+        height: 100
+        id: context_error_end
+        position: {x: 950, y: 160}
+        positionAbsolute: {x: 950, y: 160}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          context: {enabled: false, variable_selector: []}
+          desc: 标准化用户问题并抽取实体，不得编造指标 ID 或 SQL。
+          memory: {enabled: false, window: {enabled: false, size: 10}}
+          model:
+            provider: langgenius/deepseek/deepseek
+            name: deepseek-chat
+            mode: chat
+            completion_params: {temperature: 0}
+          prompt_template:
+            - role: system
+              text: |
+                你是 ChatBI Query 预处理器。只做自然语言标准化和实体提取，不生成指标 ID、表名、字段名或 SQL。
+                必须保留否定、时间、比较、排序、TopN 和多轮引用语义。输出必须符合 JSON Schema。
+                当前演示日期为 2026-07-09，样例数仓最新完整业务日期为 2026-06-30。
+                当用户说“最近一年/近一年/过去一年”且未给出明确历史年份时，按最新完整月倒推 12 个完整月：2025-07-01 至 2026-06-30。
+            - role: user
+              text: |
+                原始问题：{{#start.query#}}
+                业务域：{{#start.biz_domain#}}
+                时区：{{#start.timezone#}}
+                上一轮查询上下文：{{#context_parse.last_query_context#}}
+          retry_config:
+            enabled: true
+            max_retries: 1
+            retry_interval: 1000
+            exponential_backoff: {enabled: false, multiplier: 2, max_interval: 10000}
+          structured_output_enabled: true
+          structured_output:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                normalized_query: {type: string}
+                metric_mentions: {type: array, items: {type: string}}
+                dimension_mentions: {type: array, items: {type: string}}
+                filter_mentions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      field: {type: string}
+                      value: {type: string}
+                    required: [field, value]
+                time_text: {type: string}
+                time_start: {type: string}
+                time_end: {type: string}
+                comparison: {type: string}
+                inherit_context: {type: boolean}
+              required: [normalized_query, metric_mentions, dimension_mentions, filter_mentions, time_text, time_start, time_end, comparison, inherit_context]
+          title: 查询预处理
+          type: llm
+          vision: {enabled: false}
+        height: 130
+        id: preprocess_llm
+        position: {x: 950, y: 420}
+        positionAbsolute: {x: 950, y: 420}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          authorization: {type: no-auth}
+          body:
+            type: json
+            data: |
+              {"query":"{{#start.query#}}","normalized_query":"{{#preprocess_llm.structured_output.normalized_query#}}","workspace_id":"{{#start.workspace_id#}}","biz_domain":"{{#start.biz_domain#}}","operator_id":"{{#context_parse.operator_id#}}","context":{{#context_parse.context_json#}},"preprocess":{{#preprocess_llm.structured_output#}}}
+          desc: 调用精确别名、BM25、Dense、RRF、Cross-Encoder、概率校准和置信度门控服务。
+          headers: |-
+            Authorization: Bearer {{#env.CHATBI_API_TOKEN#}}
+            Content-Type: application/json
+            X-Request-ID: {{#sys.workflow_run_id#}}
+            X-Trace-ID: {{#sys.workflow_run_id#}}
+          method: post
+          params: ''
+          retry_config:
+            enabled: true
+            max_retries: 1
+            retry_interval: 1000
+            exponential_backoff: {enabled: false, multiplier: 2, max_interval: 10000}
+          timeout: {connect: 10, read: 45, write: 30}
+          title: 指标检索
+          type: http-request
+          url: '{{#env.CHATBI_API_BASE_URL#}}/metrics/retrieve'
+        height: 130
+        id: retrieval_http
+        position: {x: 1250, y: 420}
+        positionAbsolute: {x: 1250, y: 420}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |
+            import json
+
+            ALLOWED = {"PASS", "LLM_DISAMBIGUATE", "CLARIFY", "REJECT"}
+
+            def main(body: str, status_code: int) -> dict:
+                try:
+                    data = json.loads(body) if body else {}
+                except Exception:
+                    data = {}
+                gate = str(data.get("gate_status", "REJECT"))
+                if not (200 <= int(status_code or 0) < 300) or gate not in ALLOWED:
+                    gate = "REJECT"
+                mentions = data.get("mentions", [])
+                candidates = []
+                for mention in mentions:
+                    for candidate in mention.get("candidates", []) or []:
+                        candidates.append(candidate)
+                lines = []
+                for index, candidate in enumerate(candidates[:5], start=1):
+                    lines.append(f"{index}. {candidate.get('display_name', candidate.get('metric_id', 'unknown'))} [{candidate.get('metric_id', '')}] type={candidate.get('metric_type', '')}")
+                return {
+                    "gate_status": gate,
+                    "retrieval_json": json.dumps(data, ensure_ascii=False),
+                    "candidates_text": "\n".join(lines),
+                    "clarification_message": str(data.get("clarification", "请选择正确的指标口径。")),
+                }
+          code_language: python3
+          desc: 将检索结果转换为离散分流决策。
+          outputs:
+            gate_status: {children: null, type: string}
+            retrieval_json: {children: null, type: string}
+            candidates_text: {children: null, type: string}
+            clarification_message: {children: null, type: string}
+          selected: false
+          title: 解析检索决策
+          type: code
+          variables:
+            - variable: body
+              value_selector: [retrieval_http, body]
+            - variable: status_code
+              value_selector: [retrieval_http, status_code]
+        height: 90
+        id: retrieval_parse
+        position: {x: 1550, y: 420}
+        positionAbsolute: {x: 1550, y: 420}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          cases:
+            - case_id: case_pass
+              conditions:
+                - comparison_operator: is
+                  id: confidence-pass-condition
+                  value: PASS
+                  varType: string
+                  variable_selector: [retrieval_parse, gate_status]
+              id: case_pass
+              logical_operator: and
+            - case_id: case_disambiguate
+              conditions:
+                - comparison_operator: is
+                  id: confidence-disambiguate-condition
+                  value: LLM_DISAMBIGUATE
+                  varType: string
+                  variable_selector: [retrieval_parse, gate_status]
+              id: case_disambiguate
+              logical_operator: and
+            - case_id: case_clarify
+              conditions:
+                - comparison_operator: is
+                  id: confidence-clarify-condition
+                  value: CLARIFY
+                  varType: string
+                  variable_selector: [retrieval_parse, gate_status]
+              id: case_clarify
+              logical_operator: and
+          desc: 仅依据后端返回的已校准离散状态进行分流。
+          selected: false
+          title: 置信度门控
+          type: if-else
+        height: 190
+        id: confidence_gate
+        position: {x: 1850, y: 420}
+        positionAbsolute: {x: 1850, y: 420}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: 高置信检索分支的指标解析上下文。
+          selected: false
+          template: |
+            {"mode":"PASS","retrieval":{{ retrieval }}}
+          title: 高置信上下文
+          type: template-transform
+          variables:
+            - variable: retrieval
+              value_selector: [retrieval_parse, retrieval_json]
+        height: 70
+        id: pass_context
+        position: {x: 2160, y: 220}
+        positionAbsolute: {x: 2160, y: 220}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          context: {enabled: false, variable_selector: []}
+          desc: 仅允许从检索服务返回的已授权候选指标中选择。
+          memory: {enabled: false, window: {enabled: false, size: 10}}
+          model:
+            provider: langgenius/deepseek/deepseek
+            name: deepseek-chat
+            mode: chat
+            completion_params: {temperature: 0}
+          prompt_template:
+            - role: system
+              text: |
+                你是指标候选消歧器。只能从输入候选中选择 metric_id，不得创造新指标。如果证据不足，selected_metric_id 返回空字符串并将 need_clarification 设为 true。
+            - role: user
+              text: |
+                用户问题：{{#start.query#}}
+                预处理：{{#preprocess_llm.structured_output#}}
+                授权候选：{{#retrieval_parse.retrieval_json#}}
+                会话上下文：{{#context_parse.last_query_context#}}
+          retry_config:
+            enabled: true
+            max_retries: 1
+            retry_interval: 1000
+            exponential_backoff: {enabled: false, multiplier: 2, max_interval: 10000}
+          structured_output_enabled: true
+          structured_output:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                selected_metric_id: {type: string}
+                need_clarification: {type: boolean}
+                reason: {type: string}
+              required: [selected_metric_id, need_clarification, reason]
+          title: 指标候选消歧
+          type: llm
+          vision: {enabled: false}
+        height: 130
+        id: disambiguate_llm
+        position: {x: 2160, y: 420}
+        positionAbsolute: {x: 2160, y: 420}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: 指标候选消歧分支生成的解析上下文。
+          selected: false
+          template: |
+            {"mode":"LLM_DISAMBIGUATE","selection":{{ selection }},"retrieval":{{ retrieval }}}
+          title: 消歧上下文
+          type: template-transform
+          variables:
+            - variable: selection
+              value_selector: [disambiguate_llm, structured_output]
+            - variable: retrieval
+              value_selector: [retrieval_parse, retrieval_json]
+        height: 70
+        id: disambiguate_context
+        position: {x: 2460, y: 420}
+        positionAbsolute: {x: 2460, y: 420}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          delivery_methods:
+            - enabled: true
+              id: metric-clarify-webapp-delivery
+              type: webapp
+          form_content: |
+            {{#retrieval_parse.clarification_message#}}
+
+            {{#retrieval_parse.candidates_text#}}
+          inputs: []
+          selected: false
+          timeout: 1
+          timeout_unit: day
+          title: 指标澄清
+          type: human-input
+          user_actions:
+            - button_style: primary
+              id: choose_candidate_1
+              title: 选择候选 1
+            - button_style: default
+              id: choose_candidate_2
+              title: 选择候选 2
+            - button_style: default
+              id: cancel
+              title: 取消查询
+        height: 190
+        id: metric_clarify
+        position: {x: 2160, y: 640}
+        positionAbsolute: {x: 2160, y: 640}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: 用户澄清操作生成的指标解析上下文。
+          selected: false
+          template: |
+            {"mode":"CLARIFY","action":"{{ action }}","retrieval":{{ retrieval }}}
+          title: 澄清上下文
+          type: template-transform
+          variables:
+            - variable: action
+              value_selector: [metric_clarify, __action_id]
+            - variable: retrieval
+              value_selector: [retrieval_parse, retrieval_json]
+        height: 70
+        id: clarify_context
+        position: {x: 2460, y: 660}
+        positionAbsolute: {x: 2460, y: 660}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: 合并高置信、LLM 消歧和人工澄清三个分支。
+          advanced_settings:
+            group_enabled: false
+            groups: []
+          output_type: string
+          selected: false
+          title: 已解析指标上下文
+          type: variable-aggregator
+          variables:
+            - [pass_context, output]
+            - [disambiguate_context, output]
+            - [clarify_context, output]
+        height: 110
+        id: resolution_aggregator
+        position: {x: 2780, y: 420}
+        positionAbsolute: {x: 2780, y: 420}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: 无法解析出授权指标或用户取消时安全结束。
+          outputs:
+            - value_selector: [retrieval_parse, gate_status]
+              value_type: string
+              variable: metric_reject_status
+            - value_selector: [retrieval_parse, clarification_message]
+              value_type: string
+              variable: metric_reject_message
+          selected: false
+          title: 指标识别失败
+          type: end
+        height: 100
+        id: reject_end
+        position: {x: 2460, y: 900}
+        positionAbsolute: {x: 2460, y: 900}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          context: {enabled: false, variable_selector: []}
+          desc: 仅生成强类型语义 DSL，绝不生成 SQL。
+          memory: {enabled: false, window: {enabled: false, size: 10}}
+          model:
+            provider: langgenius/deepseek/deepseek
+            name: deepseek-chat
+            mode: chat
+            completion_params: {temperature: 0}
+          prompt_template:
+            - role: system
+              text: |
+                你是 ChatBI DSL Parser。只输出符合 Schema 的 DSL。指标只能来自 resolved metric context；禁止生成 SQL、表名或未知 ID。时间和筛选存在歧义时不要猜测。
+                必须优先遵循 resolved metric context/retrieval_json 中的 time_resolution 和 dsl_generation_constraints。
+                对“最近一年每月 GMV”这类问题，必须生成 trend_query、D_MONTH、time_range.start=2025-07-01、time_range.end=2026-06-30、sort D_MONTH asc、limit=100。
+            - role: user
+              text: |
+                原始问题：{{#start.query#}}
+                预处理：{{#preprocess_llm.structured_output#}}
+                已解析指标上下文：{{#resolution_aggregator.output#}}
+                权限与会话上下文：{{#context_parse.context_json#}}
+          retry_config:
+            enabled: true
+            max_retries: 1
+            retry_interval: 1000
+            exponential_backoff: {enabled: false, multiplier: 2, max_interval: 10000}
+          structured_output_enabled: true
+          structured_output:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                dsl_version: {type: string, enum: ['1.0']}
+                intent:
+                  type: string
+                  enum: [aggregate_query, trend_query, comparison_query, ranking_query]
+                  description: Use trend_query for time-series questions such as daily, weekly, monthly, or quarterly trends.
+                metrics:
+                  type: array
+                  items:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      metric_id: {type: string}
+                      metric_version: {type: integer}
+                      aggregation: {type: string, enum: [default, sum, avg, min, max, count, count_distinct]}
+                    required: [metric_id, metric_version, aggregation]
+                dimensions:
+                  type: array
+                  items:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      dimension_id:
+                        type: string
+                        description: Use D_DATE, D_WEEK, D_MONTH, or D_QUARTER for time grain; monthly questions must use D_MONTH.
+                    required: [dimension_id]
+                filters:
+                  type: array
+                  items:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      field_id: {type: string}
+                      operator: {type: string, enum: [eq, neq, in, not_in, gt, gte, lt, lte, between, contains, is_null, is_not_null]}
+                      values: {type: array, items: {type: string}}
+                    required: [field_id, operator, values]
+                time_range:
+                  type: object
+                  additionalProperties: false
+                  properties:
+                    start: {type: string, format: date}
+                    end: {type: string, format: date}
+                    timezone: {type: string}
+                  required: [start, end, timezone]
+                sort:
+                  type: array
+                  items:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      field_id: {type: string}
+                      direction: {type: string, enum: [asc, desc]}
+                    required: [field_id, direction]
+                limit: {type: integer, minimum: 1, maximum: 5000}
+              required: [dsl_version, intent, metrics, dimensions, filters, time_range, sort, limit]
+          title: DSL 解析器
+          type: llm
+          vision: {enabled: false}
+        height: 140
+        id: dsl_llm
+        position: {x: 3090, y: 420}
+        positionAbsolute: {x: 3090, y: 420}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          authorization: {type: no-auth}
+          body:
+            type: json
+            data: |
+              {"workspace_id":"{{#start.workspace_id#}}","operator_id":"{{#context_parse.operator_id#}}","row_policy_context":{{#context_parse.context_json#}},"dsl":{{#dsl_llm.structured_output#}}}
+          desc: 确定性校验指标 ID、版本、维度、筛选、时间、模型兼容性和权限。
+          headers: |-
+            Authorization: Bearer {{#env.CHATBI_API_TOKEN#}}
+            Content-Type: application/json
+            X-Request-ID: {{#sys.workflow_run_id#}}
+            X-Trace-ID: {{#sys.workflow_run_id#}}
+          method: post
+          params: ''
+          retry_config:
+            enabled: true
+            max_retries: 1
+            retry_interval: 1000
+            exponential_backoff: {enabled: false, multiplier: 2, max_interval: 10000}
+          timeout: {connect: 10, read: 30, write: 30}
+          title: DSL 校验器
+          type: http-request
+          url: '{{#env.CHATBI_API_BASE_URL#}}/dsl/validate'
+        height: 130
+        id: dsl_validate_http
+        position: {x: 3400, y: 420}
+        positionAbsolute: {x: 3400, y: 420}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |
+            import json
+
+            ALLOWED = {"VALID", "CLARIFY", "DENY", "INVALID"}
+
+            def main(body: str, status_code: int) -> dict:
+                try:
+                    data = json.loads(body) if body else {}
+                except Exception:
+                    data = {}
+                status = str(data.get("status", "INVALID"))
+                if not (200 <= int(status_code or 0) < 300) or status not in ALLOWED:
+                    status = "INVALID"
+                return {
+                    "validation_status": status,
+                    "normalized_dsl_json": json.dumps(data.get("normalized_dsl", {}), ensure_ascii=False),
+                    "validation_json": json.dumps(data, ensure_ascii=False),
+                    "message": str(data.get("message", data.get("clarification", "DSL 校验未通过"))),
+                }
+          code_language: python3
+          desc: 将 DSL 校验结果转换为离散分流决策。
+          outputs:
+            validation_status: {children: null, type: string}
+            normalized_dsl_json: {children: null, type: string}
+            validation_json: {children: null, type: string}
+            message: {children: null, type: string}
+          selected: false
+          title: 解析 DSL 校验结果
+          type: code
+          variables:
+            - variable: body
+              value_selector: [dsl_validate_http, body]
+            - variable: status_code
+              value_selector: [dsl_validate_http, status_code]
+        height: 90
+        id: dsl_validate_parse
+        position: {x: 3700, y: 420}
+        positionAbsolute: {x: 3700, y: 420}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          cases:
+            - case_id: case_valid
+              conditions:
+                - comparison_operator: is
+                  id: dsl-valid-condition
+                  value: VALID
+                  varType: string
+                  variable_selector: [dsl_validate_parse, validation_status]
+              id: case_valid
+              logical_operator: and
+            - case_id: case_clarify
+              conditions:
+                - comparison_operator: is
+                  id: dsl-clarify-condition
+                  value: CLARIFY
+                  varType: string
+                  variable_selector: [dsl_validate_parse, validation_status]
+              id: case_clarify
+              logical_operator: and
+            - case_id: case_deny
+              conditions:
+                - comparison_operator: is
+                  id: dsl-deny-condition
+                  value: DENY
+                  varType: string
+                  variable_selector: [dsl_validate_parse, validation_status]
+              id: case_deny
+              logical_operator: and
+          desc: 只有通过确定性 DSL 校验后才允许进入编译。
+          selected: false
+          title: DSL 校验门控
+          type: if-else
+        height: 190
+        id: dsl_gate
+        position: {x: 4000, y: 420}
+        positionAbsolute: {x: 4000, y: 420}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: DSL 存在歧义时返回澄清请求，不执行编译。
+          outputs:
+            - value_selector: [dsl_validate_parse, validation_status]
+              value_type: string
+              variable: dsl_clarify_status
+            - value_selector: [dsl_validate_parse, message]
+              value_type: string
+              variable: dsl_clarify_message
+          selected: false
+          title: DSL 需要澄清
+          type: end
+        height: 100
+        id: dsl_clarify_end
+        position: {x: 4300, y: 660}
+        positionAbsolute: {x: 4300, y: 660}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: DSL 被拒绝或非法时安全结束。
+          outputs:
+            - value_selector: [dsl_validate_parse, validation_status]
+              value_type: string
+              variable: dsl_deny_status
+            - value_selector: [dsl_validate_parse, message]
+              value_type: string
+              variable: dsl_deny_message
+          selected: false
+          title: DSL 被拒绝
+          type: end
+        height: 100
+        id: dsl_deny_end
+        position: {x: 4300, y: 860}
+        positionAbsolute: {x: 4300, y: 860}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          authorization: {type: no-auth}
+          body:
+            type: json
+            data: |
+              {"workspace_id":"{{#start.workspace_id#}}","operator_id":"{{#context_parse.operator_id#}}","dsl":{{#dsl_validate_parse.normalized_dsl_json#}},"permission_context":{{#context_parse.context_json#}}}
+          desc: 确定性编译 DSL、注入权限，并执行 SQL Guard 和 EXPLAIN 成本检查。
+          headers: |-
+            Authorization: Bearer {{#env.CHATBI_API_TOKEN#}}
+            Content-Type: application/json
+            X-Request-ID: {{#sys.workflow_run_id#}}
+            X-Trace-ID: {{#sys.workflow_run_id#}}
+          method: post
+          params: ''
+          retry_config:
+            enabled: true
+            max_retries: 1
+            retry_interval: 1000
+            exponential_backoff: {enabled: false, multiplier: 2, max_interval: 10000}
+          timeout: {connect: 10, read: 45, write: 30}
+          title: SQL 编译与安全校验
+          type: http-request
+          url: '{{#env.CHATBI_API_BASE_URL#}}/query/compile'
+        height: 130
+        id: compile_http
+        position: {x: 4300, y: 420}
+        positionAbsolute: {x: 4300, y: 420}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |
+            import json
+
+            ALLOWED = {"READY", "NEED_APPROVAL", "BLOCKED"}
+
+            def main(body: str, status_code: int) -> dict:
+                try:
+                    data = json.loads(body) if body else {}
+                except Exception:
+                    data = {}
+                status = str(data.get("status", "BLOCKED"))
+                if not (200 <= int(status_code or 0) < 300) or status not in ALLOWED:
+                    status = "BLOCKED"
+                return {
+                    "compile_status": status,
+                    "query_id": str(data.get("query_id", "")),
+                    "execution_token": str(data.get("execution_token", "")),
+                    "compiled_json": json.dumps(data, ensure_ascii=False),
+                    "message": str(data.get("message", "查询已被安全策略拦截")),
+                }
+          code_language: python3
+          desc: 将编译结果转换为 READY、NEED_APPROVAL 或 BLOCKED。
+          outputs:
+            compile_status: {children: null, type: string}
+            query_id: {children: null, type: string}
+            execution_token: {children: null, type: string}
+            compiled_json: {children: null, type: string}
+            message: {children: null, type: string}
+          selected: false
+          title: 解析编译决策
+          type: code
+          variables:
+            - variable: body
+              value_selector: [compile_http, body]
+            - variable: status_code
+              value_selector: [compile_http, status_code]
+        height: 90
+        id: compile_parse
+        position: {x: 4600, y: 420}
+        positionAbsolute: {x: 4600, y: 420}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          cases:
+            - case_id: case_ready
+              conditions:
+                - comparison_operator: is
+                  id: execution-ready-condition
+                  value: READY
+                  varType: string
+                  variable_selector: [compile_parse, compile_status]
+              id: case_ready
+              logical_operator: and
+            - case_id: case_approval
+              conditions:
+                - comparison_operator: is
+                  id: execution-approval-condition
+                  value: NEED_APPROVAL
+                  varType: string
+                  variable_selector: [compile_parse, compile_status]
+              id: case_approval
+              logical_operator: and
+          desc: 拦截不安全查询，并暂停高风险查询等待审批。
+          selected: false
+          title: 执行门控
+          type: if-else
+        height: 150
+        id: execution_gate
+        position: {x: 4900, y: 420}
+        positionAbsolute: {x: 4900, y: 420}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          delivery_methods:
+            - enabled: true
+              id: execution-approval-webapp-delivery
+              type: webapp
+          form_content: |
+            该查询需要人工审批后执行。
+
+            查询 ID：{{#compile_parse.query_id#}}
+            编译与风险摘要：{{#compile_parse.compiled_json#}}
+          inputs: []
+          selected: false
+          timeout: 1
+          timeout_unit: day
+          title: 执行审批
+          type: human-input
+          user_actions:
+            - button_style: primary
+              id: approve
+              title: 批准执行
+            - button_style: default
+              id: reject
+              title: 拒绝执行
+        height: 180
+        id: execution_approval
+        position: {x: 5200, y: 660}
+        positionAbsolute: {x: 5200, y: 660}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: 返回安全的查询拦截结果。
+          outputs:
+            - value_selector: [compile_parse, compile_status]
+              value_type: string
+              variable: query_blocked_status
+            - value_selector: [compile_parse, message]
+              value_type: string
+              variable: query_blocked_message
+          selected: false
+          title: 查询被拦截
+          type: end
+        height: 100
+        id: blocked_end
+        position: {x: 5200, y: 920}
+        positionAbsolute: {x: 5200, y: 920}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: 执行审批被拒绝时结束工作流。
+          outputs:
+            - value_selector: [compile_parse, query_id]
+              value_type: string
+              variable: approval_query_id
+            - value_selector: [execution_approval, __action_id]
+              value_type: string
+              variable: approval_status
+          selected: false
+          title: 审批被拒绝
+          type: end
+        height: 100
+        id: approval_reject_end
+        position: {x: 5500, y: 820}
+        positionAbsolute: {x: 5500, y: 820}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          authorization: {type: no-auth}
+          body:
+            type: json
+            data: |
+              {"workspace_id":"{{#start.workspace_id#}}","operator_id":"{{#context_parse.operator_id#}}","query_id":"{{#compile_parse.query_id#}}","execution_token":"{{#compile_parse.execution_token#}}"}
+          desc: 仅通过查询 ID 执行已经完成编译和安全校验的查询。
+          headers: |-
+            Authorization: Bearer {{#env.CHATBI_API_TOKEN#}}
+            Content-Type: application/json
+            X-Request-ID: {{#sys.workflow_run_id#}}
+            X-Trace-ID: {{#sys.workflow_run_id#}}
+            Idempotency-Key: {{#compile_parse.query_id#}}
+          method: post
+          params: ''
+          retry_config:
+            enabled: false
+            max_retries: 1
+            retry_interval: 1000
+            exponential_backoff: {enabled: false, multiplier: 2, max_interval: 10000}
+          timeout: {connect: 10, read: 120, write: 30}
+          title: 数仓执行
+          type: http-request
+          url: '{{#env.CHATBI_API_BASE_URL#}}/query/execute'
+        height: 140
+        id: execute_http
+        position: {x: 5500, y: 420}
+        positionAbsolute: {x: 5500, y: 420}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |
+            import json
+
+            def main(body: str, status_code: int) -> dict:
+                try:
+                    data = json.loads(body) if body else {}
+                except Exception:
+                    data = {}
+                status = str(data.get("status", "FAILED"))
+                ok = bool(200 <= int(status_code or 0) < 300 and status == "SUCCEEDED")
+                error = data.get("error") or {}
+                return {
+                    "execute_ok": ok,
+                    "execute_status": status if ok else "FAILED",
+                    "execute_json": json.dumps(data, ensure_ascii=False),
+                    "execute_message": str(error.get("message", "数仓执行失败或返回不可解析")),
+                }
+          code_language: python3
+          desc: 解析执行响应；只有 HTTP 成功且业务状态为 SUCCEEDED 才允许进入画像。
+          outputs:
+            execute_ok: {children: null, type: boolean}
+            execute_status: {children: null, type: string}
+            execute_json: {children: null, type: string}
+            execute_message: {children: null, type: string}
+          selected: false
+          title: 解析执行结果
+          type: code
+          variables:
+            - variable: body
+              value_selector: [execute_http, body]
+            - variable: status_code
+              value_selector: [execute_http, status_code]
+        height: 100
+        id: execute_parse
+        position: {x: 5500, y: 160}
+        positionAbsolute: {x: 5500, y: 160}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          cases:
+            - case_id: case_succeeded
+              conditions:
+                - comparison_operator: is
+                  id: execute-succeeded-condition
+                  value: SUCCEEDED
+                  varType: string
+                  variable_selector: [execute_parse, execute_status]
+              id: case_succeeded
+              logical_operator: and
+          desc: 执行超时、失败、取消、非法 JSON 或非 2xx 均 fail-closed。
+          selected: false
+          title: 执行结果门控
+          type: if-else
+        height: 120
+        id: execute_gate
+        position: {x: 5800, y: 160}
+        positionAbsolute: {x: 5800, y: 160}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: 数仓执行未成功时停止，不把错误响应交给画像或 LLM。
+          outputs:
+            - value_selector: [compile_parse, query_id]
+              value_type: string
+              variable: query_id
+            - value_selector: [execute_parse, execute_status]
+              value_type: string
+              variable: execute_status
+            - value_selector: [execute_parse, execute_message]
+              value_type: string
+              variable: execute_message
+          selected: false
+          title: 数仓执行失败
+          type: end
+        height: 110
+        id: execute_failed_end
+        position: {x: 6100, y: 160}
+        positionAbsolute: {x: 6100, y: 160}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          authorization: {type: no-auth}
+          body:
+            type: json
+            data: |
+              {"workspace_id":"{{#start.workspace_id#}}","query_id":"{{#compile_parse.query_id#}}","execution_result":{{#execute_parse.execute_json#}},"dsl":{{#dsl_validate_parse.normalized_dsl_json#}}}
+          desc: 生成确定性的统计摘要、异常、贡献度、图表配置和证据 ID。
+          headers: |-
+            Authorization: Bearer {{#env.CHATBI_API_TOKEN#}}
+            Content-Type: application/json
+            X-Request-ID: {{#sys.workflow_run_id#}}
+            X-Trace-ID: {{#sys.workflow_run_id#}}
+          method: post
+          params: ''
+          retry_config:
+            enabled: true
+            max_retries: 1
+            retry_interval: 1000
+            exponential_backoff: {enabled: false, multiplier: 2, max_interval: 10000}
+          timeout: {connect: 10, read: 60, write: 30}
+          title: 结果画像
+          type: http-request
+          url: '{{#env.CHATBI_API_BASE_URL#}}/result/profile'
+        height: 130
+        id: profile_http
+        position: {x: 5800, y: 420}
+        positionAbsolute: {x: 5800, y: 420}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |
+            import json
+
+            def main(body: str, status_code: int) -> dict:
+                try:
+                    data = json.loads(body) if body else {}
+                except Exception:
+                    data = {}
+                ok = bool(200 <= int(status_code or 0) < 300 and data)
+                return {
+                    "profile_ok": ok,
+                    "profile_json": json.dumps(data, ensure_ascii=False),
+                    "evidence_json": json.dumps(data.get("evidence", []), ensure_ascii=False),
+                    "chart_json": json.dumps(data.get("chart_spec", {}), ensure_ascii=False),
+                }
+          code_language: python3
+          desc: 向业务解读模型提供安全且有边界的证据变量。
+          outputs:
+            profile_ok: {children: null, type: boolean}
+            profile_json: {children: null, type: string}
+            evidence_json: {children: null, type: string}
+            chart_json: {children: null, type: string}
+          selected: false
+          title: 解析结果画像
+          type: code
+          variables:
+            - variable: body
+              value_selector: [profile_http, body]
+            - variable: status_code
+              value_selector: [profile_http, status_code]
+        height: 90
+        id: profile_parse
+        position: {x: 6100, y: 420}
+        positionAbsolute: {x: 6100, y: 420}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          cases:
+            - case_id: case_ok
+              conditions:
+                - comparison_operator: is
+                  id: profile-ok-condition
+                  value: true
+                  varType: boolean
+                  variable_selector: [profile_parse, profile_ok]
+              id: case_ok
+              logical_operator: and
+          desc: 画像失败、空响应或非法 JSON 时禁止进入业务解读 LLM。
+          selected: false
+          title: 结果画像门控
+          type: if-else
+        height: 120
+        id: profile_gate
+        position: {x: 6100, y: 700}
+        positionAbsolute: {x: 6100, y: 700}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: 无可信 Profile/Evidence 时停止，禁止生成无证据解读。
+          outputs:
+            - value_selector: [compile_parse, query_id]
+              value_type: string
+              variable: query_id
+            - value_selector: [profile_parse, profile_ok]
+              value_type: boolean
+              variable: profile_ok
+            - value_selector: [profile_parse, profile_json]
+              value_type: string
+              variable: profile_error
+          selected: false
+          title: 结果画像失败
+          type: end
+        height: 110
+        id: profile_failed_end
+        position: {x: 6400, y: 700}
+        positionAbsolute: {x: 6400, y: 700}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          authorization: {type: no-auth}
+          body:
+            type: json
+            data: |
+              {"workspace_id":"{{#start.workspace_id#}}","query_id":"{{#compile_parse.query_id#}}","dsl":{{#dsl_validate_parse.normalized_dsl_json#}},"profile":{{#profile_parse.profile_json#}}}
+          desc: 从服务端 Evidence 生成确定性业务解读，避免外部 LLM 插件断流影响演示主链路。
+          headers: |-
+            Authorization: Bearer {{#env.CHATBI_API_TOKEN#}}
+            Content-Type: application/json
+            X-Request-ID: {{#sys.workflow_run_id#}}
+            X-Trace-ID: {{#sys.workflow_run_id#}}
+          method: post
+          params: ''
+          retry_config:
+            enabled: true
+            max_retries: 1
+            retry_interval: 1000
+            exponential_backoff: {enabled: false, multiplier: 2, max_interval: 10000}
+          timeout: {connect: 10, read: 30, write: 30}
+          title: 确定性业务解读
+          type: http-request
+          url: '{{#env.CHATBI_API_BASE_URL#}}/interpretation/generate'
+        height: 130
+        id: interpret_http
+        position: {x: 6400, y: 420}
+        positionAbsolute: {x: 6400, y: 420}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |
+            import json
+
+            def main(body: str, status_code: int) -> dict:
+                try:
+                    data = json.loads(body) if body else {}
+                except Exception:
+                    data = {}
+                interpretation = data.get("interpretation") if isinstance(data, dict) else {}
+                ok = bool(200 <= int(status_code or 0) < 300 and isinstance(interpretation, dict) and interpretation)
+                return {
+                    "interpretation_ok": ok,
+                    "interpretation_json": json.dumps(interpretation if ok else {}, ensure_ascii=False),
+                }
+          code_language: python3
+          desc: 解析确定性业务解读；失败时交给 Reflection 节点按 BLOCK 处理。
+          outputs:
+            interpretation_ok: {children: null, type: boolean}
+            interpretation_json: {children: null, type: string}
+          selected: false
+          title: 解析业务解读
+          type: code
+          variables:
+            - variable: body
+              value_selector: [interpret_http, body]
+            - variable: status_code
+              value_selector: [interpret_http, status_code]
+        height: 90
+        id: interpret_parse
+        position: {x: 6700, y: 420}
+        positionAbsolute: {x: 6700, y: 420}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          authorization: {type: no-auth}
+          body:
+            type: json
+            data: |
+              {"workspace_id":"{{#start.workspace_id#}}","query_id":"{{#compile_parse.query_id#}}","dsl":{{#dsl_validate_parse.normalized_dsl_json#}},"profile":{{#profile_parse.profile_json#}},"interpretation":{{#interpret_parse.interpretation_json#}}}
+          desc: 确定性检查证据 ID、数值、单位、权限、限制说明和因果表达。
+          headers: |-
+            Authorization: Bearer {{#env.CHATBI_API_TOKEN#}}
+            Content-Type: application/json
+            X-Request-ID: {{#sys.workflow_run_id#}}
+            X-Trace-ID: {{#sys.workflow_run_id#}}
+          method: post
+          params: ''
+          retry_config:
+            enabled: true
+            max_retries: 1
+            retry_interval: 1000
+            exponential_backoff: {enabled: false, multiplier: 2, max_interval: 10000}
+          timeout: {connect: 10, read: 30, write: 30}
+          title: Reflection 校验器
+          type: http-request
+          url: '{{#env.CHATBI_API_BASE_URL#}}/reflection/validate'
+        height: 130
+        id: reflection_http
+        position: {x: 6700, y: 420}
+        positionAbsolute: {x: 6700, y: 420}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |
+            import json
+
+            ALLOWED = {"PASS", "REVISE", "BLOCK"}
+
+            def main(body: str, status_code: int) -> dict:
+                try:
+                    data = json.loads(body) if body else {}
+                except Exception:
+                    data = {}
+                status = str(data.get("status", "BLOCK"))
+                if not (200 <= int(status_code or 0) < 300) or status not in ALLOWED:
+                    status = "BLOCK"
+                return {
+                    "reflection_status": status,
+                    "reflection_json": json.dumps(data, ensure_ascii=False),
+                    "revision_instruction": str(data.get("revision_instruction", "")),
+                }
+          code_language: python3
+          desc: 将 Reflection 结果转换为 PASS、REVISE 或 BLOCK。
+          outputs:
+            reflection_status: {children: null, type: string}
+            reflection_json: {children: null, type: string}
+            revision_instruction: {children: null, type: string}
+          selected: false
+          title: 解析 Reflection
+          type: code
+          variables:
+            - variable: body
+              value_selector: [reflection_http, body]
+            - variable: status_code
+              value_selector: [reflection_http, status_code]
+        height: 90
+        id: reflection_parse
+        position: {x: 7000, y: 420}
+        positionAbsolute: {x: 7000, y: 420}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          cases:
+            - case_id: case_pass
+              conditions:
+                - comparison_operator: is
+                  id: reflection-pass-condition
+                  value: PASS
+                  varType: string
+                  variable_selector: [reflection_parse, reflection_status]
+              id: case_pass
+              logical_operator: and
+            - case_id: case_revise
+              conditions:
+                - comparison_operator: is
+                  id: reflection-revise-condition
+                  value: REVISE
+                  varType: string
+                  variable_selector: [reflection_parse, reflection_status]
+              id: case_revise
+              logical_operator: and
+          desc: 只允许修订一次，否则降级为仅数据输出。
+          selected: false
+          title: Reflection 门控
+          type: if-else
+        height: 150
+        id: reflection_gate
+        position: {x: 7300, y: 420}
+        positionAbsolute: {x: 7300, y: 420}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: 格式化通过校验且具有证据支撑的结果。
+          selected: false
+          template: |
+            {
+              "status": "SUCCESS",
+              "query_id": "{{ query_id }}",
+              "interpretation": {{ interpretation }},
+              "chart_spec": {{ chart }},
+              "metric_context": {{ dsl }},
+              "lineage": {{ compiled }}
+            }
+          title: 最终渲染
+          type: template-transform
+          variables:
+            - variable: query_id
+              value_selector: [compile_parse, query_id]
+            - variable: interpretation
+              value_selector: [interpret_parse, interpretation_json]
+            - variable: chart
+              value_selector: [profile_parse, chart_json]
+            - variable: dsl
+              value_selector: [dsl_validate_parse, normalized_dsl_json]
+            - variable: compiled
+              value_selector: [compile_parse, compiled_json]
+        height: 100
+        id: final_template
+        position: {x: 7600, y: 220}
+        positionAbsolute: {x: 7600, y: 220}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          context: {enabled: false, variable_selector: []}
+          desc: 只修订一次表达，不得修改指标、DSL 或数据。
+          memory: {enabled: false, window: {enabled: false, size: 10}}
+          model:
+            provider: langgenius/deepseek/deepseek
+            name: deepseek-chat
+            mode: chat
+            completion_params: {temperature: 0}
+          prompt_template:
+            - role: system
+              text: |
+                只根据 Reflection 指令修订表达。不得修改指标、DSL、数字、evidence_id 或结论证据范围。输出完整修订结果 JSON。
+            - role: user
+              text: |
+                原结果：{{#interpret_parse.interpretation_json#}}
+                Reflection：{{#reflection_parse.reflection_json#}}
+                修订要求：{{#reflection_parse.revision_instruction#}}
+          retry_config:
+            enabled: true
+            max_retries: 1
+            retry_interval: 1000
+            exponential_backoff: {enabled: false, multiplier: 2, max_interval: 10000}
+          structured_output_enabled: true
+          structured_output:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                title: {type: string}
+                findings:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      text: {type: string}
+                      evidence_ids: {type: array, items: {type: string}}
+                    required: [text, evidence_ids]
+                caveats: {type: array, items: {type: string}}
+                next_actions: {type: array, items: {type: string}}
+              required: [title, findings, caveats, next_actions]
+          title: 修订模型
+          type: llm
+          vision: {enabled: false}
+        height: 140
+        id: revision_llm
+        position: {x: 7600, y: 420}
+        positionAbsolute: {x: 7600, y: 420}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          authorization: {type: no-auth}
+          body:
+            type: json
+            data: |
+              {"workspace_id":"{{#start.workspace_id#}}","query_id":"{{#compile_parse.query_id#}}","dsl":{{#dsl_validate_parse.normalized_dsl_json#}},"profile":{{#profile_parse.profile_json#}},"interpretation":{{#revision_llm.structured_output#}}}
+          desc: 对修订后的完整 Interpretation 再做一次确定性校验；非 PASS 一律降级。
+          headers: |-
+            Authorization: Bearer {{#env.CHATBI_API_TOKEN#}}
+            Content-Type: application/json
+            X-Request-ID: {{#sys.workflow_run_id#}}
+            X-Trace-ID: {{#sys.workflow_run_id#}}
+          method: post
+          params: ''
+          retry_config:
+            enabled: true
+            max_retries: 1
+            retry_interval: 1000
+            exponential_backoff: {enabled: false, multiplier: 2, max_interval: 10000}
+          timeout: {connect: 10, read: 30, write: 30}
+          title: 修订后二次 Reflection
+          type: http-request
+          url: '{{#env.CHATBI_API_BASE_URL#}}/reflection/validate'
+        height: 140
+        id: revision_reflection_http
+        position: {x: 7900, y: 420}
+        positionAbsolute: {x: 7900, y: 420}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          code: |
+            import json
+
+            def main(body: str, status_code: int) -> dict:
+                try:
+                    data = json.loads(body) if body else {}
+                except Exception:
+                    data = {}
+                status = str(data.get("status", "BLOCK"))
+                if not (200 <= int(status_code or 0) < 300) or status not in {"PASS", "REVISE", "BLOCK"}:
+                    status = "BLOCK"
+                return {
+                    "reflection_status": status,
+                    "reflection_json": json.dumps(data, ensure_ascii=False),
+                    "revision_instruction": str(data.get("revision_instruction", "")),
+                }
+          code_language: python3
+          desc: 二次 Reflection 非 2xx、非法 JSON 或未知状态均按 BLOCK 处理。
+          outputs:
+            reflection_status: {children: null, type: string}
+            reflection_json: {children: null, type: string}
+            revision_instruction: {children: null, type: string}
+          selected: false
+          title: 解析二次 Reflection
+          type: code
+          variables:
+            - variable: body
+              value_selector: [revision_reflection_http, body]
+            - variable: status_code
+              value_selector: [revision_reflection_http, status_code]
+        height: 100
+        id: revision_reflection_parse
+        position: {x: 8200, y: 420}
+        positionAbsolute: {x: 8200, y: 420}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          cases:
+            - case_id: case_pass
+              conditions:
+                - comparison_operator: is
+                  id: revision-reflection-pass-condition
+                  value: PASS
+                  varType: string
+                  variable_selector: [revision_reflection_parse, reflection_status]
+              id: case_pass
+              logical_operator: and
+          desc: 修订结果只有二次 Reflection 为 PASS 才允许输出。
+          selected: false
+          title: 二次 Reflection 门控
+          type: if-else
+        height: 120
+        id: revision_reflection_gate
+        position: {x: 8500, y: 420}
+        positionAbsolute: {x: 8500, y: 420}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: 格式化单次修订后的回答。
+          selected: false
+          template: |
+            {
+              "status": "REVISED",
+              "query_id": "{{ query_id }}",
+              "interpretation": {{ interpretation }},
+              "chart_spec": {{ chart }},
+              "metric_context": {{ dsl }}
+            }
+          title: 修订结果渲染
+          type: template-transform
+          variables:
+            - variable: query_id
+              value_selector: [compile_parse, query_id]
+            - variable: interpretation
+              value_selector: [revision_llm, structured_output]
+            - variable: chart
+              value_selector: [profile_parse, chart_json]
+            - variable: dsl
+              value_selector: [dsl_validate_parse, normalized_dsl_json]
+        height: 100
+        id: revision_template
+        position: {x: 8800, y: 420}
+        positionAbsolute: {x: 8800, y: 420}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: 修订后仍未通过二次 Reflection 时，仅返回确定性结果和二次校验信息。
+          selected: false
+          template: |
+            {
+              "status": "DATA_ONLY",
+              "query_id": "{{ query_id }}",
+              "message": "修订后的 AI 解读仍未通过校验，仅返回确定性数据结果。",
+              "result_profile": {{ profile }},
+              "chart_spec": {{ chart }},
+              "reflection": {{ reflection }}
+            }
+          title: 修订失败仅数据渲染
+          type: template-transform
+          variables:
+            - variable: query_id
+              value_selector: [compile_parse, query_id]
+            - variable: profile
+              value_selector: [profile_parse, profile_json]
+            - variable: chart
+              value_selector: [profile_parse, chart_json]
+            - variable: reflection
+              value_selector: [revision_reflection_parse, reflection_json]
+        height: 110
+        id: revision_data_only_template
+        position: {x: 8800, y: 660}
+        positionAbsolute: {x: 8800, y: 660}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: AI 解读不可信时仅返回确定性数据和限制说明。
+          selected: false
+          template: |
+            {
+              "status": "DATA_ONLY",
+              "query_id": "{{ query_id }}",
+              "message": "AI 业务解读未通过校验，仅返回确定性数据结果。",
+              "result_profile": {{ profile }},
+              "chart_spec": {{ chart }},
+              "reflection": {{ reflection }}
+            }
+          title: 仅数据结果渲染
+          type: template-transform
+          variables:
+            - variable: query_id
+              value_selector: [compile_parse, query_id]
+            - variable: profile
+              value_selector: [profile_parse, profile_json]
+            - variable: chart
+              value_selector: [profile_parse, chart_json]
+            - variable: reflection
+              value_selector: [reflection_parse, reflection_json]
+        height: 100
+        id: data_only_template
+        position: {x: 7600, y: 660}
+        positionAbsolute: {x: 7600, y: 660}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: 通过全部校验的最终输出。
+          outputs:
+            - value_selector: [final_template, output]
+              value_type: string
+              variable: final_result
+          selected: false
+          title: 最终输出
+          type: end
+        height: 90
+        id: final_end
+        position: {x: 7900, y: 220}
+        positionAbsolute: {x: 7900, y: 220}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: 经过一次修订后的最终输出。
+          outputs:
+            - value_selector: [revision_template, output]
+              value_type: string
+              variable: revised_result
+          selected: false
+          title: 修订输出
+          type: end
+        height: 90
+        id: revision_end
+        position: {x: 9100, y: 420}
+        positionAbsolute: {x: 9100, y: 420}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: 修订后二次校验失败的确定性降级终态。
+          outputs:
+            - value_selector: [revision_data_only_template, output]
+              value_type: string
+              variable: data_only_result
+          selected: false
+          title: 修订失败仅数据输出
+          type: end
+        height: 100
+        id: revision_data_only_end
+        position: {x: 9100, y: 660}
+        positionAbsolute: {x: 9100, y: 660}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+      - data:
+          desc: 确定性降级输出。
+          outputs:
+            - value_selector: [data_only_template, output]
+              value_type: string
+              variable: data_only_result
+          selected: false
+          title: 仅数据输出
+          type: end
+        height: 90
+        id: data_only_end
+        position: {x: 7900, y: 660}
+        positionAbsolute: {x: 7900, y: 660}
+        selected: false
+        sourcePosition: right
+        targetPosition: left
+        type: custom
+        width: 244
+    viewport:
+      x: -80
+      y: 60
+      zoom: 0.35
+  rag_pipeline_variables: []
