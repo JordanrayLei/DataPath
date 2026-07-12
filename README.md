@@ -1,13 +1,13 @@
-# AI 数据运营平台
+# DataPath
 
-一个面向业务运营的通用 ChatBI 作品集：自然语言问题经过指标解析、Query DSL、确定性 SQL 编译和安全执行后，返回可追溯的数据、图表和业务解读。
+面向数据运营和数据分析师的可信 ChatBI Copilot：自然语言问题经过指标解析、Query DSL、确定性 SQL 编译和安全执行后，返回可追溯的数据、图表和业务解读。
 
 ## 当前状态
 
 - 已有 53 节点、58 条边的可导入 Dify Workflow DSL，关键错误分支已改为 fail-closed，主链路业务解读已切换为后端 Evidence fallback。
-- 已完成 PRD、24 个首发指标、Query DSL 1.0 和 8 个 ChatBI API 契约。
+- 已完成 Olist 九表、3 个已发布指标、Query DSL 1.0/2.0 和 8 个 ChatBI API 契约。
 - 已完成 PostgreSQL、ClickHouse、Redis 的本地数据底座配置。
-- 已完成电商和广告可复现演示数据、ODS/DWD/DWS 模型和 6 个指标基准校验。
+- 已完成 Semantic Join Graph、确定性 Join Planner、跨表 SQL Compiler 和 5 条已发布安全 Join Path。
 - 8 个 `/api/chatbi/*` 后端接口已全部实现并通过真实 HTTP smoke。
 - Result Profiler 已提供强类型 Evidence，Reflection Validator 已实现 PASS/REVISE/BLOCK；新增确定性业务解读 fallback，可在 Dify LLM 插件不稳定时兜底。当前 Dify 端到端已打通到数仓执行和画像，待把业务解读节点切换为 fallback 后完成稳定演示闭环。
 - 已新增产品前端入口，由 FastAPI 直接托管 `/` 和 `/app` 页面；浏览器调用 `/api/chatbi/ask`，服务端完成完整 ChatBI 链路并保护内部 service token。
@@ -73,10 +73,23 @@ http://host.docker.internal:8000/portfolio/dify-chatbi-workflow.dsl.yml
 .\.venv\Scripts\python.exe scripts\evaluate_chatbi_entrypoint.py
 ```
 
+测评用例定义位于 `data/evaluation/olist_business_cases.json`，当前包含 30 条业务用例和 6 个可信运营门禁。
+
+加载并验证 Olist 真实电商数据：
+
+```bash
+.venv/bin/python -m scripts.download_olist
+.venv/bin/python -m scripts.load_olist
+.venv/bin/python -m scripts.validate_olist
+```
+
+数据来源、许可和口径边界见 [真实业务数据与扩展测评](document/product/09-real-data-and-evaluation.md)。
+
 测评会覆盖：
 
 - 成功链路：自然语言到可信解读闭环。
 - 排行链路：非时间维度聚合与柱状图展示。
+- 多轮链路：继承指标、维度和时间，并允许后续问题显式覆盖。
 - 歧义链路：指标口径不清时安全澄清，不执行查询。
 - 拒绝链路：未知指标不生成 DSL、不编译查询。
 - 权限链路：非 demo workspace 被拦截。
@@ -130,6 +143,7 @@ Dify Cloud 临时联调前，先阅读导入手册并生成独立演示密钥：
 
 ## 文档入口
 
+- [DataPath 正式产品文档中心](document/product/README.md)
 - [产品 PRD](document/ai-data-operations-platform-prd.md)
 - [执行方案](document/ai-data-operations-platform-execution-plan.md)
 - [首发指标目录](document/initial-metric-catalog.md)
@@ -146,7 +160,6 @@ Dify Cloud 临时联调前，先阅读导入手册并生成独立演示密钥：
 - [ChatBI 产品入口测评报告](reports/chatbi-entrypoint-evaluation-latest.md)
 - [作品集一页总览](document/portfolio-one-page-overview.md)
 - [产品决策说明](document/product-decision-rationale.md)
-- [作品集演示脚本](document/portfolio-demo-script.md)
 
 ## 安全说明
 

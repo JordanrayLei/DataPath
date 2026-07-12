@@ -8,10 +8,13 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy import delete
 
 from app.api.routes.chatbi import public_router as chatbi_public_router
 from app.api.routes.chatbi import router as chatbi_router
 from app.config import get_settings
+from app.db.models import ConversationContext
+from app.db.session import SessionLocal
 
 
 settings = get_settings()
@@ -23,11 +26,20 @@ frontend_dir = project_root / "frontend"
 app = FastAPI(
     title=get_settings().app_name,
     version="0.1.0",
-    description="Trusted ChatBI backend for the AI data operations portfolio.",
+    description="DataPath trusted ChatBI backend.",
     docs_url="/docs" if expose_api_docs else None,
     redoc_url="/redoc" if expose_api_docs else None,
     openapi_url="/openapi.json" if expose_api_docs else None,
 )
+
+
+@app.on_event("startup")
+def clear_development_conversation_history() -> None:
+    if settings.environment != "development":
+        return
+    with SessionLocal() as session:
+        session.execute(delete(ConversationContext))
+        session.commit()
 
 
 @app.middleware("http")
@@ -37,6 +49,10 @@ async def attach_trace_context(request: Request, call_next):
     response = await call_next(request)
     response.headers["X-Request-ID"] = request.state.request_id
     response.headers["X-Trace-ID"] = request.state.trace_id
+    if settings.environment == "development" and (
+        request.url.path in {"/", "/app"} or request.url.path.startswith("/frontend/")
+    ):
+        response.headers["Cache-Control"] = "no-store, max-age=0"
     return response
 
 

@@ -4,6 +4,7 @@ from datetime import datetime
 
 from sqlalchemy import (
     BigInteger,
+    Boolean,
     DateTime,
     ForeignKey,
     Index,
@@ -15,6 +16,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from pgvector.sqlalchemy import Vector
 
 from app.db.session import Base
 
@@ -47,6 +49,92 @@ class SemanticModel(Base):
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="ACTIVE")
 
     business_domain: Mapped[BusinessDomain] = relationship()
+
+
+class SemanticEntity(Base):
+    __tablename__ = "semantic_entity"
+    __table_args__ = {"schema": "metric_center"}
+
+    id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    semantic_model_id: Mapped[str] = mapped_column(
+        ForeignKey("metric_center.semantic_model.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+    )
+    business_domain_id: Mapped[str] = mapped_column(
+        ForeignKey("metric_center.business_domain.id"), nullable=False, index=True
+    )
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    grain: Mapped[str] = mapped_column(String(500), nullable=False)
+    primary_key_json: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    entity_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="STAGED")
+
+
+class SemanticJoinRelation(Base):
+    __tablename__ = "semantic_join_relation"
+    __table_args__ = (
+        UniqueConstraint(
+            "left_entity_id", "right_entity_id", name="uq_semantic_join_relation_edge"
+        ),
+        {"schema": "metric_center"},
+    )
+
+    id: Mapped[str] = mapped_column(String(120), primary_key=True)
+    business_domain_id: Mapped[str] = mapped_column(
+        ForeignKey("metric_center.business_domain.id"), nullable=False, index=True
+    )
+    left_entity_id: Mapped[str] = mapped_column(
+        ForeignKey("metric_center.semantic_entity.id", ondelete="CASCADE"), nullable=False
+    )
+    right_entity_id: Mapped[str] = mapped_column(
+        ForeignKey("metric_center.semantic_entity.id", ondelete="CASCADE"), nullable=False
+    )
+    left_keys_json: Mapped[list] = mapped_column(JSONB, nullable=False)
+    right_keys_json: Mapped[list] = mapped_column(JSONB, nullable=False)
+    relationship_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    join_type: Mapped[str] = mapped_column(String(16), nullable=False, default="left")
+    fanout_strategy: Mapped[str] = mapped_column(String(40), nullable=False, default="safe")
+    priority: Mapped[int] = mapped_column(Integer, nullable=False, default=100)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="STAGED")
+    version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+
+
+class SemanticJoinDraft(Base):
+    __tablename__ = "semantic_join_draft"
+    __table_args__ = {"schema": "metric_center"}
+
+    draft_id: Mapped[str] = mapped_column(String(120), primary_key=True)
+    relation_id: Mapped[str] = mapped_column(String(120), nullable=False, unique=True)
+    business_domain_id: Mapped[str] = mapped_column(
+        ForeignKey("metric_center.business_domain.id"), nullable=False, index=True
+    )
+    definition_json: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    validation_json: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="DRAFT")
+    created_by: Mapped[str] = mapped_column(String(128), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+    )
+
+
+class SemanticJoinVersion(Base):
+    __tablename__ = "semantic_join_version"
+    __table_args__ = (
+        UniqueConstraint("relation_id", "version", name="uq_semantic_join_version"),
+        {"schema": "metric_center"},
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    relation_id: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    version: Mapped[int] = mapped_column(Integer, nullable=False)
+    definition_json: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    validation_json: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="PUBLISHED")
+    published_by: Mapped[str] = mapped_column(String(128), nullable=False)
+    published_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
 
 
 class Dimension(Base):
@@ -91,6 +179,9 @@ class Metric(Base):
     )
     aliases: Mapped[list[MetricAlias]] = relationship(
         back_populates="metric", cascade="all, delete-orphan"
+    )
+    semantic_profile: Mapped[MetricSemanticProfile | None] = relationship(
+        back_populates="metric", cascade="all, delete-orphan", uselist=False
     )
 
 
@@ -138,6 +229,113 @@ class MetricAlias(Base):
     alias: Mapped[str] = mapped_column(String(200), nullable=False)
 
     metric: Mapped[Metric] = relationship(back_populates="aliases")
+
+
+class MetricSemanticProfile(Base):
+    __tablename__ = "metric_semantic_profile"
+    __table_args__ = {"schema": "metric_center"}
+
+    metric_id: Mapped[str] = mapped_column(
+        ForeignKey("metric_center.metric.id", ondelete="CASCADE"), primary_key=True
+    )
+    positive_examples_json: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    negative_examples_json: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    retrieval_config_json: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    updated_by: Mapped[str] = mapped_column(String(128), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+    )
+
+    metric: Mapped[Metric] = relationship(back_populates="semantic_profile")
+
+
+class MetricEmbedding(Base):
+    __tablename__ = "metric_embedding"
+    __table_args__ = (
+        UniqueConstraint(
+            "metric_id", "source_type", "source_hash", "embedding_model",
+            name="uq_metric_embedding_source",
+        ),
+        Index("ix_metric_embedding_metric_active", "metric_id", "is_active"),
+        {"schema": "metric_center"},
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    metric_id: Mapped[str] = mapped_column(
+        ForeignKey("metric_center.metric.id", ondelete="CASCADE"), nullable=False
+    )
+    source_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    source_text: Mapped[str] = mapped_column(Text, nullable=False)
+    source_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    embedding_model: Mapped[str] = mapped_column(String(128), nullable=False)
+    embedding_dimensions: Mapped[int] = mapped_column(Integer, nullable=False)
+    embedding: Mapped[list[float]] = mapped_column(Vector(1024), nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
+
+class SemanticScopeExample(Base):
+    __tablename__ = "semantic_scope_example"
+    __table_args__ = (
+        UniqueConstraint(
+            "business_domain_id", "source_hash", name="uq_scope_example_domain_hash"
+        ),
+        {"schema": "metric_center"},
+    )
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    business_domain_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    label: Mapped[str] = mapped_column(String(30), nullable=False, default="OUT_OF_SCOPE")
+    reason: Mapped[str] = mapped_column(String(200), nullable=False, default="")
+    source_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    embedding_model: Mapped[str] = mapped_column(String(100), nullable=False, default="")
+    embedding_dimensions: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    embedding: Mapped[list[float] | None] = mapped_column(Vector(1024), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class MetricDraft(Base):
+    __tablename__ = "metric_draft"
+    __table_args__ = (
+        UniqueConstraint("metric_id", name="uq_metric_draft_metric"),
+        {"schema": "metric_center"},
+    )
+
+    draft_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    metric_id: Mapped[str] = mapped_column(
+        ForeignKey("metric_center.metric.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    business_domain_id: Mapped[str] = mapped_column(
+        ForeignKey("metric_center.business_domain.id"), nullable=False
+    )
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False)
+    metric_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    unit: Mapped[str] = mapped_column(String(64), nullable=False)
+    owner: Mapped[str] = mapped_column(String(128), nullable=False)
+    semantic_model_id: Mapped[str] = mapped_column(
+        ForeignKey("metric_center.semantic_model.id"), nullable=False
+    )
+    expression_json: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    default_aggregation: Mapped[str] = mapped_column(String(32), nullable=False, default="default")
+    time_dimension_id: Mapped[str] = mapped_column(
+        ForeignKey("metric_center.dimension.id"), nullable=False, default="D_DATE"
+    )
+    aliases_json: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    positive_examples_json: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    negative_examples_json: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    dimension_ids_json: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    validation_json: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    created_by: Mapped[str] = mapped_column(String(128), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+    )
 
 
 class MetricDimension(Base):

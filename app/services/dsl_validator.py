@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.config import get_settings
 from app.db.models import Dimension, Metric, MetricDimension, MetricVersion
 from app.schemas.chatbi import DslValidateResponse, QueryDsl, ValidationIssue
+from app.services.join_planner import JoinPlanningError, expression_model_ids, plan_query_models
 
 
 def issue(code: str, message: str, field_path: str) -> ValidationIssue:
@@ -98,7 +99,7 @@ def validate_dsl(
         issues.append(
             issue(
                 "MULTI_MODEL_QUERY_UNSUPPORTED",
-                "MVP 暂不支持跨语义模型指标查询。",
+                "V1 暂不支持多个事实模型的指标组合查询。",
                 "metrics",
             )
         )
@@ -123,11 +124,15 @@ def validate_dsl(
                     )
                 )
 
+    time_dimension_ids = {row.time_dimension_id for row in version_map.values()}
+    all_dimension_ids = set(requested_dimension_ids) | {
+        item.field_id for item in dsl.filters
+    } | time_dimension_ids
     dimensions = {
         row.id: row
         for row in session.scalars(
             select(Dimension).where(
-                Dimension.id.in_(requested_dimension_ids + [item.field_id for item in dsl.filters]),
+                Dimension.id.in_(all_dimension_ids),
                 Dimension.status == "ACTIVE",
             )
         ).all()
@@ -171,6 +176,37 @@ def validate_dsl(
                 )
             )
 
+    if len(model_ids) == 1 and not issues:
+        required_model_ids = {model_id}
+        for row in version_map.values():
+            required_model_ids.update(expression_model_ids(row.expression_json, model_id))
+        for dimension_id in all_dimension_ids:
+            dimension = dimensions.get(dimension_id)
+            if dimension is None or model_id not in dimension.mapping_json:
+                issues.append(
+                    issue(
+                        "DIMENSION_MODEL_MAPPING_MISSING",
+                        "维度缺少指标事实模型映射。",
+                        f"dimensions.{dimension_id}",
+                    )
+                )
+                continue
+            mapping = dimension.mapping_json[model_id]
+            required_model_ids.add(str(mapping.get("source_model_id") or model_id))
+        if not issues:
+            try:
+                plan = plan_query_models(session, model_id, required_model_ids)
+                if dsl.dsl_version == "2.0" and dsl.query_mode != plan.query_mode:
+                    issues.append(
+                        issue(
+                            "QUERY_MODE_MISMATCH",
+                            "查询模式与确定性Join规划结果不一致。",
+                            "query_mode",
+                        )
+                    )
+            except JoinPlanningError as error:
+                issues.append(issue("JOIN_PATH_NOT_SAFE", str(error), "dimensions"))
+
     allowed_sort_fields = set(metric_ids) | set(requested_dimension_ids)
     for index, sort_item in enumerate(dsl.sort):
         if sort_item.field_id not in allowed_sort_fields:
@@ -210,4 +246,3 @@ def validate_dsl(
         issues=[],
         message="",
     )
-

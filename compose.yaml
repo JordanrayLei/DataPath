@@ -2,7 +2,7 @@ name: data-agent
 
 services:
   postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:0.8.4-pg16-bookworm
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-data_agent}
       POSTGRES_USER: ${POSTGRES_USER:-data_agent}

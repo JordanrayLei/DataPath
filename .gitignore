@@ -1,4 +1,6 @@
 .venv/
+.DS_Store
+**/.DS_Store
 __pycache__/
 *.py[cod]
 .pytest_cache/
@@ -13,6 +15,8 @@ pytest-cache-files-*/
 !.env.example
 data/generated/*
 !data/generated/.gitkeep
+data/external/olist/*.csv
+data/external/olist/*.csv
 reports/evaluation-history/*
 infra/dify/
 *.log

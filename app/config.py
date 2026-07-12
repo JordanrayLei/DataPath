@@ -12,7 +12,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    app_name: str = "AI Data Operations Platform"
+    app_name: str = "DataPath"
     environment: str = "development"
     database_url: str = "postgresql+psycopg://data_agent:data_agent_dev@127.0.0.1:5432/data_agent"
 
@@ -30,6 +30,28 @@ class Settings(BaseSettings):
     default_operator_id: str = "public_demo_user"
     query_ttl_seconds: int = 1800
     max_query_days: int = 366
+    query_understanding_provider: str = "metric_center"
+    query_understanding_url: str = ""
+    query_understanding_token: str = ""
+    query_understanding_timeout_seconds: int = 15
+    embedding_provider: str = "dashscope"
+    embedding_base_url: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    embedding_model: str = "text-embedding-v3"
+    embedding_dimensions: int = 1024
+    embedding_timeout_seconds: int = 30
+    embedding_batch_size: int = 10
+    dashscope_api_key: str = ""
+    vector_search_limit: int = 5
+    vector_similarity_threshold: float = 0.45
+    vector_min_positive_similarity: float = 0.70
+    vector_scope_negative_threshold: float = 0.64
+    vector_scope_margin: float = 0.06
+    reranker_enabled: bool = True
+    reranker_base_url: str = "https://dashscope.aliyuncs.com/compatible-api/v1"
+    reranker_model: str = "qwen3-rerank"
+    reranker_timeout_seconds: int = 30
+    reranker_candidate_limit: int = 5
+    reranker_weight: float = 0.30
 
 
 @lru_cache

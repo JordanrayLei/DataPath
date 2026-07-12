@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://example.local/schemas/chatbi/query-dsl-v1.schema.json",
-  "title": "ChatBI Query DSL 1.0",
+  "title": "ChatBI Query DSL 1.0/2.0",
   "description": "A warehouse-independent semantic query contract. It must never contain SQL, physical table names, joins, credentials, or permission expressions.",
   "type": "object",
   "additionalProperties": false,
@@ -17,8 +17,12 @@
   ],
   "properties": {
     "dsl_version": {
-      "const": "1.0",
+      "enum": ["1.0", "2.0"],
       "description": "Semantic query protocol version, not the Dify app DSL version."
+    },
+    "query_mode": {
+      "type": "string",
+      "enum": ["single_model", "multi_entity", "multi_fact"]
     },
     "intent": {
       "type": "string",
@@ -74,6 +78,11 @@
     }
   },
   "allOf": [
+    {
+      "if": {"properties": {"dsl_version": {"const": "2.0"}}, "required": ["dsl_version"]},
+      "then": {"required": ["query_mode"]},
+      "else": {"not": {"required": ["query_mode"]}}
+    },
     {
       "if": {
         "properties": {

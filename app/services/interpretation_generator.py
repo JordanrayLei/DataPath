@@ -9,6 +9,7 @@ from app.schemas.chatbi import (
     Interpretation,
     InterpretationGenerateRequest,
     InterpretationGenerateResponse,
+    ProfileResponse,
 )
 from app.services.query_compiler import sha256_json
 
@@ -19,6 +20,37 @@ class InterpretationGenerationError(ValueError):
 
 def _dedupe(items: list[str]) -> list[str]:
     return list(dict.fromkeys(item for item in items if item))
+
+
+def _format_percent(value: float) -> str:
+    return f"{value:.1f}".rstrip("0").rstrip(".")
+
+
+def _business_title(profile: ProfileResponse) -> str:
+    display_name = (
+        profile.headline_metrics[0].display_name
+        if profile.headline_metrics
+        else "查询结果"
+    )
+
+    if profile.chart_spec.type in {"bar", "grouped_bar", "stacked_bar"}:
+        leading = min(profile.dimension_contributions, key=lambda item: item.rank, default=None)
+        if leading is not None:
+            share = _format_percent(leading.share * 100)
+            return f"{leading.dimension_value}贡献最高，占比{share}%"
+
+    if profile.trend_summary:
+        trend = profile.trend_summary[0]
+        if trend.direction == "flat":
+            return f"{display_name}整体保持稳定"
+        if trend.change_rate is not None:
+            direction = "增长" if trend.direction == "up" else "下降"
+            rate = _format_percent(abs(trend.change_rate))
+            return f"{display_name}较期初{direction}{rate}%"
+
+    if profile.evidence:
+        return profile.evidence[0].statement.rstrip("。")
+    return f"{display_name}查询结果"
 
 
 def generate_interpretation(
@@ -48,12 +80,7 @@ def generate_interpretation(
     ):
         raise InterpretationGenerationError("profile does not match query")
 
-    display_name = (
-        payload.profile.headline_metrics[0].display_name
-        if payload.profile.headline_metrics
-        else "查询结果"
-    )
-    title = f"{display_name}证据约束解读"
+    title = _business_title(payload.profile)
 
     findings = [
         Finding(text=evidence.statement, evidence_ids=[evidence.evidence_id])

@@ -1,10 +1,10 @@
 app:
-  description: Dify ChatBI AI 编排工作流。LLM 负责意图理解和 DSL 解析；外部服务负责指标检索、规则校验、SQL 编译、数仓执行、结果画像和 Reflection。
+  description: DataPath AI 编排工作流。LLM 负责意图理解和 DSL 解析；外部服务负责指标检索、规则校验、SQL 编译、数仓执行、结果画像和 Reflection。
   icon: 📊
   icon_background: '#E4FBCC'
   icon_type: emoji
   mode: workflow
-  name: ChatBI AI 编排器
+  name: DataPath AI 编排器
   use_icon_as_answer_icon: false
 dependencies: []
 kind: app
@@ -980,7 +980,7 @@ workflow:
       - data:
           delivery_methods:
             - enabled: true
-              id: metric-clarify-webapp-delivery
+              id: d48ce910-06e0-4df3-9da2-938deaf51287
               type: webapp
           form_content: |
             {{#retrieval_parse.clarification_message#}}
@@ -1447,7 +1447,7 @@ workflow:
       - data:
           delivery_methods:
             - enabled: true
-              id: execution-approval-webapp-delivery
+              id: c323ece8-fcff-4fda-84ca-e293e81a20d2
               type: webapp
           form_content: |
             该查询需要人工审批后执行。

@@ -1,0 +1,32 @@
+{
+  "dataset": "Olist Brazilian E-Commerce",
+  "status": "STAGED_NOT_QUERYABLE",
+  "grain": {
+    "olist_orders": "one row per order_id",
+    "olist_order_items": "one row per order_id and order_item_id",
+    "olist_order_payments": "one row per order_id and payment_sequential",
+    "olist_order_reviews": "one row per review_id and order_id",
+    "olist_customers": "one row per customer_id",
+    "olist_products": "one row per product_id",
+    "olist_sellers": "one row per seller_id",
+    "olist_geolocation": "multiple coordinates per zip code prefix",
+    "olist_product_category_translation": "one row per Portuguese category name"
+  },
+  "join_paths": [
+    {"left": "olist_orders.customer_id", "right": "olist_customers.customer_id", "cardinality": "many_to_one", "status": "recommended"},
+    {"left": "olist_order_items.order_id", "right": "olist_orders.order_id", "cardinality": "many_to_one", "status": "recommended"},
+    {"left": "olist_order_items.product_id", "right": "olist_products.product_id", "cardinality": "many_to_one", "status": "recommended"},
+    {"left": "olist_order_items.seller_id", "right": "olist_sellers.seller_id", "cardinality": "many_to_one", "status": "recommended"},
+    {"left": "olist_order_payments.order_id", "right": "olist_orders.order_id", "cardinality": "many_to_one", "status": "aggregate_before_join"},
+    {"left": "olist_order_reviews.order_id", "right": "olist_orders.order_id", "cardinality": "many_to_one", "status": "aggregate_before_join"},
+    {"left": "olist_products.product_category_name", "right": "olist_product_category_translation.product_category_name", "cardinality": "many_to_one", "status": "recommended"},
+    {"left": "olist_customers.customer_zip_code_prefix", "right": "olist_geolocation.geolocation_zip_code_prefix", "cardinality": "many_to_many", "status": "aggregate_geolocation_before_join"},
+    {"left": "olist_sellers.seller_zip_code_prefix", "right": "olist_geolocation.geolocation_zip_code_prefix", "cardinality": "many_to_many", "status": "aggregate_geolocation_before_join"}
+  ],
+  "safety_notes": [
+    "Payments and reviews may contain multiple rows per order; aggregate them before joining to order items.",
+    "Geolocation contains multiple rows per zip code prefix; create a canonical zip-level view before joining.",
+    "Order item price excludes freight_value; metrics must state whether freight is included.",
+    "customer_id identifies an order-level customer record; customer_unique_id represents the cross-order person."
+  ]
+}

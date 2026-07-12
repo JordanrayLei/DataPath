@@ -174,7 +174,7 @@ flowchart LR
 | --- | --- |
 | DSL 版本 | `0.6.0` |
 | 应用模式 | `workflow` |
-| 中文应用名 | `ChatBI AI 编排器` |
+| 中文应用名 | `DataPath AI 编排器` |
 | 节点数 | 40 |
 | 边数 | 45 |
 | LLM 节点 | 5 |

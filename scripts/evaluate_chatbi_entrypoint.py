@@ -11,6 +11,7 @@ import argparse
 import json
 import re
 import sys
+import uuid
 import warnings
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -30,6 +31,7 @@ from app.main import app
 @dataclass(frozen=True)
 class EvalCase:
     name: str
+    category: str
     query: str
     domain: str
     expected_status: str
@@ -43,53 +45,23 @@ class EvalCase:
     must_not_compile: bool = False
 
 
-CASES = [
-    EvalCase(
-        name="sales_monthly_gmv",
-        query="最近一年每月 GMV 趋势如何？",
-        domain="auto",
-        expected_status="SUCCESS",
-        expected_chart="line",
-        expected_rows=12,
-        expected_metric="M_SALES_GMV",
-        expected_intent="trend_query",
-        expected_dimension="D_MONTH",
-    ),
-    EvalCase(
-        name="sales_region_ranking",
-        query="各地区 GMV 排名",
-        domain="sales",
-        expected_status="SUCCESS",
-        expected_chart="bar",
-        expected_rows=4,
-        expected_metric="M_SALES_GMV",
-        expected_intent="ranking_query",
-        expected_dimension="D_REGION",
-    ),
-    EvalCase(
-        name="ambiguous_gross_profit",
-        query="看看毛利",
-        domain="sales",
-        expected_status="CLARIFY",
-        expected_candidates=frozenset({"M_SALES_GROSS_PROFIT", "M_SALES_GROSS_MARGIN_RATE"}),
-        must_not_compile=True,
-    ),
-    EvalCase(
-        name="unknown_metric_reject",
-        query="最近一年每月火星销售指数",
-        domain="sales",
-        expected_status="REJECT",
-        must_not_compile=True,
-    ),
-    EvalCase(
-        name="workspace_guard",
-        query="最近一年每月 GMV 趋势如何？",
-        domain="sales",
-        workspace_id="private_workspace",
-        expected_status="BLOCKED",
-        must_not_compile=True,
-    ),
-]
+EVALUATION_CASES_PATH = PROJECT_ROOT / "data" / "evaluation" / "olist_business_cases.json"
+
+
+def load_evaluation_cases() -> list[EvalCase]:
+    definitions = json.loads(EVALUATION_CASES_PATH.read_text(encoding="utf-8"))
+    return [
+        EvalCase(
+            **{
+                **item,
+                "expected_candidates": frozenset(item.get("expected_candidates", [])),
+            }
+        )
+        for item in definitions
+    ]
+
+
+CASES = load_evaluation_cases()
 
 
 def parse_args() -> argparse.Namespace:
@@ -124,7 +96,7 @@ def post_case_with_test_client(case: EvalCase) -> dict[str, Any]:
                 "query": case.query,
                 "biz_domain": case.domain,
                 "workspace_id": case.workspace_id,
-                "conversation_id": f"eval_{case.name}",
+                "conversation_id": f"eval_{case.name}_{uuid.uuid4().hex}",
                 "timezone": "Asia/Shanghai",
             },
         )
@@ -133,42 +105,52 @@ def post_case_with_test_client(case: EvalCase) -> dict[str, Any]:
 
 
 def post_case_with_http(base_url: str, case: EvalCase) -> dict[str, Any]:
-    with httpx.Client(timeout=60) as client:
+    with httpx.Client(timeout=60, trust_env=False) as client:
         response = client.post(
             f"{base_url.rstrip('/')}/api/chatbi/ask",
             json={
                 "query": case.query,
                 "biz_domain": case.domain,
                 "workspace_id": case.workspace_id,
-                "conversation_id": f"eval_{case.name}",
+                "conversation_id": f"eval_{case.name}_{uuid.uuid4().hex}",
                 "timezone": "Asia/Shanghai",
             },
         )
-        response.raise_for_status()
-        return response.json()
+        try:
+            body = response.json()
+        except ValueError:
+            body = {}
+        if response.is_error:
+            return {
+                **body,
+                "status": body.get("status") or "HTTP_ERROR",
+                "message": body.get("message") or f"HTTP {response.status_code}",
+                "http_status": response.status_code,
+            }
+        return body
 
 
 def assert_case(case: EvalCase, body: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     if body.get("status") != case.expected_status:
         errors.append(f"status expected {case.expected_status}, got {body.get('status')}")
-    if case.expected_metric and body.get("selected_metric", {}).get("metric_id") != case.expected_metric:
+    if case.expected_metric and (body.get("selected_metric") or {}).get("metric_id") != case.expected_metric:
         errors.append(
             "metric expected "
-            f"{case.expected_metric}, got {body.get('selected_metric', {}).get('metric_id')}"
+            f"{case.expected_metric}, got {(body.get('selected_metric') or {}).get('metric_id')}"
         )
-    if case.expected_chart and body.get("profile", {}).get("chart_spec", {}).get("type") != case.expected_chart:
+    if case.expected_chart and (body.get("profile") or {}).get("chart_spec", {}).get("type") != case.expected_chart:
         errors.append(
             "chart expected "
-            f"{case.expected_chart}, got {body.get('profile', {}).get('chart_spec', {}).get('type')}"
+            f"{case.expected_chart}, got {(body.get('profile') or {}).get('chart_spec', {}).get('type')}"
         )
-    if case.expected_rows is not None and body.get("execution", {}).get("row_count") != case.expected_rows:
+    if case.expected_rows is not None and (body.get("execution") or {}).get("row_count") != case.expected_rows:
         errors.append(
-            f"row_count expected {case.expected_rows}, got {body.get('execution', {}).get('row_count')}"
+            f"row_count expected {case.expected_rows}, got {(body.get('execution') or {}).get('row_count')}"
         )
-    if case.expected_intent and body.get("dsl", {}).get("intent") != case.expected_intent:
+    if case.expected_intent and (body.get("dsl") or {}).get("intent") != case.expected_intent:
         errors.append(
-            f"dsl intent expected {case.expected_intent}, got {body.get('dsl', {}).get('intent')}"
+            f"dsl intent expected {case.expected_intent}, got {(body.get('dsl') or {}).get('intent')}"
         )
     if case.expected_dimension:
         dimensions = {
@@ -188,9 +170,9 @@ def assert_case(case: EvalCase, body: dict[str, Any]) -> list[str]:
                 f"candidate set expected {sorted(case.expected_candidates)}, got {sorted(candidates)}"
             )
     if case.expected_status == "SUCCESS":
-        if body.get("reflection", {}).get("status") != "PASS":
+        if (body.get("reflection") or {}).get("status") != "PASS":
             errors.append("reflection did not PASS")
-        if not body.get("profile", {}).get("evidence"):
+        if not (body.get("profile") or {}).get("evidence"):
             errors.append("missing evidence")
         if "SELECT " in str(body).upper():
             errors.append("response leaked raw SQL")
@@ -203,6 +185,7 @@ def case_result(case: EvalCase, body: dict[str, Any], latency_ms: int) -> dict[s
     errors = assert_case(case, body)
     return {
         "name": case.name,
+        "category": case.category,
         "query": case.query,
         "domain": case.domain,
         "workspace_id": case.workspace_id,
@@ -236,7 +219,7 @@ def feedback_body(query_id: str) -> dict[str, Any]:
         "workspace_id": "demo",
         "conversation_id": "eval_feedback",
         "query_id": query_id,
-        "user_query": "最近一年每月 GMV 趋势如何？",
+        "user_query": "2017年每月Olist销售额趋势",
         "feedback_type": "INTERPRETATION_UNTRUSTED",
         "severity": "MEDIUM",
         "message": "测评提交：希望该回答补充异常月份的业务背景。",
@@ -267,13 +250,40 @@ def check_metric_catalog_with_test_client() -> dict[str, Any]:
             params={"workspace_id": "demo", "domain": "sales", "limit": 20},
         )
         detail = client.get(
-            "/api/chatbi/metrics/catalog/M_SALES_GMV",
+            "/api/chatbi/metrics/catalog/M_OLIST_ITEM_REVENUE",
             params={"workspace_id": "demo"},
         )
         return {
             "listed": {"status_code": listed.status_code, "body": listed.json()},
             "detail": {"status_code": detail.status_code, "body": detail.json()},
         }
+
+
+def check_multiturn_context_with_test_client() -> list[dict[str, Any]]:
+    from fastapi.testclient import TestClient
+
+    conversation_id = f"eval_multiturn_{uuid.uuid4().hex}"
+    queries = [
+        "2017年每月Olist销售额趋势",
+        "按商品品类拆解",
+        "只看最近三个月",
+        "换成Olist订单量",
+        "再看卖家州",
+    ]
+    with TestClient(app) as client:
+        return [
+            client.post(
+                "/api/chatbi/ask",
+                json={
+                    "query": query,
+                    "biz_domain": "auto",
+                    "workspace_id": "demo",
+                    "conversation_id": conversation_id,
+                    "timezone": "Asia/Shanghai",
+                },
+            ).json()
+            for query in queries
+        ]
 
 
 def check_feedback_submission_with_test_client(query_id: str) -> dict[str, Any]:
@@ -353,7 +363,7 @@ def check_golden_question_lifecycle_with_test_client(query_id: str) -> dict[str,
 
 
 def check_internal_auth_with_http(base_url: str) -> dict[str, Any]:
-    with httpx.Client(timeout=30) as client:
+    with httpx.Client(timeout=30, trust_env=False) as client:
         response = client.post(
             f"{base_url.rstrip('/')}/api/chatbi/context/load",
             json=unauthorized_body(),
@@ -362,13 +372,13 @@ def check_internal_auth_with_http(base_url: str) -> dict[str, Any]:
 
 
 def check_metric_catalog_with_http(base_url: str) -> dict[str, Any]:
-    with httpx.Client(timeout=30) as client:
+    with httpx.Client(timeout=30, trust_env=False) as client:
         listed = client.get(
             f"{base_url.rstrip('/')}/api/chatbi/metrics/catalog",
             params={"workspace_id": "demo", "domain": "sales", "limit": 20},
         )
         detail = client.get(
-            f"{base_url.rstrip('/')}/api/chatbi/metrics/catalog/M_SALES_GMV",
+            f"{base_url.rstrip('/')}/api/chatbi/metrics/catalog/M_OLIST_ITEM_REVENUE",
             params={"workspace_id": "demo"},
         )
         return {
@@ -377,8 +387,34 @@ def check_metric_catalog_with_http(base_url: str) -> dict[str, Any]:
         }
 
 
+def check_multiturn_context_with_http(base_url: str) -> list[dict[str, Any]]:
+    conversation_id = f"eval_multiturn_{uuid.uuid4().hex}"
+    queries = [
+        "2017年每月Olist销售额趋势",
+        "按商品品类拆解",
+        "只看最近三个月",
+        "换成Olist订单量",
+        "再看卖家州",
+    ]
+    with httpx.Client(timeout=60, trust_env=False) as client:
+        responses = []
+        for query in queries:
+            response = client.post(
+                f"{base_url.rstrip('/')}/api/chatbi/ask",
+                json={
+                    "query": query,
+                    "biz_domain": "auto",
+                    "workspace_id": "demo",
+                    "conversation_id": conversation_id,
+                    "timezone": "Asia/Shanghai",
+                },
+            )
+            responses.append(response.json())
+        return responses
+
+
 def check_feedback_submission_with_http(base_url: str, query_id: str) -> dict[str, Any]:
-    with httpx.Client(timeout=30) as client:
+    with httpx.Client(timeout=30, trust_env=False) as client:
         response = client.post(
             f"{base_url.rstrip('/')}/api/chatbi/feedback",
             json=feedback_body(query_id),
@@ -387,7 +423,7 @@ def check_feedback_submission_with_http(base_url: str, query_id: str) -> dict[st
 
 
 def check_feedback_board_lifecycle_with_http(base_url: str, query_id: str) -> dict[str, Any]:
-    with httpx.Client(timeout=30) as client:
+    with httpx.Client(timeout=30, trust_env=False) as client:
         submitted = client.post(
             f"{base_url.rstrip('/')}/api/chatbi/feedback",
             json=feedback_body(query_id),
@@ -417,7 +453,7 @@ def check_feedback_board_lifecycle_with_http(base_url: str, query_id: str) -> di
 
 
 def check_golden_question_lifecycle_with_http(base_url: str, query_id: str) -> dict[str, Any]:
-    with httpx.Client(timeout=60) as client:
+    with httpx.Client(timeout=60, trust_env=False) as client:
         submitted = client.post(
             f"{base_url.rstrip('/')}/api/chatbi/feedback",
             json=feedback_body(query_id),
@@ -497,24 +533,58 @@ def build_gate_results(base_url: str | None, case_results: list[dict[str, Any]])
     metric_catalog_passed = (
         metric_catalog_result["listed"]["status_code"] == 200
         and metric_catalog_result["detail"]["status_code"] == 200
-        and any(item.get("metric_id") == "M_SALES_GMV" for item in metric_items)
-        and metric_detail.get("metric_id") == "M_SALES_GMV"
+        and any(item.get("metric_id") == "M_OLIST_ITEM_REVENUE" for item in metric_items)
+        and metric_detail.get("metric_id") == "M_OLIST_ITEM_REVENUE"
         and "SUM(" in metric_detail.get("formula_text", "")
-        and "data_warehouse.dwd_sales_order_item" in metric_detail.get("lineage", {}).get("tables", [])
-        and {"D_DATE", "D_MONTH", "D_REGION"}.issubset(metric_dimensions)
+        and "data_warehouse.olist_order_items" in metric_detail.get("lineage", {}).get("tables", [])
+        and {"D_DATE", "D_MONTH", "D_OLIST_CATEGORY"}.issubset(metric_dimensions)
     )
     gates.append(
         {
             "name": "metric_catalog_detail",
             "passed": metric_catalog_passed,
             "detail": (
-                "Metric catalog listed M_SALES_GMV with formula, dimensions, and warehouse lineage."
+                "Metric catalog listed M_OLIST_ITEM_REVENUE with formula, dimensions, and warehouse lineage."
                 if metric_catalog_passed
                 else f"Unexpected metric catalog response: {metric_catalog_result}"
             ),
         }
     )
-    query_id = next((item.get("query_id") for item in case_results if item.get("query_id")), None)
+    multiturn = (
+        check_multiturn_context_with_http(base_url)
+        if base_url
+        else check_multiturn_context_with_test_client()
+    )
+    multiturn_passed = (
+        len(multiturn) == 5
+        and all(item.get("status") == "SUCCESS" for item in multiturn)
+        and (multiturn[1].get("selected_metric") or {}).get("metric_id") == "M_OLIST_ITEM_REVENUE"
+        and (multiturn[1].get("dsl") or {}).get("dimensions") == [{"dimension_id": "D_OLIST_CATEGORY"}]
+        and (multiturn[2].get("dsl") or {}).get("time_range", {}).get("start") == "2018-07-01"
+        and (multiturn[3].get("selected_metric") or {}).get("metric_id")
+        == "M_OLIST_ORDER_COUNT"
+        and (multiturn[4].get("dsl") or {}).get("dimensions")
+        == [{"dimension_id": "D_OLIST_SELLER_STATE"}]
+    )
+    gates.append(
+        {
+            "name": "multiturn_context_inheritance",
+            "passed": multiturn_passed,
+            "detail": (
+                "Metric, dimension, and time context were inherited and explicitly overridden across five turns."
+                if multiturn_passed
+                else f"Unexpected multiturn responses: {multiturn}"
+            ),
+        }
+    )
+    query_id = next(
+        (
+            item.get("query_id")
+            for item in case_results
+            if item.get("name") == "revenue_month_2017" and item.get("query_id")
+        ),
+        None,
+    )
     if query_id:
         feedback_result = (
             check_feedback_submission_with_http(base_url, query_id)
@@ -630,6 +700,16 @@ def run_evaluation(base_url: str | None) -> dict[str, Any]:
     passed_gates = sum(1 for item in gates if item["passed"])
     total = len(results) + len(gates)
     passed = passed_cases + passed_gates
+    category_summary: dict[str, dict[str, Any]] = {}
+    for item in results:
+        category = item["category"]
+        stats = category_summary.setdefault(category, {"passed": 0, "total": 0})
+        stats["total"] += 1
+        stats["passed"] += int(item["passed"])
+    for stats in category_summary.values():
+        stats["pass_rate"] = round(stats["passed"] / stats["total"], 4)
+    latencies = sorted(item["latency_ms"] for item in results)
+    p95_index = max(0, min(len(latencies) - 1, int(len(latencies) * 0.95) - 1))
     return {
         "generated_at": datetime.now(UTC).isoformat(),
         "target": base_url or "in-process TestClient",
@@ -642,7 +722,10 @@ def run_evaluation(base_url: str | None) -> dict[str, Any]:
             "gate_passed": passed_gates,
             "gate_total": len(gates),
             "pass_rate": round(passed / total, 4) if total else 0,
+            "average_case_latency_ms": round(sum(latencies) / len(latencies), 2),
+            "p95_case_latency_ms": latencies[p95_index],
         },
+        "category_summary": category_summary,
         "cases": results,
         "gates": gates,
     }
@@ -662,12 +745,25 @@ def markdown_report(report: dict[str, Any]) -> str:
         f"- 总通过：{summary['passed']}/{summary['total']}，通过率：{summary['pass_rate'] * 100:.2f}%",
         f"- 用例通过：{summary['case_passed']}/{summary['case_total']}",
         f"- 安全/可信门禁通过：{summary['gate_passed']}/{summary['gate_total']}",
+        f"- 平均响应时间：{summary.get('average_case_latency_ms', 0)}ms",
+        f"- P95响应时间：{summary.get('p95_case_latency_ms', 0)}ms",
+        "",
+        "## 分层结果",
+        "",
+        "| 类型 | 通过 | 总数 | 通过率 |",
+        "| --- | ---: | ---: | ---: |",
+    ]
+    for category, stats in report.get("category_summary", {}).items():
+        lines.append(
+            f"| {category} | {stats['passed']} | {stats['total']} | {stats['pass_rate'] * 100:.2f}% |"
+        )
+    lines.extend([
         "",
         "## 用例明细",
         "",
         "| 用例 | 结果 | 问题 | 状态 | 指标 | 意图 | 图表 | 行数 | Evidence | Reflection | 耗时 |",
         "| --- | --- | --- | --- | --- | --- | --- | ---: | ---: | --- | ---: |",
-    ]
+    ])
     for item in report["cases"]:
         result = "PASS" if item["passed"] else "FAIL"
         lines.append(

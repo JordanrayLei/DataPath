@@ -29,7 +29,12 @@ def update_fields(instance: Any, values: dict[str, Any]) -> None:
         setattr(instance, key, value)
 
 
-def seed() -> None:
+def seed(include_legacy: bool = False) -> None:
+    if not include_legacy:
+        from scripts.seed_olist_staging import seed as seed_olist_metrics
+
+        seed_olist_metrics()
+        return
     with SessionLocal() as session:
         domains = [
             {
@@ -179,7 +184,9 @@ def seed() -> None:
             if row is None:
                 session.add(Dimension(**values))
             else:
-                update_fields(row, values)
+                incoming_mapping = values["mapping_json"]
+                update_fields(row, {key: value for key, value in values.items() if key != "mapping_json"})
+                row.mapping_json = {**(row.mapping_json or {}), **incoming_mapping}
         session.flush()
 
         metrics = [

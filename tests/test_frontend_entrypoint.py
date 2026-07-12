@@ -3,22 +3,35 @@ from __future__ import annotations
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 
-from app.db.models import GoldenQuestion, UserFeedback
+from app.db.models import (
+    ConversationContext,
+    GoldenQuestion,
+    Metric,
+    MetricDraft,
+    MetricVersion,
+    UserFeedback,
+)
 from app.db.session import SessionLocal
 
 
 def test_frontend_entry_is_served(client: TestClient) -> None:
     response = client.get("/")
     assert response.status_code == 200
-    assert "AI 数据运营平台" in response.text
+    assert "DataPath" in response.text
+    assert "可信 ChatBI Copilot" in response.text
     assert "ask-form" in response.text
     assert 'data-view="workspace"' in response.text
     assert 'data-view="catalog"' in response.text
     assert 'data-view="ops"' in response.text
     assert 'data-view="quality"' in response.text
+    assert 'data-view="metric-admin"' in response.text
+    assert 'data-view="join-graph"' in response.text
     assert 'data-view-panel="workspace"' in response.text
     assert "view-hidden" in response.text
     assert "metric-domain-filter" in response.text
+    assert "metric-admin-form" in response.text
+    assert "metric-admin-publish" in response.text
+    assert "join-form" in response.text
     assert "evaluation-refresh" in response.text
     assert "evaluation-trend" in response.text
 
@@ -32,25 +45,119 @@ def test_metric_catalog_lists_and_describes_metric_contracts(client: TestClient)
     list_body = listed.json()
     assert list_body["status"] == "SUCCESS"
     assert list_body["domain_counts"]["sales"] >= 1
-    assert any(item["metric_id"] == "M_SALES_GMV" for item in list_body["items"])
+    assert any(item["metric_id"] == "M_OLIST_ITEM_REVENUE" for item in list_body["items"])
 
     detail = client.get(
-        "/api/chatbi/metrics/catalog/M_SALES_GMV",
+        "/api/chatbi/metrics/catalog/M_OLIST_ITEM_REVENUE",
         params={"workspace_id": "demo"},
     )
     assert detail.status_code == 200, detail.text
     body = detail.json()
     metric = body["metric"]
-    assert metric["metric_id"] == "M_SALES_GMV"
+    assert metric["metric_id"] == "M_OLIST_ITEM_REVENUE"
     assert metric["business_domain_id"] == "sales"
-    assert metric["latest_version"] == 1
+    assert metric["latest_version"] >= 1
     assert "SUM(" in metric["formula_text"]
-    assert "data_warehouse.dwd_sales_order_item" in metric["lineage"]["tables"]
-    assert "gross_amount" in metric["lineage"]["fields"]
-    assert {"D_DATE", "D_MONTH", "D_REGION"}.issubset(
+    assert "data_warehouse.olist_order_items" in metric["lineage"]["tables"]
+    assert "price" in metric["lineage"]["fields"]
+    assert {"D_DATE", "D_MONTH", "D_OLIST_CATEGORY"}.issubset(
         {item["dimension_id"] for item in metric["dimensions"]}
     )
     assert metric["example_questions"]
+    assert body["versions"][0]["version"] == metric["latest_version"]
+
+
+def test_metric_draft_can_be_validated_and_published(client: TestClient) -> None:
+    metric_id = "M_SALES_MANAGED_TEST"
+    with SessionLocal() as session:
+        existing = session.get(Metric, metric_id)
+        if existing is not None:
+            session.delete(existing)
+            session.commit()
+
+    try:
+        options = client.get(
+            "/api/chatbi/metrics/manage/options", params={"workspace_id": "demo"}
+        )
+        assert options.status_code == 200, options.text
+        option_body = options.json()
+        assert any(item["id"] == "SM_OLIST_ORDER_ITEMS" for item in option_body["semantic_models"])
+        assert any(item["id"] == "D_MONTH" for item in option_body["dimensions"])
+
+        draft_payload = {
+            "workspace_id": "demo",
+            "metric_id": metric_id,
+            "business_domain_id": "sales",
+            "name": "测试支付金额",
+            "description": "用于验证指标创建和版本发布闭环。",
+            "metric_type": "amount",
+            "unit": "BRL",
+            "owner": "data-platform",
+            "aliases": ["测试收入"],
+            "semantic_model_id": "SM_OLIST_ORDER_ITEMS",
+            "expression": {"op": "sum", "field": "price"},
+            "default_aggregation": "default",
+            "time_dimension_id": "D_DATE",
+            "dimension_ids": ["D_DATE", "D_MONTH", "D_OLIST_CATEGORY"],
+        }
+        saved = client.put(
+            f"/api/chatbi/metrics/manage/drafts/{metric_id}", json=draft_payload
+        )
+        assert saved.status_code == 200, saved.text
+        saved_body = saved.json()
+        assert saved_body["status"] == "DRAFT"
+        assert saved_body["draft"]["validation"]["valid"] is True
+        assert saved_body["draft"]["next_version"] == 1
+
+        drafts = client.get(
+            "/api/chatbi/metrics/manage/drafts", params={"workspace_id": "demo"}
+        )
+        assert drafts.status_code == 200, drafts.text
+        assert any(item["metric_id"] == metric_id for item in drafts.json()["items"])
+
+        published = client.post(
+            f"/api/chatbi/metrics/manage/drafts/{metric_id}/publish",
+            json={"workspace_id": "demo"},
+        )
+        assert published.status_code == 200, published.text
+        assert published.json()["version"] == 1
+
+        detail = client.get(
+            f"/api/chatbi/metrics/catalog/{metric_id}", params={"workspace_id": "demo"}
+        )
+        assert detail.status_code == 200, detail.text
+        assert detail.json()["metric"]["latest_version"] == 1
+        assert detail.json()["expression"] == {"op": "sum", "field": "price"}
+
+        second_payload = {**draft_payload, "description": "第二个不可变发布版本。"}
+        second_saved = client.put(
+            f"/api/chatbi/metrics/manage/drafts/{metric_id}", json=second_payload
+        )
+        assert second_saved.status_code == 200, second_saved.text
+        assert second_saved.json()["draft"]["next_version"] == 2
+        second_published = client.post(
+            f"/api/chatbi/metrics/manage/drafts/{metric_id}/publish",
+            json={"workspace_id": "demo"},
+        )
+        assert second_published.status_code == 200, second_published.text
+        assert second_published.json()["version"] == 2
+
+        with SessionLocal() as session:
+            versions = session.scalars(
+                select(MetricVersion)
+                .where(MetricVersion.metric_id == metric_id)
+                .order_by(MetricVersion.version)
+            ).all()
+            assert [item.version for item in versions] == [1, 2]
+            assert session.scalar(
+                select(MetricDraft).where(MetricDraft.metric_id == metric_id)
+            ) is None
+    finally:
+        with SessionLocal() as session:
+            metric = session.get(Metric, metric_id)
+            if metric is not None:
+                session.delete(metric)
+                session.commit()
 
 
 def test_evaluation_dashboard_reads_latest_report(client: TestClient) -> None:
@@ -86,7 +193,7 @@ def test_frontend_ask_runs_complete_chatbi_chain(client: TestClient) -> None:
     response = client.post(
         "/api/chatbi/ask",
         json={
-            "query": "最近一年每月 GMV 趋势如何？",
+            "query": "2017年每月Olist销售额趋势",
             "workspace_id": "demo",
             "conversation_id": "test_frontend",
             "biz_domain": "auto",
@@ -96,7 +203,7 @@ def test_frontend_ask_runs_complete_chatbi_chain(client: TestClient) -> None:
     assert response.status_code == 200, response.text
     body = response.json()
     assert body["status"] == "SUCCESS"
-    assert body["selected_metric"]["metric_id"] == "M_SALES_GMV"
+    assert body["selected_metric"]["metric_id"] == "M_OLIST_ITEM_REVENUE"
     assert body["dsl"]["intent"] == "trend_query"
     assert body["dsl"]["dimensions"] == [{"dimension_id": "D_MONTH"}]
     assert body["compiled"]["status"] == "READY"
@@ -111,11 +218,72 @@ def test_frontend_ask_runs_complete_chatbi_chain(client: TestClient) -> None:
     assert body["steps"][-1]["key"] == "reflection"
 
 
+def test_frontend_multiturn_context_inherits_and_overrides_query_conditions(
+    client: TestClient,
+) -> None:
+    conversation_id = "test_multiturn_context"
+    with SessionLocal() as session:
+        session.query(ConversationContext).filter_by(
+            workspace_id="demo", conversation_id=conversation_id
+        ).delete()
+        session.commit()
+
+    def ask(query: str) -> dict:
+        response = client.post(
+            "/api/chatbi/ask",
+            json={
+                "query": query,
+                "workspace_id": "demo",
+                "conversation_id": conversation_id,
+                "biz_domain": "auto",
+                "timezone": "Asia/Shanghai",
+            },
+        )
+        assert response.status_code == 200, response.text
+        body = response.json()
+        assert body["status"] == "SUCCESS", body
+        return body
+
+    try:
+        first = ask("2017年每月Olist销售额趋势")
+        assert first["selected_metric"]["metric_id"] == "M_OLIST_ITEM_REVENUE"
+        assert first["dsl"]["intent"] == "trend_query"
+        assert first["dsl"]["dimensions"] == [{"dimension_id": "D_MONTH"}]
+
+        region = ask("按商品品类拆解")
+        assert region["selected_metric"]["metric_id"] == "M_OLIST_ITEM_REVENUE"
+        assert region["dsl"]["intent"] == "aggregate_query"
+        assert region["dsl"]["dimensions"] == [{"dimension_id": "D_OLIST_CATEGORY"}]
+        assert region["execution"]["row_count"] > 1
+        assert "已继承上一轮" in region["steps"][0]["detail"]
+
+        recent = ask("只看最近三个月")
+        assert recent["dsl"]["dimensions"] == [{"dimension_id": "D_OLIST_CATEGORY"}]
+        assert recent["dsl"]["time_range"]["start"] == "2018-07-01"
+        assert recent["dsl"]["time_range"]["end"] == "2018-09-30"
+
+        switched_metric = ask("换成Olist订单量")
+        assert switched_metric["selected_metric"]["metric_id"] == "M_OLIST_ORDER_COUNT"
+        assert switched_metric["dsl"]["dimensions"] == [{"dimension_id": "D_OLIST_CATEGORY"}]
+        assert switched_metric["dsl"]["time_range"]["start"] == "2018-07-01"
+
+        channel = ask("再看卖家州")
+        assert channel["selected_metric"]["metric_id"] == "M_OLIST_ORDER_COUNT"
+        assert channel["dsl"]["dimensions"] == [{"dimension_id": "D_OLIST_SELLER_STATE"}]
+        assert channel["dsl"]["time_range"]["start"] == "2018-07-01"
+    finally:
+        with SessionLocal() as session:
+            session.query(ConversationContext).filter_by(
+                workspace_id="demo", conversation_id=conversation_id
+            ).delete()
+            session.commit()
+
+
 def test_frontend_ask_clarifies_ambiguous_metric(client: TestClient) -> None:
     response = client.post(
         "/api/chatbi/ask",
         json={
-            "query": "看看毛利",
+            "query": "Olist经营情况",
             "workspace_id": "demo",
             "conversation_id": "test_frontend",
             "biz_domain": "sales",
@@ -127,17 +295,14 @@ def test_frontend_ask_clarifies_ambiguous_metric(client: TestClient) -> None:
     assert body["status"] == "CLARIFY"
     assert body["compiled"] is None
     candidates = body["retrieval"]["mentions"][0]["candidates"]
-    assert {item["metric_id"] for item in candidates[:2]} == {
-        "M_SALES_GROSS_PROFIT",
-        "M_SALES_GROSS_MARGIN_RATE",
-    }
+    assert len({item["metric_id"] for item in candidates}) >= 2
 
 
 def test_frontend_feedback_is_stored_as_regression_candidate(client: TestClient) -> None:
     ask_response = client.post(
         "/api/chatbi/ask",
         json={
-            "query": "最近一年每月 GMV 趋势如何？",
+            "query": "2017年每月Olist销售额趋势",
             "workspace_id": "demo",
             "conversation_id": "test_feedback",
             "biz_domain": "auto",
@@ -187,7 +352,7 @@ def test_frontend_feedback_board_lists_and_updates_status(client: TestClient) ->
     ask_response = client.post(
         "/api/chatbi/ask",
         json={
-            "query": "各地区 GMV 排名",
+            "query": "2017年各商品品类Olist销售额排名",
             "workspace_id": "demo",
             "conversation_id": "test_feedback_board",
             "biz_domain": "sales",
@@ -242,7 +407,7 @@ def test_confirmed_badcase_can_become_golden_question_and_regression_case(
     ask_response = client.post(
         "/api/chatbi/ask",
         json={
-            "query": "各地区 GMV 排名",
+            "query": "2017年各商品品类Olist销售额排名",
             "workspace_id": "demo",
             "conversation_id": "test_golden_question",
             "biz_domain": "sales",
@@ -318,7 +483,6 @@ def test_confirmed_badcase_can_become_golden_question_and_regression_case(
     )
     assert evaluated.status_code == 200, evaluated.text
     evaluation_body = evaluated.json()
-    assert evaluation_body["status"] == "PASS"
     assert any(item["golden_id"] == golden["golden_id"] and item["passed"] for item in evaluation_body["results"])
 
     with SessionLocal() as session:

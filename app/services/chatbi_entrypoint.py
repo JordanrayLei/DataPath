@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import Any, Literal
 
 from sqlalchemy import select
@@ -24,81 +25,103 @@ from app.schemas.chatbi import (
 )
 from app.services.dsl_validator import validate_dsl
 from app.services.interpretation_generator import generate_interpretation
-from app.services.metric_retrieval import (
-    DEMO_RECENT_YEAR_END,
-    DEMO_RECENT_YEAR_START,
-    retrieve_metrics,
-)
+from app.services.metric_retrieval import retrieve_metrics
 from app.services.query_compiler import compile_query
 from app.services.query_executor import execute_query
+from app.services.query_understanding import get_query_understanding_provider
 from app.services.reflection_validator import validate_interpretation
 from app.services.result_profiler import profile_result
 from app.services.signing import sign_value
 
 
-Domain = Literal["sales", "advertising"]
+Domain = Literal["sales"]
 
 
 def _step(key: str, label: str, status: str, detail: str = "") -> ChatbiPipelineStep:
     return ChatbiPipelineStep(key=key, label=label, status=status, detail=detail)
 
 
-def infer_domain(query: str, requested: str) -> Domain:
-    if requested in {"sales", "advertising"}:
-        return requested  # type: ignore[return-value]
-    lowered = query.lower()
-    ad_tokens = ("广告", "投放", "roas", "roi", "曝光", "点击", "消耗", "spend", "转化")
-    return "advertising" if any(token in lowered for token in ad_tokens) else "sales"
-
-
-def infer_metric_mentions(query: str, domain: Domain) -> list[str]:
-    lowered = query.lower()
-    if domain == "advertising":
-        ordered = [
-            (("roas", "投产比", "广告回报"), "ROAS"),
-            (("roi", "投资回报"), "ROI"),
-            (("广告消耗", "广告花费", "投放消耗", "投放成本", "spend"), "广告消耗"),
-            (("点击率", "ctr"), "点击率"),
-            (("点击",), "点击量"),
-            (("曝光",), "曝光量"),
-        ]
-    else:
-        ordered = [
-            (("毛利率",), "毛利率"),
-            (("毛利",), "毛利"),
-            (("gmv", "成交额"), "GMV"),
-            (("销售额", "已支付销售额"), "已支付销售额"),
-            (("订单",), "支付订单量"),
-            (("客单价",), "客单价"),
-        ]
-    for tokens, mention in ordered:
-        if any(token in lowered or token in query for token in tokens):
-            return [mention]
-    return []
+def infer_domain(query: str, requested: str, prior_domain: str | None = None) -> Domain:
+    return "sales"
 
 
 def infer_dimension_mentions(query: str, domain: Domain) -> list[str]:
     mentions: list[str] = []
     if any(token in query for token in ("每月", "按月", "月度", "趋势", "近一年", "最近一年")):
         mentions.append("月份")
-    if domain == "sales" and any(token in query for token in ("地区", "区域", "大区", "各地")):
-        mentions.append("地区")
-    if domain == "advertising" and any(token in query for token in ("平台", "渠道", "媒体")):
-        mentions.append("广告平台")
+    if any(token in query for token in ("国家", "市场", "country")):
+        mentions.append("国家")
+    if any(token in query for token in ("商品", "产品")):
+        mentions.append("真实商品")
     return mentions
 
 
-def build_preprocess(query: str, domain: Domain, timezone: str) -> PreprocessData:
+def inherited_metric_name(last_query_context: dict[str, Any]) -> str:
+    metrics = last_query_context.get("metrics") or []
+    if not metrics:
+        return ""
+    metric = metrics[0]
+    if isinstance(metric, dict):
+        return str(metric.get("display_name") or metric.get("name") or "")
+    return ""
+
+
+def resolve_time_range(
+    query: str,
+    last_query_context: dict[str, Any],
+    metric_id: str = "",
+) -> dict[str, str]:
+    explicit_year = re.search(r"(?<!\d)(20(?:0[9]|1[0-8]|2[0-6]))\s*年?", query)
+    if explicit_year:
+        year = explicit_year.group(1)
+        return {"start": f"{year}-01-01", "end": f"{year}-12-31"}
+    short_year = re.search(r"(?<!\d)(16|17|18)\s*年", query)
+    if short_year:
+        year = f"20{short_year.group(1)}"
+        return {"start": f"{year}-01-01", "end": f"{year}-12-31"}
+    if any(token in query for token in ("最近三个月", "近三个月", "过去三个月")):
+        return {"start": "2018-07-01", "end": "2018-09-30"}
+    if any(token in query for token in ("最近一年", "近一年", "过去一年")):
+        return {"start": "2017-10-01", "end": "2018-09-30"}
+    previous = last_query_context.get("time_range")
+    if isinstance(previous, dict) and previous.get("start") and previous.get("end"):
+        return {"start": str(previous["start"]), "end": str(previous["end"])}
+    if metric_id.startswith("M_OLIST_"):
+        return {"start": "2017-01-01", "end": "2017-12-31"}
+    return {"start": "2017-01-01", "end": "2017-12-31"}
+
+
+def build_preprocess(
+    session: Session,
+    query: str,
+    domain: Domain,
+    timezone: str,
+    last_query_context: dict[str, Any],
+) -> PreprocessData:
+    inherited_metric = inherited_metric_name(last_query_context)
+    understanding = get_query_understanding_provider().understand(
+        session, query, domain, inherited_metric
+    )
+    explicit_metrics = understanding.metric_mentions
+    explicit_dimensions = understanding.dimension_mentions or infer_dimension_mentions(query, domain)
+    time_range = resolve_time_range(query, last_query_context)
+    inherited = understanding.inherited_metric
     return PreprocessData(
-        normalized_query=query.strip(),
-        metric_mentions=infer_metric_mentions(query, domain),
-        dimension_mentions=infer_dimension_mentions(query, domain),
-        filter_mentions=[],
-        time_text="最近一年" if any(token in query for token in ("最近一年", "近一年", "过去一年")) else "",
-        time_start=DEMO_RECENT_YEAR_START,
-        time_end=DEMO_RECENT_YEAR_END,
+        normalized_query=understanding.normalized_query,
+        metric_mentions=explicit_metrics,
+        dimension_mentions=explicit_dimensions,
+        filter_mentions=understanding.filter_mentions or [],
+        time_text=understanding.time_text or (
+            "最近三个月"
+            if any(token in query for token in ("最近三个月", "近三个月", "过去三个月"))
+            else "最近一年"
+            if any(token in query for token in ("最近一年", "近一年", "过去一年"))
+            else ""
+        ),
+        time_start=understanding.time_start or time_range["start"],
+        time_end=understanding.time_end or time_range["end"],
         comparison="",
-        inherit_context=False,
+        inherit_context=inherited or bool(last_query_context.get("dimensions")),
     )
 
 
@@ -132,33 +155,125 @@ def build_context(
     )
 
 
+def save_conversation_context(
+    session: Session,
+    payload: ChatbiAskRequest,
+    operator_id: str,
+    domain: Domain,
+    selected_metric: dict[str, Any],
+    dsl: QueryDsl,
+) -> None:
+    context = session.scalar(
+        select(ConversationContext).where(
+            ConversationContext.workspace_id == payload.workspace_id,
+            ConversationContext.conversation_id == payload.conversation_id,
+        )
+    )
+    snapshot = {
+        "biz_domain": domain,
+        "metrics": [
+            {
+                "metric_id": selected_metric.get("metric_id"),
+                "metric_version": selected_metric.get("metric_version"),
+                "display_name": selected_metric.get("display_name"),
+            }
+        ],
+        "dimensions": [item.model_dump(mode="json") for item in dsl.dimensions],
+        "filters": [item.model_dump(mode="json") for item in dsl.filters],
+        "time_range": dsl.time_range.model_dump(mode="json"),
+        "intent": dsl.intent,
+    }
+    if context is None:
+        context = ConversationContext(
+            workspace_id=payload.workspace_id,
+            conversation_id=payload.conversation_id,
+            operator_id=operator_id,
+            last_query_context=snapshot,
+        )
+        session.add(context)
+    else:
+        context.operator_id = operator_id
+        context.last_query_context = snapshot
+    session.commit()
+
+
 def build_query_dsl(
     query: str,
     domain: Domain,
     metric_id: str,
     metric_version: int,
     timezone: str,
+    last_query_context: dict[str, Any],
 ) -> dict[str, Any]:
-    wants_ranking = any(token in query for token in ("排名", "排行", "top", "Top", "各地区", "各平台"))
-    wants_monthly = any(token in query for token in ("每月", "按月", "月度", "趋势", "近一年", "最近一年", "过去一年"))
-    dimensions: list[dict[str, str]] = []
+    lowered = query.lower()
+    wants_ranking = any(token in lowered for token in ("排名", "排行", "排个名", "top"))
+    wants_monthly = any(token in query for token in ("每月", "按月", "月度", "趋势"))
+    explicit_dimensions: list[str] = []
+    if wants_monthly:
+        explicit_dimensions.append("D_MONTH")
+    dimension_query = lowered
+    if metric_id.startswith("M_OLIST_"):
+        for metric_name in ("Olist商品销售额", "Olist运费", "Olist订单量"):
+            dimension_query = dimension_query.replace(metric_name.casefold(), "")
+        dimension_rules = [
+            (("品类", "类目", "category"), "D_OLIST_CATEGORY"),
+            (("客户州", "买家州", "客户地区", "买家地区"), "D_OLIST_CUSTOMER_STATE"),
+            (("卖家州", "卖家地区"), "D_OLIST_SELLER_STATE"),
+            (("订单状态", "交易状态"), "D_OLIST_ORDER_STATUS"),
+        ]
+    elif domain == "sales":
+        dimension_rules = [
+            (("地区", "区域", "大区", "各地"), "D_REGION"),
+            (("渠道", "来源"), "D_SALES_CHANNEL"),
+            (("品类", "类目"), "D_CATEGORY"),
+            (("商品", "产品"), "D_PRODUCT"),
+        ]
+    else:
+        dimension_rules = [
+            (("平台", "渠道", "媒体"), "D_AD_PLATFORM"),
+            (("计划", "campaign"), "D_CAMPAIGN"),
+        ]
+    for tokens, dimension_id in dimension_rules:
+        if any(token in dimension_query for token in tokens):
+            explicit_dimensions.append(dimension_id)
+
+    reset_dimensions = any(token in query for token in ("整体", "汇总", "总计", "不拆分"))
+    previous_dimensions = [] if reset_dimensions else last_query_context.get("dimensions") or []
+    inherited_dimensions = [
+        str(item.get("dimension_id") if isinstance(item, dict) else item)
+        for item in previous_dimensions
+    ]
+    dimension_ids = list(dict.fromkeys(explicit_dimensions or inherited_dimensions))
+    dimensions = [{"dimension_id": item} for item in dimension_ids if item]
     sort: list[dict[str, str]] = []
-    intent: str = "aggregate_query"
+    explicit_dimension_change = bool(explicit_dimensions) or reset_dimensions
+    previous_intent = str(last_query_context.get("intent") or "")
+    intent: str = previous_intent if previous_intent and not explicit_dimension_change else "aggregate_query"
 
     if wants_ranking:
         intent = "ranking_query"
-        if domain == "advertising":
-            dimensions = [{"dimension_id": "D_AD_PLATFORM"}]
-        else:
-            dimensions = [{"dimension_id": "D_REGION"}]
+        if not dimensions:
+            dimensions = [{"dimension_id": (
+                "D_OLIST_CATEGORY" if metric_id.startswith("M_OLIST_") else "D_REGION"
+            )}]
         sort = [{"field_id": metric_id, "direction": "desc"}]
-    elif wants_monthly:
+    elif dimensions and dimensions[0]["dimension_id"] == "D_MONTH":
         intent = "trend_query"
-        dimensions = [{"dimension_id": "D_MONTH"}]
         sort = [{"field_id": "D_MONTH", "direction": "asc"}]
+    elif dimensions:
+        intent = "aggregate_query"
+        sort = [{"field_id": metric_id, "direction": "desc"}]
+    else:
+        intent = "aggregate_query"
 
+    time_range = resolve_time_range(query, last_query_context, metric_id)
+
+    filters: list[dict[str, Any]] = []
+
+    is_multi_entity = metric_id.startswith("M_OLIST_")
     return {
-        "dsl_version": "1.0",
+        "dsl_version": "2.0" if is_multi_entity else "1.0",
+        **({"query_mode": "multi_entity"} if is_multi_entity else {}),
         "intent": intent,
         "metrics": [
             {
@@ -168,10 +283,10 @@ def build_query_dsl(
             }
         ],
         "dimensions": dimensions,
-        "filters": [],
+        "filters": filters,
         "time_range": {
-            "start": DEMO_RECENT_YEAR_START,
-            "end": DEMO_RECENT_YEAR_END,
+            "start": time_range["start"],
+            "end": time_range["end"],
             "timezone": timezone,
         },
         "sort": sort,
@@ -258,7 +373,25 @@ def answer_chatbi_question(
 
     context = build_context(session, payload, request_id, trace_id)
     context_data = context.model_dump(mode="json")
-    steps.append(_step("context", "上下文加载", "PASS", "已加载公开演示身份和行权限"))
+    last_query_context = context.last_query_context or {}
+    domain = infer_domain(
+        payload.query,
+        payload.biz_domain,
+        str(last_query_context.get("biz_domain") or ""),
+    )
+    inherited_parts = []
+    if last_query_context.get("metrics"):
+        inherited_parts.append("指标")
+    if last_query_context.get("dimensions"):
+        inherited_parts.append("维度")
+    if last_query_context.get("time_range"):
+        inherited_parts.append("时间")
+    context_detail = (
+        f"已继承上一轮的{'、'.join(inherited_parts)}条件"
+        if inherited_parts
+        else "已加载公开演示身份和行权限"
+    )
+    steps.append(_step("context", "上下文加载", "PASS", context_detail))
 
     retrieval_request = MetricRetrieveRequest(
         query=payload.query,
@@ -267,7 +400,9 @@ def answer_chatbi_question(
         biz_domain=domain,
         operator_id=context.operator_id,
         context=context_data,
-        preprocess=build_preprocess(payload.query, domain, payload.timezone),
+        preprocess=build_preprocess(
+            session, payload.query, domain, payload.timezone, last_query_context
+        ),
     )
     retrieval = retrieve_metrics(session, retrieval_request, request_id, trace_id)
     retrieval_data = retrieval.model_dump(mode="json")
@@ -317,6 +452,16 @@ def answer_chatbi_question(
         selected.metric_id,
         selected.metric_version,
         payload.timezone,
+        last_query_context,
+    )
+    query_mode = raw_dsl.get("query_mode", "single_model")
+    steps.append(
+        _step(
+            "route",
+            "查询分流",
+            "PASS",
+            "进入多实体Join规划链路" if query_mode == "multi_entity" else "进入单模型指标查询链路",
+        )
     )
     validation = validate_dsl(session, raw_dsl, context_data, request_id, trace_id)
     validation_data = validation.model_dump(mode="json")
@@ -398,7 +543,7 @@ def answer_chatbi_question(
         trace_id,
     )
     interpretation_data = generated.interpretation.model_dump(mode="json")
-    steps.append(_step("interpretation", "业务解读", "PASS", "已生成 Evidence 约束解读"))
+    steps.append(_step("interpretation", "业务解读", "PASS", "已生成基于查询结果的业务结论"))
 
     reflected = validate_interpretation(
         session,
@@ -424,6 +569,14 @@ def answer_chatbi_question(
     )
 
     answer_markdown = summarize_answer(interpretation_data, reflection_data, profile_data)
+    save_conversation_context(
+        session,
+        payload,
+        context.operator_id,
+        domain,
+        selected.model_dump(mode="json"),
+        dsl,
+    )
     return _base_response(
         payload,
         request_id,

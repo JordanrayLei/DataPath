@@ -3,17 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AI 数据运营平台</title>
-    <link rel="stylesheet" href="/frontend/styles.css" />
+    <title>DataPath｜可信 ChatBI Copilot</title>
+    <link rel="stylesheet" href="/frontend/styles.css?v=20260712-semantic-retrieval" />
   </head>
   <body>
     <div class="shell">
       <aside class="sidebar">
         <div class="brand">
-          <div class="brand-mark">AI</div>
+          <div class="brand-mark">DP</div>
           <div>
-            <p class="eyebrow">Data Operations Copilot</p>
-            <h1>AI 数据运营平台</h1>
+            <p class="eyebrow">可信 ChatBI Copilot</p>
+            <h1>DataPath</h1>
           </div>
         </div>
 
@@ -38,86 +38,90 @@
             <strong>测评监控</strong>
             <small>发布前质量门禁和趋势</small>
           </button>
+          <button class="nav-item" type="button" data-view="metric-admin">
+            <span>05</span>
+            <strong>指标管理</strong>
+            <small>创建草稿并发布版本</small>
+          </button>
+          <button class="nav-item" type="button" data-view="join-graph">
+            <span>06</span><strong>Join治理</strong><small>发现、验证并发布安全关系</small>
+          </button>
         </nav>
-
+        <div class="sidebar-spacer"></div>
+        <div class="sidebar-user">
+          <span class="user-avatar">演</span>
+          <span>
+            <strong>演示工作区</strong>
+            <small>public_demo_user</small>
+          </span>
+        </div>
       </aside>
 
       <main class="main">
-        <section class="workspace-command" data-view-panel="workspace">
-          <section class="card ask-panel">
-            <div class="panel-heading">
+        <section class="chat-workspace" data-view-panel="workspace">
+          <aside class="conversation-rail">
+            <button id="new-conversation" class="new-conversation" type="button"><span>＋</span> 新建分析</button>
+            <p class="rail-label">最近会话</p>
+            <div id="conversation-list" class="conversation-list"></div>
+          </aside>
+
+          <section class="conversation-main">
+            <header class="conversation-header">
               <div>
-                <p class="eyebrow">Ask Data</p>
-                <h2>自然语言取数</h2>
+                <h2 id="conversation-title">真实零售数据分析</h2>
+                <p><span id="conversation-turn-count">0 轮对话</span> · <span class="context-online">已保留上下文</span></p>
               </div>
-              <span class="pill">Demo Workspace</span>
-            </div>
-            <form id="ask-form" class="ask-form">
-              <label for="query">你想看什么数据？</label>
-              <textarea id="query" name="query" rows="4" maxlength="1000">最近一年每月 GMV 趋势如何？</textarea>
-
-              <div class="form-row">
-                <label for="domain">业务域</label>
-                <select id="domain" name="domain">
-                  <option value="auto">自动识别</option>
-                  <option value="sales">电商经营</option>
-                  <option value="advertising">广告投放</option>
-                </select>
+              <div class="conversation-actions">
+                <button type="button" title="分享当前分析">分享</button>
+                <button type="button" title="更多操作">•••</button>
               </div>
+            </header>
 
-              <button id="submit-btn" type="submit">运行分析</button>
-            </form>
-
-            <div class="examples" aria-label="示例问题">
-              <button type="button" data-example="最近一年每月 GMV 趋势如何？">GMV 月趋势</button>
-              <button type="button" data-example="各地区 GMV 排名">地区排名</button>
-              <button type="button" data-example="看看毛利">歧义澄清</button>
+            <div id="chat-thread" class="chat-thread" aria-live="polite">
+              <section id="empty-state" class="chat-empty">
+                <span class="empty-icon">AI</span>
+                <h3>从一个业务问题开始</h3>
+                <p>我会记住本次会话中的指标、时间、维度和筛选条件。</p>
+                <div class="empty-examples" aria-label="示例问题">
+                  <button type="button" data-example="2011年每月真实净收入趋势">净收入趋势</button>
+                  <button type="button" data-example="各国家真实商品销售额排名">国家排名</button>
+                  <button type="button" data-example="商品真实销售件数排名">商品排名</button>
+                </div>
+              </section>
             </div>
+
+            <footer class="chat-composer">
+              <div id="context-chips" class="context-chips"><span>新会话 · 暂无继承条件</span></div>
+              <form id="ask-form" class="composer-form">
+                <label class="sr-only" for="query">继续追问</label>
+                <textarea id="query" name="query" rows="2" maxlength="1000" placeholder="继续追问，例如：哪些地区贡献了增长？"></textarea>
+                <div class="composer-tools">
+                  <select id="domain" name="domain" aria-label="业务域">
+                    <option value="auto">自动识别</option>
+                    <option value="sales">电商经营</option>
+                  </select>
+                  <button id="submit-btn" type="submit" title="发送问题">↑</button>
+                </div>
+              </form>
+            </footer>
           </section>
 
-          <section class="card pipeline-panel">
-            <div class="panel-heading">
-              <div>
-                <p class="eyebrow">Trace</p>
-                <h2>执行链路</h2>
-              </div>
-              <span id="overall-status" class="status idle">待运行</span>
-            </div>
-            <ol id="pipeline" class="pipeline">
-              <li>提交问题后展示完整链路。</li>
-            </ol>
-          </section>
-        </section>
-
-        <section class="card workspace-guide" data-view-panel="workspace">
-          <div class="card-title-row">
-            <div>
-              <p class="eyebrow">Daily Workflow</p>
-              <h3>日常使用路径</h3>
-              <p class="card-subtitle">默认只呈现业务用户最常用的路径；治理和测评能力放到独立工作区，避免干扰提问。</p>
-            </div>
-            <span class="pill">业务优先</span>
-          </div>
-          <div class="guide-steps">
-            <div>
-              <strong>1. 提问</strong>
-              <small>输入业务问题，系统自动识别指标和查询意图。</small>
-            </div>
-            <div>
-              <strong>2. 看结果</strong>
-              <small>优先查看图表、结论、数据表和 Evidence。</small>
-            </div>
-            <div>
-              <strong>3. 反馈</strong>
-              <small>口径或解释不对时，再提交 Badcase 进入治理闭环。</small>
-            </div>
-          </div>
-        </section>
-
-        <section id="empty-state" class="empty-state" data-view-panel="workspace">
-          <div class="empty-icon">⌁</div>
-          <h3>准备就绪</h3>
-          <p>点击“运行分析”，你会看到从自然语言到可信数据解读的完整闭环。</p>
+          <aside class="trust-panel">
+            <div class="trust-heading"><h2>本轮分析</h2><span id="overall-status" class="status idle">待运行</span></div>
+            <section class="trust-card">
+              <h3>上下文记忆</h3>
+              <p class="trust-subtitle">系统自动继承并在本轮生效</p>
+              <div id="context-memory" class="context-memory"><p>完成第一轮分析后显示继承条件。</p></div>
+            </section>
+            <section class="trust-card trace-card">
+              <div class="card-title-row"><h3>执行链路</h3><span id="trace-badge" class="trace-badge"></span></div>
+              <ol id="pipeline" class="pipeline"><li>提交问题后展示完整链路。</li></ol>
+            </section>
+            <section class="trust-card">
+              <div class="card-title-row"><h3>证据与口径</h3><span id="evidence-count" class="pill">0 条</span></div>
+              <div id="evidence-inspector" class="evidence-list"><div class="evidence-item">暂无 Evidence。</div></div>
+            </section>
+          </aside>
         </section>
 
         <section class="card view-hidden" data-view-panel="quality">
@@ -158,7 +162,6 @@
               <select id="metric-domain-filter" aria-label="指标业务域筛选">
                 <option value="ALL">全部业务域</option>
                 <option value="sales">电商经营</option>
-                <option value="advertising">广告投放</option>
               </select>
               <button id="metric-refresh" type="button">刷新指标</button>
             </div>
@@ -171,6 +174,84 @@
             <div id="metric-detail" class="metric-detail">
               <div class="rich-item">选择一个指标查看口径、公式、维度和血缘。</div>
             </div>
+          </div>
+        </section>
+
+        <section class="card view-hidden" data-view-panel="join-graph">
+          <div class="card-title-row"><div><h3>Semantic Join Graph 治理</h3><p class="card-subtitle">自动发现候选关系，检测基数、覆盖率与 Fanout，审核后发布给 Planner。</p></div><div class="badcase-actions"><button id="join-scan" type="button">扫描候选</button><button id="join-refresh" type="button">刷新</button></div></div>
+          <div class="join-summary" id="join-summary"></div>
+          <div class="join-admin-layout">
+            <section><h4>语义模型</h4><div id="join-models" class="join-list"></div><h4>已发布关系</h4><div id="join-relations" class="join-list"></div></section>
+            <section class="join-editor"><h4>关系草稿</h4><form id="join-form">
+              <label>关系 ID<input id="join-id" required pattern="J_[A-Z0-9_]+" placeholder="J_ORDERS_CUSTOMERS" /></label>
+              <div class="metric-form-grid"><label>左实体<select id="join-left"></select></label><label>右实体<select id="join-right"></select></label><label>左键<input id="join-left-key" required placeholder="order_id" /></label><label>右键<input id="join-right-key" required placeholder="order_id" /></label><label>基数<select id="join-cardinality"><option value="many_to_one">多对一</option><option value="one_to_one">一对一</option><option value="one_to_many">一对多</option><option value="many_to_many">多对多</option></select></label><label>Fanout策略<select id="join-strategy"><option value="safe">safe</option><option value="aggregate_before_join">aggregate_before_join</option><option value="blocked">blocked</option></select></label></div>
+              <div id="join-validation" class="admin-message">保存草稿后执行数据检测。</div><div class="form-actions"><button type="submit">保存草稿</button><button id="join-validate" type="button" disabled>检测</button><button id="join-publish" type="button" disabled>发布</button></div>
+            </form><h4>自动发现候选</h4><div id="join-candidates" class="join-list"><div class="rich-item">尚未扫描。</div></div></section>
+          </div>
+        </section>
+
+        <section class="card view-hidden" data-view-panel="metric-admin">
+          <div class="card-title-row">
+            <div>
+              <h3>指标管理</h3>
+              <p class="card-subtitle">创建指标草稿，校验公式与可用维度，并发布不可变版本。</p>
+            </div>
+            <div class="badcase-actions">
+              <button id="metric-admin-new" type="button">新建指标</button>
+              <button id="metric-admin-refresh" type="button">刷新草稿</button>
+            </div>
+          </div>
+          <div class="metric-admin-layout">
+            <aside>
+              <div class="admin-section-heading">
+                <h4>待发布草稿</h4>
+                <span id="metric-draft-count" class="pill">0</span>
+              </div>
+              <div id="metric-draft-list" class="metric-list">
+                <div class="rich-item">暂无草稿。</div>
+              </div>
+            </aside>
+            <form id="metric-admin-form" class="metric-admin-form">
+              <div class="admin-form-heading">
+                <div>
+                  <h4 id="metric-admin-title">创建指标草稿</h4>
+                  <p id="metric-admin-subtitle">发布后生成 v1；后续修改会生成递增版本。</p>
+                </div>
+                <span id="metric-admin-status" class="pill">未保存</span>
+              </div>
+              <div class="metric-form-grid">
+                <label>指标 ID<input id="metric-admin-id" required pattern="M_[A-Z0-9_]+" placeholder="M_SALES_NET_REVENUE" /></label>
+                <label>业务域<select id="metric-admin-domain" required></select></label>
+                <label>指标名称<input id="metric-admin-name" required maxlength="200" placeholder="净收入" /></label>
+                <label>指标类型<select id="metric-admin-type"><option value="amount">金额</option><option value="count">计数</option><option value="ratio">比率</option><option value="average">均值</option></select></label>
+                <label>单位<input id="metric-admin-unit" required maxlength="64" placeholder="CNY" /></label>
+                <label>Owner<input id="metric-admin-owner" required maxlength="128" value="data-platform" /></label>
+                <label class="span-two">业务定义<textarea id="metric-admin-description" required rows="3" maxlength="2000" placeholder="说明统计对象、时间口径和排除规则"></textarea></label>
+                <label class="span-two">别名<input id="metric-admin-aliases" maxlength="1000" placeholder="使用逗号分隔，例如：净销售额, 实收收入" /></label>
+                <label class="span-two">正向问法<textarea id="metric-admin-positive-examples" rows="3" maxlength="4000" placeholder="每行一个用户问法，用于语义召回和回归"></textarea></label>
+                <label class="span-two">反向问法<textarea id="metric-admin-negative-examples" rows="3" maxlength="4000" placeholder="每行一个易混淆问法，用于候选降权"></textarea></label>
+                <label class="span-two">语义模型<select id="metric-admin-model" required></select></label>
+              </div>
+              <section class="metric-config-section">
+                <h4>计算公式</h4>
+                <div class="metric-form-grid">
+                  <label>运算<select id="metric-admin-operation"><option value="sum">求和 SUM</option><option value="count_distinct">去重计数 COUNT DISTINCT</option><option value="ratio">比率 RATIO</option></select></label>
+                  <label>字段<select id="metric-admin-field" required></select></label>
+                  <label id="metric-admin-denominator-wrap" class="hidden">分母字段<select id="metric-admin-denominator"></select></label>
+                  <label id="metric-admin-scale-wrap" class="hidden">缩放<select id="metric-admin-scale"><option value="1">1</option><option value="100">100（百分比）</option><option value="1000">1000</option></select></label>
+                </div>
+                <div id="metric-formula-preview" class="formula">选择模型和字段后生成公式预览</div>
+              </section>
+              <section class="metric-config-section">
+                <div class="admin-section-heading"><h4>可用维度</h4><small>必须包含时间维度</small></div>
+                <div id="metric-admin-dimensions" class="dimension-selector"></div>
+              </section>
+              <div id="metric-admin-message" class="admin-message" aria-live="polite"></div>
+              <div class="admin-form-actions">
+                <button id="metric-admin-save" type="submit">保存并校验草稿</button>
+                <button id="metric-admin-publish" type="button" disabled>发布版本</button>
+              </div>
+            </form>
           </div>
         </section>
 
@@ -215,13 +296,13 @@
           </div>
         </section>
 
-        <section id="result" class="result hidden" data-view-panel="workspace">
+        <section id="result" class="result hidden legacy-result" data-view-panel="workspace">
           <div class="result-header">
             <div>
               <p class="eyebrow">Answer</p>
               <h2 id="answer-title">查询结果</h2>
             </div>
-            <div id="trace-badge" class="trace-badge"></div>
+            <div id="legacy-trace-badge" class="trace-badge"></div>
           </div>
 
           <div id="message" class="message"></div>
@@ -311,6 +392,6 @@
       </main>
     </div>
 
-    <script src="/frontend/app.js" type="module"></script>
+    <script src="/frontend/app.js?v=20260712-semantic-retrieval" type="module"></script>
   </body>
 </html>

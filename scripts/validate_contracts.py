@@ -21,6 +21,7 @@ QUERY_DSL_SCHEMA_PATH = DOCUMENT / "query-dsl-v1.schema.json"
 OPENAPI_PATH = DOCUMENT / "chatbi-openapi.yaml"
 DIFY_DSL_PATH = DOCUMENT / "dify-chatbi-workflow.zh-CN.dsl.yml"
 METRIC_CATALOG_PATH = DOCUMENT / "initial-metric-catalog.md"
+BUSINESS_EVALUATION_PATH = ROOT / "data" / "evaluation" / "olist_business_cases.json"
 
 EXPECTED_PATHS = {
     "/api/chatbi/context/load",
@@ -105,6 +106,11 @@ OPTIONAL_PUBLIC_ENTRYPOINTS = {
     "/api/chatbi/feedback",
     "/api/chatbi/golden-questions/from-feedback/{feedback_id}",
     "/api/chatbi/golden-questions/evaluate",
+    "/api/chatbi/metrics/manage/drafts/{metric_id}/publish",
+    "/api/chatbi/join-graph/drafts/{relation_id}/validate",
+    "/api/chatbi/join-graph/drafts/{relation_id}/publish",
+    "/api/chatbi/join-graph/relations/{relation_id}/deprecate",
+    "/api/chatbi/join-graph/scan",
 }
 
 
@@ -328,8 +334,9 @@ def validate_metric_catalog() -> None:
     if len(metric_ids) != len(unique_ids):
         duplicates = sorted({item for item in metric_ids if metric_ids.count(item) > 1})
         raise AssertionError(f"Duplicate detailed metric definitions: {duplicates}")
-    if len(unique_ids) != 24:
-        raise AssertionError(f"Expected 24 detailed metrics, found {len(unique_ids)}")
+    expected_ids = {"M_OLIST_ITEM_REVENUE", "M_OLIST_FREIGHT_VALUE", "M_OLIST_ORDER_COUNT"}
+    if unique_ids != expected_ids:
+        raise AssertionError(f"Expected Olist V1 metrics {sorted(expected_ids)}, found {sorted(unique_ids)}")
 
     invalid_ids = sorted(
         metric_id
@@ -338,6 +345,33 @@ def validate_metric_catalog() -> None:
     )
     if invalid_ids:
         raise AssertionError(f"Invalid metric IDs: {invalid_ids}")
+
+
+def validate_business_evaluation_corpus() -> None:
+    cases = load_json(BUSINESS_EVALUATION_PATH)
+    if len(cases) != 30:
+        raise AssertionError(f"Expected 30 business evaluation cases, found {len(cases)}")
+    names = [item.get("name") for item in cases]
+    if len(names) != len(set(names)):
+        raise AssertionError("Business evaluation case names must be unique")
+    non_permission_queries = [
+        item.get("query") for item in cases if item.get("expected_status") != "BLOCKED"
+    ]
+    if len(non_permission_queries) != len(set(non_permission_queries)):
+        raise AssertionError("Non-permission evaluation queries must be unique")
+    statuses = {"SUCCESS": 0, "CLARIFY": 0, "REJECT": 0, "BLOCKED": 0}
+    for item in cases:
+        status = item.get("expected_status")
+        if status not in statuses:
+            raise AssertionError(f"Invalid expected status in {item.get('name')}: {status}")
+        if not item.get("query") or not item.get("domain"):
+            raise AssertionError(f"Incomplete evaluation case: {item.get('name')}")
+        statuses[status] += 1
+    expected_distribution = {"SUCCESS": 18, "CLARIFY": 3, "REJECT": 6, "BLOCKED": 3}
+    if statuses != expected_distribution:
+        raise AssertionError(
+            f"Unexpected business evaluation distribution: {statuses}"
+        )
 
 
 def validate_fastapi_routes() -> None:
@@ -361,7 +395,8 @@ def main() -> None:
         ("OpenAPI 3.1 and eight POST paths", validate_openapi),
         ("Dify HTTP endpoint alignment", validate_dify_endpoint_alignment),
         ("Dify fail-closed safety flow", validate_dify_safety_flow),
-        ("24 unique metric definitions", validate_metric_catalog),
+        ("three published Olist V1 metric definitions", validate_metric_catalog),
+        ("30-case Olist business evaluation corpus", validate_business_evaluation_corpus),
         ("eight implemented FastAPI ChatBI routes", validate_fastapi_routes),
     ]
 

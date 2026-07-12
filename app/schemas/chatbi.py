@@ -113,6 +113,8 @@ class MetricCatalogItem(StrictModel):
     status: str
     latest_version: int
     aliases: list[str]
+    positive_examples: list[str]
+    negative_examples: list[str]
     dimensions: list[MetricCatalogDimension]
     semantic_model: MetricCatalogSemanticModel
     formula_text: str
@@ -127,11 +129,117 @@ class MetricCatalogListResponse(TraceFields):
     domain_counts: dict[str, int]
 
 
+class MetricCatalogVersion(StrictModel):
+    version: int
+    status: str
+    formula_text: str
+    semantic_model_id: str
+    published_at: datetime
+
+
 class MetricCatalogDetailResponse(TraceFields):
     status: Literal["SUCCESS"]
     metric: MetricCatalogItem
     expression: dict[str, Any]
     version_status: str
+    published_at: datetime
+    versions: list[MetricCatalogVersion]
+
+
+class MetricManagementOption(StrictModel):
+    id: str
+    name: str
+    business_domain_id: str | None = None
+    physical_table: str | None = None
+    fields: list[str] = Field(default_factory=list)
+
+
+class MetricManagementOptionsResponse(TraceFields):
+    status: Literal["SUCCESS"]
+    domains: list[MetricManagementOption]
+    semantic_models: list[MetricManagementOption]
+    dimensions: list[MetricManagementOption]
+
+
+class MetricDraftUpsertRequest(StrictModel):
+    workspace_id: str = Field(default="demo", min_length=1, max_length=128)
+    metric_id: str = Field(pattern=r"^M_[A-Z0-9_]{2,100}$")
+    business_domain_id: Literal["sales", "advertising"]
+    name: str = Field(min_length=1, max_length=200)
+    description: str = Field(min_length=1, max_length=2000)
+    metric_type: Literal["amount", "count", "ratio", "average"]
+    unit: str = Field(min_length=1, max_length=64)
+    owner: str = Field(min_length=1, max_length=128)
+    aliases: list[str] = Field(default_factory=list, max_length=20)
+    positive_examples: list[str] = Field(default_factory=list, max_length=50)
+    negative_examples: list[str] = Field(default_factory=list, max_length=50)
+    semantic_model_id: str = Field(min_length=1, max_length=100)
+    expression: dict[str, Any]
+    default_aggregation: Literal[
+        "default", "sum", "avg", "count", "count_distinct"
+    ] = "default"
+    time_dimension_id: str = Field(default="D_DATE", pattern=r"^D_[A-Z0-9_]{2,100}$")
+    dimension_ids: list[str] = Field(min_length=1, max_length=20)
+
+    @field_validator("aliases", "positive_examples", "negative_examples")
+    @classmethod
+    def clean_aliases(cls, value: list[str]) -> list[str]:
+        cleaned = [item.strip() for item in value if item.strip()]
+        if any(len(item) > 200 for item in cleaned):
+            raise ValueError("alias is too long")
+        return list(dict.fromkeys(cleaned))
+
+    @field_validator("dimension_ids")
+    @classmethod
+    def unique_dimensions(cls, value: list[str]) -> list[str]:
+        if any(not item.startswith("D_") for item in value):
+            raise ValueError("dimension id is invalid")
+        return list(dict.fromkeys(value))
+
+
+class MetricDraftItem(StrictModel):
+    draft_id: str
+    metric_id: str
+    business_domain_id: str
+    name: str
+    description: str
+    metric_type: str
+    unit: str
+    owner: str
+    metric_status: str
+    next_version: int
+    aliases: list[str]
+    positive_examples: list[str]
+    negative_examples: list[str]
+    semantic_model_id: str
+    expression: dict[str, Any]
+    formula_text: str
+    default_aggregation: str
+    time_dimension_id: str
+    dimension_ids: list[str]
+    validation: dict[str, Any]
+    updated_at: datetime
+
+
+class MetricDraftResponse(TraceFields):
+    status: Literal["DRAFT"]
+    draft: MetricDraftItem
+
+
+class MetricDraftListResponse(TraceFields):
+    status: Literal["SUCCESS"]
+    items: list[MetricDraftItem]
+    total: int
+
+
+class MetricPublishRequest(StrictModel):
+    workspace_id: str = Field(default="demo", min_length=1, max_length=128)
+
+
+class MetricPublishResponse(TraceFields):
+    status: Literal["PUBLISHED"]
+    metric_id: str
+    version: int
     published_at: datetime
 
 
@@ -221,7 +329,8 @@ class SortItem(StrictModel):
 
 
 class QueryDsl(StrictModel):
-    dsl_version: Literal["1.0"]
+    dsl_version: Literal["1.0", "2.0"]
+    query_mode: Literal["single_model", "multi_entity", "multi_fact"] | None = None
     intent: Literal[
         "aggregate_query", "trend_query", "comparison_query", "ranking_query"
     ]
@@ -235,6 +344,10 @@ class QueryDsl(StrictModel):
 
     @model_validator(mode="after")
     def validate_intent_shape(self) -> QueryDsl:
+        if self.dsl_version == "2.0" and self.query_mode is None:
+            raise ValueError("DSL 2.0 requires query_mode")
+        if self.dsl_version == "1.0" and self.query_mode is not None:
+            raise ValueError("query_mode is only allowed in DSL 2.0")
         metric_keys = {(metric.metric_id, metric.metric_version) for metric in self.metrics}
         if len(metric_keys) != len(self.metrics):
             raise ValueError("metrics must be unique")

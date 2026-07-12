@@ -46,8 +46,105 @@ const goldenEvalSummary = document.querySelector("#golden-eval-summary");
 const goldenList = document.querySelector("#golden-list");
 const viewButtons = document.querySelectorAll("[data-view]");
 const viewPanels = document.querySelectorAll("[data-view-panel]");
+const chatThread = document.querySelector("#chat-thread");
+const conversationList = document.querySelector("#conversation-list");
+const newConversationButton = document.querySelector("#new-conversation");
+const conversationTitle = document.querySelector("#conversation-title");
+const conversationTurnCount = document.querySelector("#conversation-turn-count");
+const contextChips = document.querySelector("#context-chips");
+const contextMemory = document.querySelector("#context-memory");
+const evidenceInspector = document.querySelector("#evidence-inspector");
+const evidenceCount = document.querySelector("#evidence-count");
+const metricAdminNew = document.querySelector("#metric-admin-new");
+const metricAdminRefresh = document.querySelector("#metric-admin-refresh");
+const metricDraftCount = document.querySelector("#metric-draft-count");
+const metricDraftList = document.querySelector("#metric-draft-list");
+const metricAdminForm = document.querySelector("#metric-admin-form");
+const metricAdminTitle = document.querySelector("#metric-admin-title");
+const metricAdminSubtitle = document.querySelector("#metric-admin-subtitle");
+const metricAdminStatus = document.querySelector("#metric-admin-status");
+const metricAdminId = document.querySelector("#metric-admin-id");
+const metricAdminDomain = document.querySelector("#metric-admin-domain");
+const metricAdminName = document.querySelector("#metric-admin-name");
+const metricAdminType = document.querySelector("#metric-admin-type");
+const metricAdminUnit = document.querySelector("#metric-admin-unit");
+const metricAdminOwner = document.querySelector("#metric-admin-owner");
+const metricAdminDescription = document.querySelector("#metric-admin-description");
+const metricAdminAliases = document.querySelector("#metric-admin-aliases");
+const metricAdminPositiveExamples = document.querySelector("#metric-admin-positive-examples");
+const metricAdminNegativeExamples = document.querySelector("#metric-admin-negative-examples");
+const metricAdminModel = document.querySelector("#metric-admin-model");
+const metricAdminOperation = document.querySelector("#metric-admin-operation");
+const metricAdminField = document.querySelector("#metric-admin-field");
+const metricAdminDenominator = document.querySelector("#metric-admin-denominator");
+const metricAdminDenominatorWrap = document.querySelector("#metric-admin-denominator-wrap");
+const metricAdminScale = document.querySelector("#metric-admin-scale");
+const metricAdminScaleWrap = document.querySelector("#metric-admin-scale-wrap");
+const metricFormulaPreview = document.querySelector("#metric-formula-preview");
+const metricAdminDimensions = document.querySelector("#metric-admin-dimensions");
+const metricAdminMessage = document.querySelector("#metric-admin-message");
+const metricAdminSave = document.querySelector("#metric-admin-save");
+const metricAdminPublish = document.querySelector("#metric-admin-publish");
+const joinRefresh = document.querySelector("#join-refresh");
+const joinScan = document.querySelector("#join-scan");
+const joinSummary = document.querySelector("#join-summary");
+const joinModels = document.querySelector("#join-models");
+const joinRelations = document.querySelector("#join-relations");
+const joinCandidates = document.querySelector("#join-candidates");
+const joinForm = document.querySelector("#join-form");
+const joinId = document.querySelector("#join-id");
+const joinLeft = document.querySelector("#join-left");
+const joinRight = document.querySelector("#join-right");
+const joinLeftKey = document.querySelector("#join-left-key");
+const joinRightKey = document.querySelector("#join-right-key");
+const joinCardinality = document.querySelector("#join-cardinality");
+const joinStrategy = document.querySelector("#join-strategy");
+const joinValidation = document.querySelector("#join-validation");
+const joinValidate = document.querySelector("#join-validate");
+const joinPublish = document.querySelector("#join-publish");
 
 let currentResult = null;
+let activeConversationId = "";
+let conversations = [];
+let metricManagementOptions = null;
+let metricDrafts = [];
+let activeMetricDraft = null;
+let joinGraph = null;
+
+function joinItem(title, subtitle, status) {
+  return `<article class="join-item"><header><strong>${escapeHtml(title)}</strong><span class="pill">${escapeHtml(status)}</span></header><small>${escapeHtml(subtitle)}</small></article>`;
+}
+
+function renderJoinGraph(data) {
+  joinGraph = data;
+  joinSummary.innerHTML = [
+    [data.models.length, "语义模型"], [data.entities.length, "业务实体"],
+    [data.relations.filter((x) => x.status === "PUBLISHED").length, "已发布关系"], [data.drafts.length, "待治理草稿"],
+  ].map(([value, label]) => `<div class="rich-item"><strong>${value}</strong><small>${label}</small></div>`).join("");
+  joinModels.innerHTML = data.models.map((m) => joinItem(m.name, `${m.id} · ${m.table}`, m.status)).join("");
+  joinRelations.innerHTML = data.relations.map((r) => joinItem(r.id, `${r.left_entity_id} → ${r.right_entity_id} · ${r.relationship_type} · v${r.version}`, r.status)).join("") || '<div class="rich-item">暂无关系。</div>';
+  const options = data.entities.map((e) => `<option value="${escapeHtml(e.id)}">${escapeHtml(e.name)} · ${escapeHtml(e.entity_type)}</option>`).join("");
+  joinLeft.innerHTML = options; joinRight.innerHTML = options;
+  if (data.drafts[0]) fillJoinDraft(data.drafts[0]);
+}
+
+function fillJoinDraft(item) {
+  const d = item.definition; joinId.value = item.relation_id; joinLeft.value = d.left_entity_id;
+  joinRight.value = d.right_entity_id; joinLeftKey.value = (d.left_keys || []).join(",");
+  joinRightKey.value = (d.right_keys || []).join(","); joinCardinality.value = d.relationship_type;
+  joinStrategy.value = d.fanout_strategy; joinValidate.disabled = false;
+  joinPublish.disabled = item.status !== "VALIDATED" || !item.validation?.safe_to_publish;
+  joinValidation.textContent = item.validation?.validated_at ? `覆盖率 ${(item.validation.join_coverage * 100).toFixed(2)}% · 唯一率 ${(item.validation.right_key_unique_rate * 100).toFixed(2)}% · Fanout ${item.validation.fanout_multiplier}x · ${item.validation.risk_level}` : "草稿待数据检测";
+}
+
+async function loadJoinGraph() { const r = await fetch("/api/chatbi/join-graph?workspace_id=demo"); const d = await r.json(); if (!r.ok) throw new Error(d.message || "Join Graph加载失败"); renderJoinGraph(d); }
+async function saveJoinDraft() {
+  const id = joinId.value.trim().toUpperCase(); const body = {workspace_id:"demo", left_entity_id:joinLeft.value, right_entity_id:joinRight.value, left_keys:joinLeftKey.value.split(",").map(x=>x.trim()).filter(Boolean), right_keys:joinRightKey.value.split(",").map(x=>x.trim()).filter(Boolean), relationship_type:joinCardinality.value, join_type:"left", fanout_strategy:joinStrategy.value, priority:100};
+  const r = await fetch(`/api/chatbi/join-graph/drafts/${encodeURIComponent(id)}`, {method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)}); const d=await r.json(); if(!r.ok) throw new Error(d.message||"草稿保存失败"); joinValidation.textContent="草稿已保存，请执行数据检测。"; joinValidate.disabled=false; joinPublish.disabled=true; await loadJoinGraph();
+}
+async function validateJoinDraft() { const r=await fetch(`/api/chatbi/join-graph/drafts/${encodeURIComponent(joinId.value)}/validate`,{method:"POST"}); const d=await r.json(); if(!r.ok) throw new Error(d.message||"检测失败"); const v=d.validation; joinValidation.textContent=`覆盖率 ${(v.join_coverage*100).toFixed(2)}% · 唯一率 ${(v.right_key_unique_rate*100).toFixed(2)}% · Fanout ${v.fanout_multiplier}x · ${v.risk_level}`; joinPublish.disabled=!v.safe_to_publish; await loadJoinGraph(); }
+async function publishJoinDraft() { const r=await fetch(`/api/chatbi/join-graph/drafts/${encodeURIComponent(joinId.value)}/publish`,{method:"POST"}); const d=await r.json(); if(!r.ok) throw new Error(d.message||"发布失败"); joinValidation.textContent=`${d.relation_id} v${d.version} 已发布给 Planner。`; joinPublish.disabled=true; await loadJoinGraph(); }
+async function scanJoinCandidates() { const r=await fetch("/api/chatbi/join-graph/scan?domain=sales",{method:"POST"}); const d=await r.json(); if(!r.ok) throw new Error(d.message||"扫描失败"); joinCandidates.innerHTML=d.candidates.map((c,i)=>`<article class="join-item"><header><strong>${escapeHtml(c.left_entity_id)} → ${escapeHtml(c.right_entity_id)}</strong><button type="button" data-join-candidate="${i}">创建草稿</button></header><small>${escapeHtml(c.left_keys.join(", "))} · 置信度 ${Math.round(c.confidence*100)}% · ${escapeHtml(c.reason)}</small></article>`).join("")||'<div class="rich-item">没有发现新候选。</div>'; joinCandidates.dataset.items=JSON.stringify(d.candidates); }
 
 const statusText = {
   SUCCESS: "成功",
@@ -133,6 +230,157 @@ function richItems(items = [], empty = "暂无") {
       return `<div class="rich-item">${escapeHtml(text)}${ids}</div>`;
     })
     .join("");
+}
+
+function createConversation(title = "新建分析") {
+  return {
+    id: `frontend_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    title,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+    messages: [],
+  };
+}
+
+function persistConversations() {
+  try {
+    localStorage.setItem("chatbi_conversations_v1", JSON.stringify(conversations.slice(0, 12)));
+    localStorage.setItem("chatbi_active_conversation_v1", activeConversationId);
+  } catch (_error) {
+    // Conversation persistence is a convenience; the live session still works without it.
+  }
+}
+
+function loadConversations() {
+  localStorage.removeItem("chatbi_conversations_v1");
+  localStorage.removeItem("chatbi_active_conversation_v1");
+  conversations = [createConversation("真实零售数据分析")];
+  activeConversationId = conversations[0].id;
+}
+
+function activeConversation() {
+  return conversations.find((item) => item.id === activeConversationId) || conversations[0];
+}
+
+function conversationMeta(item) {
+  const turns = item.messages.filter((message) => message.role === "user").length;
+  if (!turns) return "尚未开始";
+  const time = new Date(item.updatedAt).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" });
+  return `${time} · ${turns} 轮对话`;
+}
+
+function renderConversationList() {
+  conversationList.innerHTML = [...conversations]
+    .sort((a, b) => b.updatedAt - a.updatedAt)
+    .map(
+      (item) => `<button class="conversation-item ${item.id === activeConversationId ? "active" : ""}" type="button" data-conversation-id="${escapeHtml(item.id)}">
+        <strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(conversationMeta(item))}</small>
+      </button>`,
+    )
+    .join("");
+}
+
+function userMessageMarkup(text) {
+  return `<article class="chat-message user"><span class="chat-avatar">你</span><div class="message-content"><div class="user-bubble">${escapeHtml(text)}</div></div></article>`;
+}
+
+function loadingMessageMarkup() {
+  return `<article class="chat-message assistant" data-loading-message><span class="chat-avatar">AI</span><div class="message-content"><div class="typing-card"><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>正在理解上下文并运行分析</div></div></article>`;
+}
+
+function contextFromResult(data) {
+  const metric = data.selected_metric;
+  const dsl = data.dsl || {};
+  const dimensions = (dsl.dimensions || []).map((item) => item.dimension_id).join("、") || "未指定";
+  const timeRange = dsl.time_range?.label || dsl.time_range?.preset || dsl.time_range?.start && dsl.time_range?.end
+    ? dsl.time_range?.label || dsl.time_range?.preset || `${dsl.time_range?.start || ""} 至 ${dsl.time_range?.end || ""}`
+    : "按问题识别";
+  return {
+    metric: metric ? `${metric.display_name || metric.name || metric.metric_id} · ${metric.metric_id}` : "待确认",
+    metricName: metric?.display_name || metric?.name || metric?.metric_id || "当前指标",
+    dimensions,
+    timeRange,
+    intent: dsl.intent || "分析查询",
+  };
+}
+
+function updateContextPanels(data) {
+  const context = contextFromResult(data);
+  contextChips.innerHTML = `<span>沿用：${escapeHtml(context.metricName)}</span><span>范围：${escapeHtml(context.timeRange)}</span><span>维度：${escapeHtml(context.dimensions)}</span>`;
+  contextMemory.innerHTML = `
+    <div class="context-row"><span>指标口径</span><strong>${escapeHtml(context.metric)}</strong></div>
+    <div class="context-row"><span>时间范围</span><strong>${escapeHtml(context.timeRange)}</strong></div>
+    <div class="context-row"><span>分析维度</span><strong>${escapeHtml(context.dimensions)}</strong></div>
+    <div class="context-row"><span>查询意图</span><strong>${escapeHtml(context.intent)}</strong></div>`;
+  const items = data.profile?.evidence || [];
+  evidenceCount.textContent = `${items.length} 条`;
+  evidenceInspector.innerHTML = items.length
+    ? items.map((item) => `<button class="evidence-item" type="button" data-evidence-id="${escapeHtml(item.evidence_id)}"><strong>${escapeHtml(item.evidence_id)}</strong><div>${escapeHtml(item.statement)}</div><small>${escapeHtml(item.metric_id)} · rows ${(item.row_refs || []).join(",")}</small></button>`).join("")
+    : `<div class="evidence-item">暂无 Evidence。</div>`;
+}
+
+function interactiveResultMarkup(data) {
+  const interpretation = data.interpretation || {};
+  const context = contextFromResult(data);
+  const finding = interpretation.findings?.[0];
+  const summary = typeof finding === "string" ? finding : finding?.text || data.message || "分析已完成。";
+  const rawTitle = String(interpretation.title || "").trim();
+  const insightTitle = rawTitle && !rawTitle.includes("证据约束解读")
+    ? rawTitle
+    : summary.replace(/[。！？!?]+$/, "");
+  const rows = data.execution?.rows || [];
+  const spec = data.profile?.chart_spec || {};
+  const yKey = Array.isArray(spec.y) ? spec.y[0] : spec.y;
+  const latest = rows.at(-1)?.[yKey];
+  const previous = rows.at(-2)?.[yKey];
+  const change = typeof latest === "number" && typeof previous === "number" && previous !== 0 ? ((latest - previous) / Math.abs(previous)) * 100 : null;
+  return `<article class="chat-message assistant"><span class="chat-avatar">AI</span><div class="message-content">
+    <p class="assistant-copy">${escapeHtml(summary)}</p>
+    <section class="interactive-result" data-result-card>
+      <header class="interactive-result-head"><div><h3>${escapeHtml(insightTitle || spec.title || "查询结果")}</h3><p>沿用 ${escapeHtml(context.metric)} · ${escapeHtml(context.timeRange)}</p></div><span class="status success">✓ 可信</span></header>
+      <div class="result-controls">
+        <button class="result-control active" type="button">${escapeHtml(context.dimensions)}</button>
+        <button class="result-control" type="button" data-followup-query="各地区${escapeHtml(context.metricName)}排名">地区</button>
+        <button class="result-control" type="button" data-followup-query="按渠道拆解${escapeHtml(context.metricName)}">渠道</button>
+        <button class="result-control" type="button" data-followup-query="只看最近三个月的${escapeHtml(context.metricName)}">最近 3 个月</button>
+        <button class="result-control result-view-control active" type="button" data-result-view="chart">图表</button>
+        <button class="result-control" type="button" data-result-view="table">数据表</button>
+      </div>
+      <div class="result-summary">
+        <div class="result-metric"><small>最新值</small><strong>${escapeHtml(formatNumber(latest ?? data.execution?.row_count ?? 0))}</strong><span>${change === null ? "查询完成" : `${change >= 0 ? "↑" : "↓"} ${Math.abs(change).toFixed(1)}% 环比`}</span></div>
+        <div class="result-metric"><small>数据行数</small><strong>${escapeHtml(rows.length)}</strong><span>完整返回</span></div>
+        <div class="result-metric"><small>可信状态</small><strong>${escapeHtml(data.reflection?.status || "PASS")}</strong><span>${escapeHtml((data.profile?.evidence || []).length)} 条 Evidence</span></div>
+      </div>
+      <div class="interactive-chart" data-result-chart>${chart.innerHTML}</div>
+      <div class="interactive-table result-tab-hidden" data-result-table>${table.innerHTML}</div>
+      <div class="result-actions"><button type="button" data-result-view="table">查看明细</button><button type="button">导出</button><button type="button">固定到看板</button></div>
+    </section>
+    <p class="assistant-meta">${escapeHtml(data.selected_metric?.metric_id || "")} · ${escapeHtml(data.compiled?.query_id || data.trace_id || "")} · Reflection ${escapeHtml(data.reflection?.status || "-")}</p>
+  </div></article>`;
+}
+
+function clarificationMessageMarkup(data) {
+  const candidates = data.retrieval?.mentions?.flatMap((mention) => mention.candidates || []) || [];
+  return `<article class="chat-message assistant"><span class="chat-avatar">AI</span><div class="message-content"><p class="assistant-copy">${escapeHtml(data.message || "需要先确认指标口径。")}</p><section class="interactive-result"><h3>请选择指标口径</h3><div class="suggested-followups">${candidates.map((candidate) => `<button type="button" data-followup-query="查询${escapeHtml(candidate.display_name)}">${escapeHtml(candidate.display_name)} · ${escapeHtml(candidate.business_definition || candidate.metric_id)}</button>`).join("")}</div></section></div></article>`;
+}
+
+function renderActiveConversation() {
+  const conversation = activeConversation();
+  conversationTitle.textContent = conversation.title;
+  const turns = conversation.messages.filter((item) => item.role === "user").length;
+  conversationTurnCount.textContent = `${turns} 轮对话`;
+  if (!conversation.messages.length) {
+    chatThread.innerHTML = `<section id="empty-state" class="chat-empty"><span class="empty-icon">AI</span><h3>从一个业务问题开始</h3><p>我会记住本次会话中的指标、时间、维度和筛选条件。</p><div class="empty-examples"><button type="button" data-example="2011年每月真实净收入趋势">净收入趋势</button><button type="button" data-example="各国家真实商品销售额排名">国家排名</button><button type="button" data-example="商品真实销售件数排名">商品排名</button></div></section>`;
+    contextChips.innerHTML = "<span>新会话 · 暂无继承条件</span>";
+    return;
+  }
+  chatThread.innerHTML = conversation.messages.map((item) => item.role === "user" ? userMessageMarkup(item.text) : item.html).join("");
+  const lastAssistant = [...conversation.messages].reverse().find((item) => item.role === "assistant" && item.data);
+  if (lastAssistant) {
+    renderResult(lastAssistant.data);
+    updateContextPanels(lastAssistant.data);
+  }
+  chatThread.scrollTop = chatThread.scrollHeight;
 }
 
 function renderClarification(data) {
@@ -360,6 +608,13 @@ function renderMetricDetail(data) {
           .map((question) => `<button type="button" data-metric-example="${escapeHtml(question)}">${escapeHtml(question)}</button>`)
           .join("")}
       </div>
+      <h4>发布历史</h4>
+      <div class="version-history">
+        ${(data.versions || [])
+          .map((version) => `<div><strong>v${escapeHtml(version.version)}</strong><span>${escapeHtml(version.formula_text)}</span><small>${escapeHtml(version.published_at)}</small></div>`)
+          .join("") || '<div class="rich-item">暂无发布版本。</div>'}
+      </div>
+      <button type="button" data-metric-edit="${escapeHtml(item.metric_id)}">创建下一版本草稿</button>
     </article>
   `;
 }
@@ -380,6 +635,225 @@ async function loadMetricDetail(metricId) {
   const data = await response.json();
   if (!response.ok) throw new Error(data.message || data.detail?.message || "指标详情加载失败");
   renderMetricDetail(data);
+  return data;
+}
+
+function expressionFromForm() {
+  const operation = metricAdminOperation.value;
+  if (operation === "ratio") {
+    return {
+      op: "ratio",
+      numerator: { op: "sum", field: metricAdminField.value },
+      denominator: { op: "sum", field: metricAdminDenominator.value },
+      scale: Number(metricAdminScale.value),
+      zero_policy: "null",
+    };
+  }
+  return { op: operation, field: metricAdminField.value };
+}
+
+function updateFormulaPreview() {
+  const operation = metricAdminOperation.value;
+  const isRatio = operation === "ratio";
+  metricAdminDenominatorWrap.classList.toggle("hidden", !isRatio);
+  metricAdminScaleWrap.classList.toggle("hidden", !isRatio);
+  if (!metricAdminField.value) {
+    metricFormulaPreview.textContent = "选择模型和字段后生成公式预览";
+    return;
+  }
+  metricFormulaPreview.textContent = isRatio
+    ? `SUM(${metricAdminField.value}) / NULLIF(SUM(${metricAdminDenominator.value || "?"}), 0) × ${metricAdminScale.value}`
+    : operation === "count_distinct"
+      ? `COUNT(DISTINCT ${metricAdminField.value})`
+      : `SUM(${metricAdminField.value})`;
+}
+
+function selectedDimensionIds() {
+  return [...metricAdminDimensions.querySelectorAll("input:checked")].map((item) => item.value);
+}
+
+function renderManagementOptions(selectedDimensions = []) {
+  if (!metricManagementOptions) return;
+  const requestedDomain = metricAdminDomain.value;
+  metricAdminDomain.innerHTML = metricManagementOptions.domains
+    .map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)}</option>`)
+    .join("");
+  if (metricManagementOptions.domains.some((item) => item.id === requestedDomain)) {
+    metricAdminDomain.value = requestedDomain;
+  }
+  const domain = metricAdminDomain.value || metricManagementOptions.domains[0]?.id;
+  const matchingModels = metricManagementOptions.semantic_models.filter((item) => item.business_domain_id === domain);
+  metricAdminModel.innerHTML = matchingModels
+    .map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)} · ${escapeHtml(item.physical_table)}</option>`)
+    .join("");
+  const model = matchingModels.find((item) => item.id === metricAdminModel.dataset.preferred) || matchingModels[0];
+  if (model) metricAdminModel.value = model.id;
+  const fields = model?.fields || [];
+  const fieldOptions = fields.map((field) => `<option value="${escapeHtml(field)}">${escapeHtml(field)}</option>`).join("");
+  metricAdminField.innerHTML = fieldOptions;
+  metricAdminDenominator.innerHTML = fieldOptions;
+  const compatible = metricManagementOptions.dimensions.filter((item) => (item.fields || []).includes(model?.id));
+  metricAdminDimensions.innerHTML = compatible
+    .map((item) => {
+      const checked = selectedDimensions.includes(item.id) || (!selectedDimensions.length && ["D_DATE", "D_MONTH"].includes(item.id));
+      return `<label><input type="checkbox" value="${escapeHtml(item.id)}" ${checked ? "checked" : ""} /> <span>${escapeHtml(item.name)}</span><small>${escapeHtml(item.id)}</small></label>`;
+    })
+    .join("");
+  updateFormulaPreview();
+}
+
+async function loadMetricManagementOptions() {
+  const response = await fetch("/api/chatbi/metrics/manage/options?workspace_id=demo");
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || "指标配置加载失败");
+  metricManagementOptions = data;
+  renderManagementOptions(selectedDimensionIds());
+}
+
+function resetMetricAdminForm() {
+  activeMetricDraft = null;
+  metricAdminForm.reset();
+  metricAdminId.disabled = false;
+  metricAdminOwner.value = "data-platform";
+  metricAdminTitle.textContent = "创建指标草稿";
+  metricAdminSubtitle.textContent = "发布后生成 v1；后续修改会生成递增版本。";
+  metricAdminStatus.textContent = "未保存";
+  metricAdminMessage.textContent = "";
+  metricAdminPublish.disabled = true;
+  metricAdminModel.dataset.preferred = "";
+  renderManagementOptions([]);
+}
+
+function fillMetricAdminForm(item) {
+  activeMetricDraft = item;
+  metricAdminId.value = item.metric_id;
+  metricAdminId.disabled = true;
+  metricAdminDomain.value = item.business_domain_id;
+  metricAdminName.value = item.name;
+  metricAdminType.value = item.metric_type;
+  metricAdminUnit.value = item.unit;
+  metricAdminOwner.value = item.owner;
+  metricAdminDescription.value = item.description;
+  metricAdminAliases.value = (item.aliases || []).join(", ");
+  metricAdminPositiveExamples.value = (item.positive_examples || []).join("\n");
+  metricAdminNegativeExamples.value = (item.negative_examples || []).join("\n");
+  metricAdminModel.dataset.preferred = item.semantic_model_id;
+  renderManagementOptions(item.dimension_ids || []);
+  metricAdminModel.value = item.semantic_model_id;
+  const expression = item.expression || {};
+  metricAdminOperation.value = expression.op || "sum";
+  if (expression.op === "ratio") {
+    metricAdminField.value = expression.numerator?.field || "";
+    metricAdminDenominator.value = expression.denominator?.field || "";
+    metricAdminScale.value = String(expression.scale || 1);
+  } else {
+    metricAdminField.value = expression.field || "";
+  }
+  metricAdminTitle.textContent = item.metric_status === "PUBLISHED" ? `编辑 ${item.name}` : `完善 ${item.name}`;
+  metricAdminSubtitle.textContent = `保存后可发布 v${item.next_version}`;
+  metricAdminStatus.textContent = `草稿 · 待发布 v${item.next_version}`;
+  metricAdminPublish.disabled = false;
+  updateFormulaPreview();
+}
+
+function renderMetricDrafts(data) {
+  metricDrafts = data.items || [];
+  metricDraftCount.textContent = String(data.total || 0);
+  metricDraftList.innerHTML = metricDrafts.length
+    ? metricDrafts.map((item) => `<article class="metric-card"><header><div><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.metric_id)}</small></div><span class="pill">v${escapeHtml(item.next_version)}</span></header><p>${escapeHtml(item.description)}</p><button type="button" data-draft-edit="${escapeHtml(item.metric_id)}">继续编辑</button></article>`).join("")
+    : '<div class="rich-item">暂无待发布草稿。</div>';
+}
+
+async function loadMetricDrafts() {
+  const response = await fetch("/api/chatbi/metrics/manage/drafts?workspace_id=demo");
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || "指标草稿加载失败");
+  renderMetricDrafts(data);
+}
+
+function metricDraftPayload() {
+  return {
+    workspace_id: "demo",
+    metric_id: metricAdminId.value.trim().toUpperCase(),
+    business_domain_id: metricAdminDomain.value,
+    name: metricAdminName.value.trim(),
+    description: metricAdminDescription.value.trim(),
+    metric_type: metricAdminType.value,
+    unit: metricAdminUnit.value.trim(),
+    owner: metricAdminOwner.value.trim(),
+    aliases: metricAdminAliases.value.split(/[,，]/).map((item) => item.trim()).filter(Boolean),
+    positive_examples: metricAdminPositiveExamples.value.split(/\n/).map((item) => item.trim()).filter(Boolean),
+    negative_examples: metricAdminNegativeExamples.value.split(/\n/).map((item) => item.trim()).filter(Boolean),
+    semantic_model_id: metricAdminModel.value,
+    expression: expressionFromForm(),
+    default_aggregation: "default",
+    time_dimension_id: selectedDimensionIds().includes("D_DATE") ? "D_DATE" : selectedDimensionIds()[0],
+    dimension_ids: selectedDimensionIds(),
+  };
+}
+
+async function saveMetricDraft() {
+  const payload = metricDraftPayload();
+  metricAdminSave.disabled = true;
+  metricAdminMessage.textContent = "正在校验指标公式与维度映射...";
+  const response = await fetch(`/api/chatbi/metrics/manage/drafts/${encodeURIComponent(payload.metric_id)}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = await response.json();
+  metricAdminSave.disabled = false;
+  if (!response.ok) throw new Error(data.message || "草稿保存失败");
+  fillMetricAdminForm(data.draft);
+  metricAdminMessage.textContent = `校验通过：${data.draft.formula_text}`;
+  await loadMetricDrafts();
+}
+
+async function publishMetricDraft() {
+  if (!activeMetricDraft) return;
+  metricAdminPublish.disabled = true;
+  metricAdminMessage.textContent = `正在发布 v${activeMetricDraft.next_version}...`;
+  const response = await fetch(`/api/chatbi/metrics/manage/drafts/${encodeURIComponent(activeMetricDraft.metric_id)}/publish`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ workspace_id: "demo" }),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    metricAdminPublish.disabled = false;
+    throw new Error(data.message || "指标发布失败");
+  }
+  metricAdminMessage.textContent = `${data.metric_id} v${data.version} 已发布并进入问数指标目录。`;
+  metricAdminStatus.textContent = `已发布 v${data.version}`;
+  activeMetricDraft = null;
+  await Promise.all([loadMetricDrafts(), loadMetricCatalog()]);
+}
+
+async function editPublishedMetric(metricId) {
+  if (!metricManagementOptions) await loadMetricManagementOptions();
+  const data = await loadMetricDetail(metricId);
+  const item = data.metric;
+  fillMetricAdminForm({
+    metric_id: item.metric_id,
+    business_domain_id: item.business_domain_id,
+    name: item.name,
+    description: item.description,
+    metric_type: item.metric_type,
+    unit: item.unit,
+    owner: item.owner,
+    metric_status: "PUBLISHED",
+    next_version: Number(item.latest_version) + 1,
+    aliases: item.aliases,
+    positive_examples: item.positive_examples || [],
+    negative_examples: item.negative_examples || [],
+    semantic_model_id: item.semantic_model.semantic_model_id,
+    expression: data.expression,
+    dimension_ids: item.dimensions.map((dimension) => dimension.dimension_id),
+  });
+  metricAdminPublish.disabled = true;
+  metricAdminStatus.textContent = `基于 v${item.latest_version}`;
+  metricAdminMessage.textContent = "修改后先保存并校验草稿，再发布新版本。";
+  switchView("metric-admin");
 }
 
 function renderEvaluationReport(data) {
@@ -791,8 +1265,22 @@ async function runAsk() {
   if (!query) return;
 
   switchView("workspace");
+  const conversation = activeConversation();
+  conversation.messages.push({ role: "user", text: query, createdAt: Date.now() });
+  conversation.updatedAt = Date.now();
+  if (conversation.messages.filter((item) => item.role === "user").length === 1) {
+    conversation.title = query.length > 18 ? `${query.slice(0, 18)}…` : query;
+  }
+  chatThread.querySelector("#empty-state")?.remove();
+  chatThread.insertAdjacentHTML("beforeend", userMessageMarkup(query));
+  chatThread.insertAdjacentHTML("beforeend", loadingMessageMarkup());
+  chatThread.scrollTop = chatThread.scrollHeight;
+  conversationTitle.textContent = conversation.title;
+  conversationTurnCount.textContent = `${conversation.messages.filter((item) => item.role === "user").length} 轮对话`;
+  renderConversationList();
+  persistConversations();
   submitBtn.disabled = true;
-  submitBtn.textContent = "运行中...";
+  submitBtn.textContent = "…";
   setOverall("RUNNING");
   renderPipeline([{ label: "请求已提交", status: "PASS", detail: "正在等待服务端返回完整链路。" }]);
 
@@ -804,23 +1292,40 @@ async function runAsk() {
         query,
         biz_domain: domainInput.value,
         workspace_id: "demo",
-        conversation_id: "frontend_demo",
+        conversation_id: activeConversationId,
         timezone: "Asia/Shanghai",
       }),
     });
-    const data = await response.json();
+    const responseText = await response.text();
+    let data;
+    try {
+      data = JSON.parse(responseText);
+    } catch {
+      throw new Error(response.ok ? "服务返回格式异常，请稍后重试" : "问数服务暂时不可用，请稍后重试");
+    }
     if (!response.ok) throw new Error(data.message || data.detail?.message || "请求失败");
     renderResult(data);
+    updateContextPanels(data);
+    const html = data.status === "CLARIFY" || data.status === "REJECT" ? clarificationMessageMarkup(data) : interactiveResultMarkup(data);
+    chatThread.querySelector("[data-loading-message]")?.remove();
+    chatThread.insertAdjacentHTML("beforeend", html);
+    conversation.messages.push({ role: "assistant", html, data, createdAt: Date.now() });
+    conversation.updatedAt = Date.now();
+    persistConversations();
+    renderConversationList();
+    chatThread.scrollTop = chatThread.scrollHeight;
+    queryInput.value = "";
   } catch (error) {
     setOverall("ERROR");
-    emptyState.classList.add("hidden");
-    result.classList.remove("hidden");
-    message.textContent = `运行失败：${error.message}`;
-    answerTitle.textContent = "运行失败";
+    chatThread.querySelector("[data-loading-message]")?.remove();
+    const errorHtml = `<article class="chat-message assistant"><span class="chat-avatar">AI</span><div class="message-content"><p class="assistant-copy">运行失败：${escapeHtml(error.message)}</p></div></article>`;
+    chatThread.insertAdjacentHTML("beforeend", errorHtml);
+    conversation.messages.push({ role: "assistant", html: errorHtml, createdAt: Date.now() });
+    persistConversations();
     renderPipeline([{ label: "前端请求", status: "ERROR", detail: error.message }]);
   } finally {
     submitBtn.disabled = false;
-    submitBtn.textContent = "运行分析";
+    submitBtn.textContent = "↑";
   }
 }
 
@@ -832,6 +1337,71 @@ form.addEventListener("submit", (event) => {
   event.preventDefault();
   runAsk();
 });
+
+queryInput.addEventListener("keydown", (event) => {
+  if (event.key === "Enter" && !event.shiftKey) {
+    event.preventDefault();
+    runAsk();
+  }
+});
+
+newConversationButton.addEventListener("click", () => {
+  const conversation = createConversation();
+  conversations.unshift(conversation);
+  activeConversationId = conversation.id;
+  currentResult = null;
+  setOverall("IDLE");
+  pipeline.innerHTML = "<li>提交问题后展示完整链路。</li>";
+  contextMemory.innerHTML = "<p>完成第一轮分析后显示继承条件。</p>";
+  evidenceInspector.innerHTML = '<div class="evidence-item">暂无 Evidence。</div>';
+  evidenceCount.textContent = "0 条";
+  queryInput.value = "";
+  persistConversations();
+  renderConversationList();
+  renderActiveConversation();
+  queryInput.focus();
+});
+
+conversationList.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-conversation-id]");
+  if (!button) return;
+  activeConversationId = button.dataset.conversationId;
+  persistConversations();
+  renderConversationList();
+  renderActiveConversation();
+});
+
+function handleConversationAction(event) {
+  const example = event.target.closest("[data-example]");
+  if (example) {
+    queryInput.value = example.dataset.example;
+    runAsk();
+    return;
+  }
+  const followup = event.target.closest("[data-followup-query]");
+  if (followup) {
+    queryInput.value = followup.dataset.followupQuery;
+    runAsk();
+    return;
+  }
+  const viewButton = event.target.closest("[data-result-view]");
+  if (viewButton) {
+    const card = viewButton.closest("[data-result-card]");
+    if (!card) return;
+    const view = viewButton.dataset.resultView;
+    card.querySelector("[data-result-chart]")?.classList.toggle("result-tab-hidden", view !== "chart");
+    card.querySelector("[data-result-table]")?.classList.toggle("result-tab-hidden", view !== "table");
+    card.querySelectorAll("[data-result-view]").forEach((button) => button.classList.toggle("active", button.dataset.resultView === view));
+    return;
+  }
+  const evidenceButton = event.target.closest("[data-evidence-id]");
+  if (evidenceButton) {
+    evidenceInspector.querySelectorAll("[data-evidence-id]").forEach((item) => item.classList.toggle("evidence-active", item === evidenceButton));
+  }
+}
+
+chatThread.addEventListener("click", handleConversationAction);
+evidenceInspector.addEventListener("click", handleConversationAction);
 
 feedbackForm.addEventListener("submit", (event) => {
   event.preventDefault();
@@ -859,11 +1429,59 @@ metricList.addEventListener("click", (event) => {
 });
 
 metricDetail.addEventListener("click", (event) => {
+  const editButton = event.target.closest("button[data-metric-edit]");
+  if (editButton) {
+    editPublishedMetric(editButton.dataset.metricEdit).catch((error) => {
+      metricDetail.insertAdjacentHTML("afterbegin", `<div class="rich-item">创建版本草稿失败：${escapeHtml(error.message)}</div>`);
+    });
+    return;
+  }
   const button = event.target.closest("button[data-metric-example]");
   if (!button) return;
   queryInput.value = button.dataset.metricExample;
   switchView("workspace");
   runAsk();
+});
+
+metricAdminNew.addEventListener("click", resetMetricAdminForm);
+metricAdminRefresh.addEventListener("click", () => {
+  loadMetricDrafts().catch((error) => {
+    metricDraftList.innerHTML = `<div class="rich-item">草稿加载失败：${escapeHtml(error.message)}</div>`;
+  });
+});
+metricAdminDomain.addEventListener("change", () => {
+  metricAdminModel.dataset.preferred = "";
+  renderManagementOptions([]);
+});
+metricAdminModel.addEventListener("change", () => {
+  metricAdminModel.dataset.preferred = metricAdminModel.value;
+  renderManagementOptions([]);
+});
+[metricAdminOperation, metricAdminField, metricAdminDenominator, metricAdminScale].forEach((control) => {
+  control.addEventListener("change", updateFormulaPreview);
+});
+metricAdminOperation.addEventListener("change", () => {
+  if (metricAdminOperation.value === "ratio") metricAdminType.value = "ratio";
+  if (metricAdminOperation.value === "count_distinct") metricAdminType.value = "count";
+});
+metricAdminForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  saveMetricDraft().catch((error) => {
+    metricAdminSave.disabled = false;
+    metricAdminMessage.textContent = `保存失败：${error.message}`;
+  });
+});
+metricAdminPublish.addEventListener("click", () => {
+  publishMetricDraft().catch((error) => {
+    metricAdminPublish.disabled = false;
+    metricAdminMessage.textContent = `发布失败：${error.message}`;
+  });
+});
+metricDraftList.addEventListener("click", (event) => {
+  const button = event.target.closest("button[data-draft-edit]");
+  if (!button) return;
+  const item = metricDrafts.find((draft) => draft.metric_id === button.dataset.draftEdit);
+  if (item) fillMetricAdminForm(item);
 });
 
 evaluationRefresh.addEventListener("click", () => {
@@ -929,19 +1547,37 @@ goldenEvaluate.addEventListener("click", () => {
   });
 });
 
-document.querySelectorAll("[data-example]").forEach((button) => {
-  button.addEventListener("click", () => {
-    queryInput.value = button.dataset.example;
-    switchView("workspace");
-    runAsk();
-  });
+joinRefresh?.addEventListener("click", () => loadJoinGraph().catch((e) => { joinValidation.textContent=e.message; }));
+joinScan?.addEventListener("click", () => scanJoinCandidates().catch((e) => { joinValidation.textContent=e.message; }));
+joinForm?.addEventListener("submit", (event) => { event.preventDefault(); saveJoinDraft().catch((e) => { joinValidation.textContent=e.message; }); });
+joinValidate?.addEventListener("click", () => validateJoinDraft().catch((e) => { joinValidation.textContent=e.message; }));
+joinPublish?.addEventListener("click", () => publishJoinDraft().catch((e) => { joinValidation.textContent=e.message; }));
+joinCandidates?.addEventListener("click", (event) => {
+  const button=event.target.closest("[data-join-candidate]"); if(!button) return;
+  const item=JSON.parse(joinCandidates.dataset.items||"[]")[Number(button.dataset.joinCandidate)]; if(!item) return;
+  joinId.value=`J_CANDIDATE_${Date.now()}`; joinLeft.value=item.left_entity_id; joinRight.value=item.right_entity_id;
+  joinLeftKey.value=item.left_keys.join(","); joinRightKey.value=item.right_keys.join(","); joinValidation.textContent="候选已带入，请确认业务粒度后保存。";
 });
 
+loadConversations();
+renderConversationList();
+renderActiveConversation();
 switchView("workspace", { scroll: false });
 
 loadMetricCatalog().catch((error) => {
   metricList.innerHTML = `<div class="rich-item">指标目录加载失败：${escapeHtml(error.message)}</div>`;
 });
+
+loadMetricManagementOptions()
+  .then(() => {
+    resetMetricAdminForm();
+    return loadMetricDrafts();
+  })
+  .catch((error) => {
+    metricDraftList.innerHTML = `<div class="rich-item">指标管理加载失败：${escapeHtml(error.message)}</div>`;
+  });
+
+loadJoinGraph().catch((error) => { if (joinValidation) joinValidation.textContent = `Join Graph加载失败：${error.message}`; });
 
 loadEvaluationReport().catch((error) => {
   evaluationSummary.innerHTML = `<div class="rich-item">测评报告加载失败：${escapeHtml(error.message)}</div>`;

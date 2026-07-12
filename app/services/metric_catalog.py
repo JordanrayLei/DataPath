@@ -12,6 +12,7 @@ from app.db.models import (
     Metric,
     MetricAlias,
     MetricDimension,
+    MetricSemanticProfile,
     MetricVersion,
     SemanticModel,
 )
@@ -21,6 +22,7 @@ from app.schemas.chatbi import (
     MetricCatalogItem,
     MetricCatalogListResponse,
     MetricCatalogSemanticModel,
+    MetricCatalogVersion,
 )
 
 
@@ -110,6 +112,7 @@ def build_metric_item(
 ) -> MetricCatalogItem:
     dimensions = metric_dimensions(session, metric.id)
     aliases = metric_aliases(session, metric.id)
+    profile = session.get(MetricSemanticProfile, metric.id)
     expression = version.expression_json or {}
     fields = extract_expression_fields(expression)
     return MetricCatalogItem(
@@ -124,6 +127,8 @@ def build_metric_item(
         status=metric.status,
         latest_version=version.version,
         aliases=aliases,
+        positive_examples=[str(item) for item in ((profile.positive_examples_json if profile else []) or [])],
+        negative_examples=[str(item) for item in ((profile.negative_examples_json if profile else []) or [])],
         dimensions=[
             MetricCatalogDimension(
                 dimension_id=dimension.id,
@@ -146,7 +151,11 @@ def build_metric_item(
             "tables": [model.physical_table],
             "fields": fields,
         },
-        example_questions=example_questions(metric, dimensions),
+        example_questions=(
+            [str(item) for item in (profile.positive_examples_json or [])][:3]
+            if profile and profile.positive_examples_json
+            else example_questions(metric, dimensions)
+        ),
     )
 
 
@@ -245,4 +254,21 @@ def get_metric_detail(
         expression=version.expression_json,
         version_status=version.status,
         published_at=version.published_at,
+        versions=[
+            MetricCatalogVersion(
+                version=item.version,
+                status=item.status,
+                formula_text=formula_text(item.expression_json or {}),
+                semantic_model_id=item.semantic_model_id,
+                published_at=item.published_at,
+            )
+            for item in session.scalars(
+                select(MetricVersion)
+                .where(
+                    MetricVersion.metric_id == metric.id,
+                    MetricVersion.status == "PUBLISHED",
+                )
+                .order_by(MetricVersion.version.desc())
+            ).all()
+        ],
     )

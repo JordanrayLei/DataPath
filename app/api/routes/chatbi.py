@@ -35,6 +35,12 @@ from app.schemas.chatbi import (
     InterpretationGenerateResponse,
     MetricCatalogDetailResponse,
     MetricCatalogListResponse,
+    MetricDraftListResponse,
+    MetricDraftResponse,
+    MetricDraftUpsertRequest,
+    MetricManagementOptionsResponse,
+    MetricPublishRequest,
+    MetricPublishResponse,
     MetricRetrieveRequest,
     MetricRetrieveResponse,
     ProfileRequest,
@@ -71,6 +77,17 @@ from app.services.metric_catalog import (
     get_metric_detail,
     list_metric_catalog,
 )
+from app.services.metric_management import (
+    MetricManagementError,
+    list_metric_drafts,
+    management_options,
+    publish_metric_draft,
+    save_metric_draft,
+)
+from app.services.join_graph_management import (
+    JoinGraphManagementError, deprecate_relation, graph_snapshot, publish_draft,
+    save_draft, scan_candidates, update_model, validate_draft,
+)
 from app.services.evaluation_reports import (
     EvaluationReportError,
     load_evaluation_report,
@@ -97,7 +114,18 @@ def ask_chatbi(
     session: Annotated[Session, Depends(get_db)],
 ) -> ChatbiAskResponse:
     request_id, trace_id = trace(request)
-    return answer_chatbi_question(session, payload, request_id, trace_id)
+    try:
+        return answer_chatbi_question(session, payload, request_id, trace_id)
+    except CompilationError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail={"code": "QUERY_COMPILATION_FAILED", "message": str(error)},
+        ) from error
+    except ExecutionError as error:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail={"code": "QUERY_EXECUTION_FAILED", "message": str(error)},
+        ) from error
 
 
 @public_router.post("/feedback", response_model=FeedbackSubmitResponse, tags=["Frontend"])
@@ -292,6 +320,144 @@ def get_chatbi_metric_detail(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail={"code": "METRIC_CATALOG_DETAIL_FAILED", "message": str(error)},
         ) from error
+
+
+@public_router.get(
+    "/metrics/manage/options",
+    response_model=MetricManagementOptionsResponse,
+    tags=["Metric Management"],
+)
+def get_metric_management_options(
+    request: Request,
+    session: Annotated[Session, Depends(get_db)],
+    workspace_id: str = "demo",
+) -> MetricManagementOptionsResponse:
+    request_id, trace_id = trace(request)
+    try:
+        return management_options(session, request_id, trace_id, workspace_id)
+    except MetricManagementError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail={"code": "METRIC_OPTIONS_FAILED", "message": str(error)},
+        ) from error
+
+
+@public_router.get(
+    "/metrics/manage/drafts",
+    response_model=MetricDraftListResponse,
+    tags=["Metric Management"],
+)
+def get_metric_drafts(
+    request: Request,
+    session: Annotated[Session, Depends(get_db)],
+    workspace_id: str = "demo",
+) -> MetricDraftListResponse:
+    request_id, trace_id = trace(request)
+    try:
+        return list_metric_drafts(session, request_id, trace_id, workspace_id)
+    except MetricManagementError as error:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail={"code": "METRIC_DRAFT_LIST_FAILED", "message": str(error)},
+        ) from error
+
+
+@public_router.put(
+    "/metrics/manage/drafts/{metric_id}",
+    response_model=MetricDraftResponse,
+    tags=["Metric Management"],
+)
+def put_metric_draft(
+    metric_id: str,
+    payload: MetricDraftUpsertRequest,
+    request: Request,
+    session: Annotated[Session, Depends(get_db)],
+) -> MetricDraftResponse:
+    if metric_id != payload.metric_id:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail={"code": "METRIC_ID_MISMATCH", "message": "路径和请求中的指标 ID 不一致。"},
+        )
+    request_id, trace_id = trace(request)
+    try:
+        return save_metric_draft(session, payload, request_id, trace_id)
+    except MetricManagementError as error:
+        session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail={"code": "METRIC_DRAFT_INVALID", "message": str(error)},
+        ) from error
+
+
+@public_router.post(
+    "/metrics/manage/drafts/{metric_id}/publish",
+    response_model=MetricPublishResponse,
+    tags=["Metric Management"],
+)
+def post_metric_publish(
+    metric_id: str,
+    payload: MetricPublishRequest,
+    request: Request,
+    session: Annotated[Session, Depends(get_db)],
+) -> MetricPublishResponse:
+    request_id, trace_id = trace(request)
+    try:
+        return publish_metric_draft(
+            session, metric_id, request_id, trace_id, payload.workspace_id
+        )
+    except MetricManagementError as error:
+        session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail={"code": "METRIC_PUBLISH_FAILED", "message": str(error)},
+        ) from error
+
+
+def _join_graph_error(error: JoinGraphManagementError) -> HTTPException:
+    return HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+        detail={"code": "JOIN_GRAPH_MANAGEMENT_FAILED", "message": str(error)})
+
+
+@public_router.get("/join-graph", response_model=dict[str, Any], tags=["Join Graph Management"])
+def get_join_graph(session: Annotated[Session, Depends(get_db)], workspace_id: str = "demo") -> dict[str, Any]:
+    try: return graph_snapshot(session, workspace_id)
+    except JoinGraphManagementError as error: raise _join_graph_error(error) from error
+
+
+@public_router.put("/join-graph/drafts/{relation_id}", response_model=dict[str, Any], tags=["Join Graph Management"])
+def put_join_graph_draft(relation_id: str, payload: dict[str, Any], session: Annotated[Session, Depends(get_db)]) -> dict[str, Any]:
+    try: return save_draft(session, relation_id, payload)
+    except JoinGraphManagementError as error: session.rollback(); raise _join_graph_error(error) from error
+
+
+@public_router.patch("/join-graph/models/{model_id}", response_model=dict[str, Any], tags=["Join Graph Management"])
+def patch_join_graph_model(model_id: str, payload: dict[str, Any], session: Annotated[Session, Depends(get_db)]) -> dict[str, Any]:
+    try: return update_model(session, model_id, payload)
+    except JoinGraphManagementError as error: session.rollback(); raise _join_graph_error(error) from error
+
+
+@public_router.post("/join-graph/drafts/{relation_id}/validate", response_model=dict[str, Any], tags=["Join Graph Management"])
+def post_join_graph_validate(relation_id: str, session: Annotated[Session, Depends(get_db)]) -> dict[str, Any]:
+    try: return validate_draft(session, relation_id)
+    except JoinGraphManagementError as error: session.rollback(); raise _join_graph_error(error) from error
+
+
+@public_router.post("/join-graph/drafts/{relation_id}/publish", response_model=dict[str, Any], tags=["Join Graph Management"])
+def post_join_graph_publish(relation_id: str, session: Annotated[Session, Depends(get_db)]) -> dict[str, Any]:
+    try: return publish_draft(session, relation_id)
+    except JoinGraphManagementError as error: session.rollback(); raise _join_graph_error(error) from error
+
+
+@public_router.post("/join-graph/relations/{relation_id}/deprecate", response_model=dict[str, Any], tags=["Join Graph Management"])
+def post_join_graph_deprecate(relation_id: str, session: Annotated[Session, Depends(get_db)]) -> dict[str, Any]:
+    try: return deprecate_relation(session, relation_id)
+    except JoinGraphManagementError as error: session.rollback(); raise _join_graph_error(error) from error
+
+
+@public_router.post("/join-graph/scan", response_model=dict[str, Any], tags=["Join Graph Management"])
+def post_join_graph_scan(session: Annotated[Session, Depends(get_db)], domain: str = "sales") -> dict[str, Any]:
+    try: return scan_candidates(session, domain)
+    except JoinGraphManagementError as error: raise _join_graph_error(error) from error
 
 
 @public_router.get(
