@@ -34,6 +34,10 @@ def test_frontend_entry_is_served(client: TestClient) -> None:
     assert "join-form" in response.text
     assert "evaluation-refresh" in response.text
     assert "evaluation-trend" in response.text
+    assert "2018年前九个月每月Olist成交总额趋势" in response.text
+    assert "2017年各客户州Olist购买客户数排名" in response.text
+    assert "2017年各商品品类Olist客单价排名" in response.text
+    assert "2011年每月真实净收入趋势" not in response.text
 
 
 def test_metric_catalog_lists_and_describes_metric_contracts(client: TestClient) -> None:
@@ -44,8 +48,13 @@ def test_metric_catalog_lists_and_describes_metric_contracts(client: TestClient)
     assert listed.status_code == 200, listed.text
     list_body = listed.json()
     assert list_body["status"] == "SUCCESS"
-    assert list_body["domain_counts"]["sales"] >= 1
+    assert list_body["domain_counts"]["sales"] >= 12
     assert any(item["metric_id"] == "M_OLIST_ITEM_REVENUE" for item in list_body["items"])
+    assert {
+        "M_OLIST_TOTAL_ORDER_VALUE",
+        "M_OLIST_AVERAGE_ORDER_VALUE",
+        "M_OLIST_CUSTOMER_COUNT",
+    }.issubset({item["metric_id"] for item in list_body["items"]})
 
     detail = client.get(
         "/api/chatbi/metrics/catalog/M_OLIST_ITEM_REVENUE",

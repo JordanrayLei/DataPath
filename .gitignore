@@ -8,6 +8,7 @@ __pycache__/
 .mypy_cache/
 .agents/
 .codex/
+.claude/
 .tmp/
 pytest-cache-files-*/
 .env

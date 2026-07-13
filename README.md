@@ -1,166 +1,123 @@
 # DataPath
 
-面向数据运营和数据分析师的可信 ChatBI Copilot：自然语言问题经过指标解析、Query DSL、确定性 SQL 编译和安全执行后，返回可追溯的数据、图表和业务解读。
+DataPath 是面向具备 SQL 基础的数据运营和数据分析师的可信 ChatBI Copilot。用户用自然语言提出业务问题，系统通过指标语义检索、结构化 Query DSL、确定性 SQL Compiler 和只读数仓执行返回表格、图表与可追溯解读。
 
-## 当前状态
+> 当前基线：2026-07-13，作品集 MVP。项目没有真实客户、生产流量或业务收益数据，所有质量结论均来自本地 Olist 数据集和离线测评。
 
-- 已有 53 节点、58 条边的可导入 Dify Workflow DSL，关键错误分支已改为 fail-closed，主链路业务解读已切换为后端 Evidence fallback。
-- 已完成 Olist 九表、3 个已发布指标、Query DSL 1.0/2.0 和 8 个 ChatBI API 契约。
-- 已完成 PostgreSQL、ClickHouse、Redis 的本地数据底座配置。
-- 已完成 Semantic Join Graph、确定性 Join Planner、跨表 SQL Compiler 和 5 条已发布安全 Join Path。
-- 8 个 `/api/chatbi/*` 后端接口已全部实现并通过真实 HTTP smoke。
-- Result Profiler 已提供强类型 Evidence，Reflection Validator 已实现 PASS/REVISE/BLOCK；新增确定性业务解读 fallback，可在 Dify LLM 插件不稳定时兜底。当前 Dify 端到端已打通到数仓执行和画像，待把业务解读节点切换为 fallback 后完成稳定演示闭环。
-- 已新增产品前端入口，由 FastAPI 直接托管 `/` 和 `/app` 页面；浏览器调用 `/api/chatbi/ask`，服务端完成完整 ChatBI 链路并保护内部 service token。
+## 当前能力
+
+- 原生 HTML/CSS/JavaScript 前端，包含问数工作台、指标口径、指标管理、Join 治理、质量运营和测评监控六个视图。
+- FastAPI `/api/chatbi/ask` 作为浏览器入口，服务端串联上下文、检索、DSL、Compiler、ClickHouse、Profiler、Interpretation 和 Reflection。
+- Olist Brazilian E-Commerce 九表数据，约 10 万订单。
+- 12 个已发布指标，覆盖销售额、成交总额、订单量、客单价、运费、运费率、商品、卖家和购买客户等口径。
+- Semantic Join Graph 与 Deterministic Join Planner，5 条安全关系已发布；支付和评价多事实关系仍为 `STAGED`。
+- BM25 + `text-embedding-v3` + `qwen3-rerank` 的混合指标检索，结合完整名称优先、歧义澄清和能力边界拒绝。
+- 会话级结构化 Memory，可继承上一轮指标、维度和时间范围并允许显式覆盖。
+- 指标草稿、校验、不可变版本发布，以及 Join 关系草稿、检测和发布。
+- Evidence、Reflection、Bad Case、黄金问题和回归测评闭环。
+
+## 架构
+
+```text
+Browser
+  -> FastAPI /api/chatbi/ask
+  -> Context + Query Understanding
+  -> Hybrid Metric Retrieval + Confidence Gate
+  -> Query DSL 2.0 + Validator
+  -> Semantic Join Graph + Deterministic Planner
+  -> SQL Compiler
+  -> ClickHouse read-only execution
+  -> Result Profiler + Evidence
+  -> Interpretation + Reflection
+  -> Interactive result
+```
+
+PostgreSQL 保存指标、版本、语义资产、向量、Join Graph、查询审计、会话上下文、Evidence、反馈和黄金问题；ClickHouse 保存 Olist 事实与维度表；Redis 已作为本地基础设施预留，但当前主链不依赖 Redis 状态。
+
+Dify Workflow DSL 保留为可选的内部 AI 编排交付物，不是浏览器入口，也不是数据权限或 SQL 安全边界。当前 `/api/chatbi/ask` 可独立完成端到端问数。
 
 ## 快速开始
 
-```powershell
-Copy-Item .env.example .env
-docker compose up -d
-```
-
-生成轻量 smoke 数据：
-
-```powershell
-.\.venv\Scripts\python.exe scripts\generate_demo_data.py --profile smoke
-.\.venv\Scripts\python.exe scripts\validate_generated_data.py
-```
-
-加载 ClickHouse 并验证指标：
-
-```powershell
-.\.venv\Scripts\python.exe scripts\load_clickhouse_data.py
-.\.venv\Scripts\python.exe scripts\verify_clickhouse_metrics.py
-```
-
-初始化指标中心并启动 API：
-
-```powershell
-.\.venv\Scripts\alembic.exe upgrade head
-.\.venv\Scripts\python.exe -m scripts.seed_metric_center
-.\.venv\Scripts\python.exe -m uvicorn app.main:app --host 0.0.0.0 --port 8000
-```
-
-打开产品前端入口：
-
-```text
-http://127.0.0.1:8000/
-```
-
-前端入口会调用：
-
-```text
-POST /api/chatbi/ask
-```
-
-该接口用于产品 UI，不需要浏览器携带内部 service token；原有 8 个 `/api/chatbi/*` 内部接口仍保留 Bearer Token 保护。
-
-本地 Dify Docker 可通过以下只读地址导入当前 Workflow DSL：
-
-```text
-http://host.docker.internal:8000/portfolio/dify-chatbi-workflow.dsl.yml
-```
-
-另开一个终端执行真实 HTTP smoke：
-
-```powershell
-.\.venv\Scripts\python.exe scripts\smoke_chatbi_api.py
-```
-
-执行产品入口测评：
-
-```powershell
-.\.venv\Scripts\python.exe scripts\evaluate_chatbi_entrypoint.py
-```
-
-测评用例定义位于 `data/evaluation/olist_business_cases.json`，当前包含 30 条业务用例和 6 个可信运营门禁。
-
-加载并验证 Olist 真实电商数据：
+要求：Python 3.12、Docker Desktop、`uv`。
 
 ```bash
-.venv/bin/python -m scripts.download_olist
-.venv/bin/python -m scripts.load_olist
-.venv/bin/python -m scripts.validate_olist
+cp .env.example .env
+uv sync
+docker compose up -d
+uv run alembic upgrade head
 ```
 
-数据来源、许可和口径边界见 [真实业务数据与扩展测评](document/product/09-real-data-and-evaluation.md)。
+首次准备 Olist 数据：
 
-测评会覆盖：
-
-- 成功链路：自然语言到可信解读闭环。
-- 排行链路：非时间维度聚合与柱状图展示。
-- 多轮链路：继承指标、维度和时间，并允许后续问题显式覆盖。
-- 歧义链路：指标口径不清时安全澄清，不执行查询。
-- 拒绝链路：未知指标不生成 DSL、不编译查询。
-- 权限链路：非 demo workspace 被拦截。
-- 安全门禁：内部服务接口仍要求 Bearer Token。
-- 反馈门禁：成功查询可提交 Badcase 反馈，并进入回归集候选。
-- 看板门禁：Badcase 能在看板出现，并推进到 `CONFIRMED` 状态。
-- 黄金集门禁：已确认 Badcase 能沉淀为黄金问题，并通过回归评测。
-- 指标口径门禁：指标目录能返回口径、公式、维度和数仓血缘。
-- 测评看板：前端可读取最新评测报告，展示通过率、用例结果和安全/可信门禁。
-- 测评趋势：每次生成报告时会沉淀历史快照，前端展示通过率、失败门禁和平均耗时的时间变化。
-
-默认输出：
-
-```text
-reports/chatbi-entrypoint-evaluation-latest.json
-reports/chatbi-entrypoint-evaluation-latest.md
-reports/evaluation-history/<report-name>-<generated-at>.json
+```bash
+uv run python -m scripts.download_olist
+uv run python -m scripts.load_olist
+uv run python -m scripts.validate_olist
 ```
 
-对真实运行中的服务执行测评：
+初始化语义资产：
 
-```powershell
-.\.venv\Scripts\python.exe scripts\evaluate_chatbi_entrypoint.py --base-url http://127.0.0.1:8000
+```bash
+uv run python -m scripts.seed_metric_center
+uv run python -m scripts.rebuild_metric_vector_index
 ```
 
-Dify Cloud 临时联调前，先阅读导入手册并生成独立演示密钥：
+`rebuild_metric_vector_index` 需要在 `.env` 中配置阿里云百炼 `DASHSCOPE_API_KEY`。未配置或外部服务异常时，在线检索会降级到文本检索。
 
-```powershell
-.\scripts\prepare_dify_cloud_demo.ps1
+启动 Web 服务：
+
+```bash
+NO_PROXY=127.0.0.1,localhost uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
-运行集成测试：
+打开 [http://127.0.0.1:8000/](http://127.0.0.1:8000/)。
 
-```powershell
-.\.venv\Scripts\pytest.exe
+## 验证
+
+```bash
+uv run pytest
+uv run python -m scripts.validate_contracts
+NO_PROXY=127.0.0.1,localhost uv run python -m scripts.smoke_chatbi_api
 ```
 
-校验产品契约：
+重建 360 条 Olist 黄金集：
 
-```powershell
-.\.venv\Scripts\python.exe scripts\validate_contracts.py
+```bash
+uv run python -m scripts.build_olist_golden_dataset
 ```
 
-## 数据规模档位
+运行 80 条发布回归集：
 
-| Profile | 订单数 | 用途 |
-| --- | ---: | --- |
-| `smoke` | 5,000 | 快速开发和 CI |
-| `demo` | 100,000 | 日常产品演示 |
-| `portfolio` | 600,000 | 生成约百万级订单明细，用于性能展示 |
+```bash
+uv run python -m scripts.evaluate_olist_golden_dataset --split regression \
+  --report-name olist-expanded-metrics-regression
+```
 
-## 文档入口
+当前最新回归结果为 73/80（91.25%）。核心指标、多实体查询、多轮上下文、语义鲁棒性和数据边界在该回归切片中均为 100%；剩余 7 条集中在 `CLARIFY`、`REJECT` 与 `BLOCKED` 的状态标准差异。详见 [最新 Olist 回归报告](reports/olist-expanded-metrics-regression.md)。
 
-- [DataPath 正式产品文档中心](document/product/README.md)
-- [产品 PRD](document/ai-data-operations-platform-prd.md)
-- [执行方案](document/ai-data-operations-platform-execution-plan.md)
-- [首发指标目录](document/initial-metric-catalog.md)
-- [数据底座说明](document/data-foundation.md)
-- [数据底座验收记录](document/data-foundation-acceptance.md)
-- [ChatBI 后端阶段验收](document/chatbi-backend-phase-acceptance.md)
-- [Result Profiler 阶段验收](document/result-profiler-phase-acceptance.md)
-- [Reflection Validator 阶段验收](document/reflection-validator-phase-acceptance.md)
-- [Dify 完整上下文](document/dify-chatbi-complete-ai-context.md)
-- [Dify Workflow 导入与 E2E 手册](document/dify-chatbi-workflow-import.md)
-- [Dify 本地端到端联调记录 2026-07-09](document/dify-local-e2e-2026-07-09.md)
-- [Dify 安全编排阶段验收](document/dify-safety-workflow-phase-acceptance.md)
-- [ChatBI OpenAPI](document/chatbi-openapi.yaml)
-- [ChatBI 产品入口测评报告](reports/chatbi-entrypoint-evaluation-latest.md)
-- [作品集一页总览](document/portfolio-one-page-overview.md)
-- [产品决策说明](document/product-decision-rationale.md)
+## 数据与安全边界
 
-## 安全说明
+- 当前只支持 Olist 数据域，不再使用旧 UCI 或模拟销售/广告数据作为产品主数据。
+- 查询只允许已发布指标、已注册字段和已发布安全 Join Path。
+- 支付和评价表尚未进入多事实查询；`aggregate-before-join` 仍是后续能力。
+- 当前只有 `demo` 工作空间和公开演示身份，不具备企业级 SSO、RBAC、行列权限或多租户隔离。
+- 不支持任意 SQL、DDL/DML、数据写回、完整因果归因和自由 Join。
+- 仓库中的默认密码仅用于本地开发；生产环境必须使用密钥管理、网络隔离、审计和最小权限账号。
 
-仓库内密码只用于本地公开演示环境。生产部署必须使用密钥管理、只读执行账号、网络隔离、SSO/RBAC、行列权限和审计，不得复用示例凭证。
+## 文档
+
+- [产品文档中心](document/product/README.md)
+- [项目理解报告](document/product/00-project-understanding.md)
+- [产品需求文档](document/product/01-product-requirements.md)
+- [AI 与可信架构](document/product/03-ai-capability.md)
+- [Olist 数据与多表能力](document/product/09-olist-multitable-evaluation.md)
+- [指标语义检索架构](document/product/12-semantic-retrieval-architecture.md)
+- [Semantic Join Graph 治理](document/product/15-semantic-join-graph-governance.md)
+- [当前指标目录](document/initial-metric-catalog.md)
+- [Dify Workflow 导入手册](document/dify-chatbi-workflow-import.md)
+- [OpenAPI 契约](document/chatbi-openapi.yaml)
+- [Query DSL Schema](document/query-dsl-v1.schema.json)
+
+## 许可证与数据来源
+
+Olist 数据来源与本地使用边界见 [data/external/olist/README.md](data/external/olist/README.md)。项目代码当前未声明开源许可证；公开分发前需要补充仓库许可证并再次核对第三方数据条款。

@@ -717,8 +717,8 @@ workflow:
               text: |
                 你是 ChatBI Query 预处理器。只做自然语言标准化和实体提取，不生成指标 ID、表名、字段名或 SQL。
                 必须保留否定、时间、比较、排序、TopN 和多轮引用语义。输出必须符合 JSON Schema。
-                当前演示日期为 2026-07-09，样例数仓最新完整业务日期为 2026-06-30。
-                当用户说“最近一年/近一年/过去一年”且未给出明确历史年份时，按最新完整月倒推 12 个完整月：2025-07-01 至 2026-06-30。
+                当前 Olist 演示参考日期为 2018-10-18，样例数仓最新完整业务月份为 2018-09。
+                当用户说“最近一年/近一年/过去一年”且未给出明确历史年份时，按最新完整月倒推 12 个完整月：2017-10-01 至 2018-09-30。
             - role: user
               text: |
                 原始问题：{{#start.query#}}
@@ -1089,7 +1089,7 @@ workflow:
               text: |
                 你是 ChatBI DSL Parser。只输出符合 Schema 的 DSL。指标只能来自 resolved metric context；禁止生成 SQL、表名或未知 ID。时间和筛选存在歧义时不要猜测。
                 必须优先遵循 resolved metric context/retrieval_json 中的 time_resolution 和 dsl_generation_constraints。
-                对“最近一年每月 GMV”这类问题，必须生成 trend_query、D_MONTH、time_range.start=2025-07-01、time_range.end=2026-06-30、sort D_MONTH asc、limit=100。
+                对“最近一年每月 Olist 商品销售额”这类问题，必须生成 trend_query、D_MONTH、time_range.start=2017-10-01、time_range.end=2018-09-30、sort D_MONTH asc、limit=100。
             - role: user
               text: |
                 原始问题：{{#start.query#}}

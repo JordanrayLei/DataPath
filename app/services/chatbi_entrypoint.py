@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from calendar import monthrange
 from typing import Any, Literal
 
 from sqlalchemy import select
@@ -71,6 +72,49 @@ def resolve_time_range(
     last_query_context: dict[str, Any],
     metric_id: str = "",
 ) -> dict[str, str]:
+    def normalize_year(value: str) -> str:
+        return value if len(value) == 4 else f"20{value}"
+
+    year_pattern = r"(?<!\d)(20(?:0[9]|1[0-8]|2[0-6])|16|17|18)\s*年?"
+    quarter_match = re.search(
+        year_pattern + r"\s*第?([一二三四1234])\s*季度",
+        query,
+    )
+    if quarter_match:
+        year = normalize_year(quarter_match.group(1))
+        quarter_text = quarter_match.group(2)
+        quarter = {"一": 1, "二": 2, "三": 3, "四": 4}.get(
+            quarter_text,
+            int(quarter_text) if quarter_text.isdigit() else 1,
+        )
+        start_month = (quarter - 1) * 3 + 1
+        end_month = quarter * 3
+        end_day = monthrange(int(year), end_month)[1]
+        return {
+            "start": f"{year}-{start_month:02d}-01",
+            "end": f"{year}-{end_month:02d}-{end_day:02d}",
+        }
+
+    first_months_match = re.search(
+        year_pattern + r"\s*前\s*([一二三四五六七八九十\d]+)\s*个?月",
+        query,
+    )
+    if first_months_match:
+        year = normalize_year(first_months_match.group(1))
+        month_text = first_months_match.group(2)
+        month = {
+            "一": 1, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6,
+            "七": 7, "八": 8, "九": 9, "十": 10, "十一": 11, "十二": 12,
+        }.get(month_text, int(month_text) if month_text.isdigit() else 0)
+        if 1 <= month <= 12:
+            end_day = monthrange(int(year), month)[1]
+            return {"start": f"{year}-01-01", "end": f"{year}-{month:02d}-{end_day:02d}"}
+
+    if any(token in query for token in ("最近三个月", "近三个月", "过去三个月")):
+        return {"start": "2018-07-01", "end": "2018-09-30"}
+    if any(token in query for token in ("最近一年", "近一年", "过去一年")):
+        return {"start": "2017-10-01", "end": "2018-09-30"}
+
     explicit_year = re.search(r"(?<!\d)(20(?:0[9]|1[0-8]|2[0-6]))\s*年?", query)
     if explicit_year:
         year = explicit_year.group(1)
@@ -79,10 +123,6 @@ def resolve_time_range(
     if short_year:
         year = f"20{short_year.group(1)}"
         return {"start": f"{year}-01-01", "end": f"{year}-12-31"}
-    if any(token in query for token in ("最近三个月", "近三个月", "过去三个月")):
-        return {"start": "2018-07-01", "end": "2018-09-30"}
-    if any(token in query for token in ("最近一年", "近一年", "过去一年")):
-        return {"start": "2017-10-01", "end": "2018-09-30"}
     previous = last_query_context.get("time_range")
     if isinstance(previous, dict) and previous.get("start") and previous.get("end"):
         return {"start": str(previous["start"]), "end": str(previous["end"])}

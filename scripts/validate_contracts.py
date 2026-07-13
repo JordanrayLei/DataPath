@@ -327,16 +327,25 @@ def validate_dify_safety_flow() -> None:
 
 
 def validate_metric_catalog() -> None:
+    from scripts.seed_olist_staging import METRICS
+
     text = METRIC_CATALOG_PATH.read_text(encoding="utf-8")
-    metric_ids = re.findall(r"^#### `(?P<id>M_[A-Z0-9_]+)`", text, flags=re.MULTILINE)
+    metric_ids = re.findall(
+        r"^\| `(?P<id>M_[A-Z0-9_]+)` \|",
+        text,
+        flags=re.MULTILINE,
+    )
     unique_ids = set(metric_ids)
 
     if len(metric_ids) != len(unique_ids):
         duplicates = sorted({item for item in metric_ids if metric_ids.count(item) > 1})
         raise AssertionError(f"Duplicate detailed metric definitions: {duplicates}")
-    expected_ids = {"M_OLIST_ITEM_REVENUE", "M_OLIST_FREIGHT_VALUE", "M_OLIST_ORDER_COUNT"}
+    expected_ids = {item[0] for item in METRICS}
     if unique_ids != expected_ids:
-        raise AssertionError(f"Expected Olist V1 metrics {sorted(expected_ids)}, found {sorted(unique_ids)}")
+        raise AssertionError(
+            f"Metric catalog differs from published seed definitions; "
+            f"expected={sorted(expected_ids)}, found={sorted(unique_ids)}"
+        )
 
     invalid_ids = sorted(
         metric_id
@@ -395,8 +404,8 @@ def main() -> None:
         ("OpenAPI 3.1 and eight POST paths", validate_openapi),
         ("Dify HTTP endpoint alignment", validate_dify_endpoint_alignment),
         ("Dify fail-closed safety flow", validate_dify_safety_flow),
-        ("three published Olist V1 metric definitions", validate_metric_catalog),
-        ("30-case Olist business evaluation corpus", validate_business_evaluation_corpus),
+        ("12 published Olist metric definitions", validate_metric_catalog),
+        ("30-case Olist entrypoint smoke corpus", validate_business_evaluation_corpus),
         ("eight implemented FastAPI ChatBI routes", validate_fastapi_routes),
     ]
 

@@ -54,6 +54,10 @@ def formula_text(expression: dict[str, Any]) -> str:
         return f"COUNT(DISTINCT {expression.get('field')})"
     if op == "count":
         return f"COUNT({expression.get('field', '*')})"
+    if op == "add":
+        return " + ".join(
+            f"({formula_text(item)})" for item in expression.get("terms", [])
+        )
     if op == "ratio":
         numerator = formula_text(expression.get("numerator", {}))
         denominator = formula_text(expression.get("denominator", {}))

@@ -68,9 +68,18 @@ DIMENSIONS = {
 }
 
 METRICS = [
-    ("M_OLIST_ITEM_REVENUE", "Olist商品销售额", "Olist订单商品价格之和，不包含运费。", "amount", "BRL", {"op": "sum", "field": "price"}, ["Olist销售额", "Olist商品金额", "巴西电商销售额"], ["各商品品类Olist销售额", "各客户州Olist销售额", "各卖家州Olist销售额"]),
-    ("M_OLIST_FREIGHT_VALUE", "Olist运费", "Olist订单商品行运费之和。", "amount", "BRL", {"op": "sum", "field": "freight_value"}, ["Olist物流费", "Olist配送费"], ["各州Olist运费", "各品类配送费"]),
+    ("M_OLIST_ITEM_REVENUE", "Olist商品销售额", "Olist订单商品价格之和，不包含运费。", "amount", "BRL", {"op": "sum", "field": "price"}, ["Olist销售额", "Olist商品金额", "巴西电商销售额"], ["各商品品类Olist销售额", "各客户州Olist销售额", "各卖家州Olist销售额", "Olist销销售额"]),
+    ("M_OLIST_FREIGHT_VALUE", "Olist运费", "Olist订单商品行运费之和。", "amount", "BRL", {"op": "sum", "field": "freight_value"}, ["Olist物流费", "Olist配送费"], ["各州Olist运费", "各品类配送费", "帮我看看物流费用", "配送费总共多少"]),
     ("M_OLIST_ORDER_COUNT", "Olist订单量", "Olist订单商品事实中去重订单数。", "count", "order", {"op": "count_distinct", "field": "order_id"}, ["Olist订单数", "巴西电商订单量"], ["各客户州Olist订单量", "各订单状态订单数"]),
+    ("M_OLIST_TOTAL_ORDER_VALUE", "Olist成交总额", "Olist订单商品价格与运费之和，不包含支付侧调整。", "amount", "BRL", {"op": "add", "terms": [{"op": "sum", "field": "price"}, {"op": "sum", "field": "freight_value"}]}, ["Olist订单总额", "Olist含运费成交额", "Olist交易总额"], ["2017年Olist成交总额", "各商品品类Olist订单总额"]),
+    ("M_OLIST_AVERAGE_ORDER_VALUE", "Olist客单价", "Olist商品销售额除以去重订单量，不包含运费。", "average", "BRL/order", {"op": "ratio", "numerator": {"op": "sum", "field": "price"}, "denominator": {"op": "count_distinct", "field": "order_id"}, "scale": 1, "zero_policy": "null"}, ["Olist平均订单金额", "Olist每单商品金额", "Olist AOV"], ["2017年Olist客单价", "每月Olist平均订单金额"]),
+    ("M_OLIST_FREIGHT_PER_ORDER", "Olist平均每单运费", "Olist运费除以去重订单量。", "average", "BRL/order", {"op": "ratio", "numerator": {"op": "sum", "field": "freight_value"}, "denominator": {"op": "count_distinct", "field": "order_id"}, "scale": 1, "zero_policy": "null"}, ["Olist单均运费", "Olist每单物流费"], ["每月Olist平均每单运费", "各客户州Olist单均运费"]),
+    ("M_OLIST_FREIGHT_RATE", "Olist运费率", "Olist运费占商品销售额的比例。", "ratio", "%", {"op": "ratio", "numerator": {"op": "sum", "field": "freight_value"}, "denominator": {"op": "sum", "field": "price"}, "scale": 100, "zero_policy": "null"}, ["Olist物流费率", "Olist运费占比"], ["2017年Olist运费率", "各品类Olist运费占比"]),
+    ("M_OLIST_ITEM_COUNT", "Olist商品件数", "Olist订单商品明细行数，每行代表一件成交商品。", "count", "item", {"op": "count", "field": "order_id"}, ["Olist成交件数", "Olist商品销量", "Olist销售件数"], ["2017年Olist商品件数", "各品类Olist成交件数", "卖出去多少件商品"]),
+    ("M_OLIST_ITEMS_PER_ORDER", "Olist每单商品件数", "Olist商品件数除以去重订单量。", "average", "item/order", {"op": "ratio", "numerator": {"op": "count", "field": "order_id"}, "denominator": {"op": "count_distinct", "field": "order_id"}, "scale": 1, "zero_policy": "null"}, ["Olist平均每单件数", "Olist件单量", "Olist每单几件商品"], ["每月Olist每单商品件数", "各客户州Olist平均每单件数"]),
+    ("M_OLIST_PRODUCT_COUNT", "Olist成交商品数", "产生订单商品明细的去重商品数量。", "count", "product", {"op": "count_distinct", "field": "product_id"}, ["Olist动销商品数", "Olist商品SKU数", "Olist销售商品种类数"], ["2017年Olist成交商品数", "各品类Olist动销商品数"]),
+    ("M_OLIST_SELLER_COUNT", "Olist活跃卖家数", "产生订单商品明细的去重卖家数量。", "count", "seller", {"op": "count_distinct", "field": "seller_id"}, ["Olist成交卖家数", "Olist有单卖家数"], ["2017年Olist活跃卖家数", "各卖家州Olist成交卖家数"]),
+    ("M_OLIST_CUSTOMER_COUNT", "Olist购买客户数", "产生订单的去重客户唯一标识数量，同一客户的多次下单只计一次。", "count", "customer", {"op": "count_distinct", "field": "customer_unique_id", "source_model_id": "SM_OLIST_CUSTOMERS"}, ["Olist下单客户数", "Olist成交客户数", "Olist买家数"], ["2017年Olist购买客户数", "各客户州Olist下单客户数", "有多少买家下过单"]),
 ]
 
 OUT_OF_SCOPE_EXAMPLES = [
@@ -271,7 +280,7 @@ def seed() -> None:
                 for key, value in values.items():
                     setattr(example, key, value)
         session.commit()
-    print("Published 3 Olist V1 metrics on 5 safe join paths; risky entities remain STAGED")
+    print("Published 12 Olist V1 metrics on 5 safe join paths; risky entities remain STAGED")
 
 
 if __name__ == "__main__":

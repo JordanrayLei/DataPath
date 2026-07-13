@@ -1,41 +1,41 @@
-# DataPath Olist V1 指标目录
+# DataPath Olist 指标目录
 
-> 版本：V1.0  
-> 数据域：Olist 巴西电商经营  
-> 发布状态：PUBLISHED
+> 版本：V2.0
+> 更新日期：2026-07-13
+> 当前已发布：12 个指标，均为 v1
 
-## 语义模型
+## 指标表
 
-V1 以 `SM_OLIST_ORDER_ITEMS` 为基础事实模型，通过受治理的 Semantic Join Graph 连接订单、商品、客户、卖家和品类翻译维度。支付和评价为事实表，在 Aggregate-Before-Join 编译器完成前保持 `STAGED`，禁止跨事实表查询。
+| 指标 ID | 名称 | 公式摘要 | 单位 | 主要口径 |
+| --- | --- | --- | --- | --- |
+| `M_OLIST_ITEM_REVENUE` | Olist 商品销售额 | `SUM(price)` | BRL | 不含运费 |
+| `M_OLIST_FREIGHT_VALUE` | Olist 运费 | `SUM(freight_value)` | BRL | 订单商品行运费 |
+| `M_OLIST_ORDER_COUNT` | Olist 订单量 | `COUNT DISTINCT order_id` | order | 订单商品事实中的去重订单 |
+| `M_OLIST_TOTAL_ORDER_VALUE` | Olist 成交总额 | `SUM(price) + SUM(freight_value)` | BRL | 不等同支付表实际支付金额 |
+| `M_OLIST_AVERAGE_ORDER_VALUE` | Olist 客单价 | 商品销售额 / 去重订单量 | BRL/order | 不含运费 |
+| `M_OLIST_FREIGHT_PER_ORDER` | Olist 平均每单运费 | 运费 / 去重订单量 | BRL/order | 零订单返回空值 |
+| `M_OLIST_FREIGHT_RATE` | Olist 运费率 | 运费 / 商品销售额 x 100 | % | 零销售额返回空值 |
+| `M_OLIST_ITEM_COUNT` | Olist 商品件数 | `COUNT(order_id)` | item | 一个订单商品明细行计一件 |
+| `M_OLIST_ITEMS_PER_ORDER` | Olist 每单商品件数 | 商品件数 / 去重订单量 | item/order | 平均件单量 |
+| `M_OLIST_PRODUCT_COUNT` | Olist 成交商品数 | `COUNT DISTINCT product_id` | product | 有成交明细的去重商品 |
+| `M_OLIST_SELLER_COUNT` | Olist 活跃卖家数 | `COUNT DISTINCT seller_id` | seller | 有成交明细的去重卖家 |
+| `M_OLIST_CUSTOMER_COUNT` | Olist 购买客户数 | `COUNT DISTINCT customer_unique_id` | customer | 同一客户多次下单只计一次 |
 
-## 已发布指标
+## 可用维度
 
-#### `M_OLIST_ITEM_REVENUE` - Olist商品销售额
+当前指标统一支持日期、月份、商品品类、客户州、卖家州和订单状态。具体可用性以指标中心 `MetricDimension` 发布数据为准。
 
-- 定义：Olist 订单商品价格之和，不包含运费。
-- 公式：`SUM(price)`。
-- 单位：BRL。
-- 时间口径：订单购买时间 `order_purchase_timestamp`。
-- 支持维度：日期、月份、商品品类、客户州、卖家州、订单状态。
+## 语义模型与 Join
 
-#### `M_OLIST_FREIGHT_VALUE` - Olist运费
+当前指标以 `SM_OLIST_ORDER_ITEMS` 为基准模型，通过已发布关系连接订单、客户、商品、卖家和品类翻译。购买客户数从客户模型读取 `customer_unique_id` 并通过订单路径去重。
 
-- 定义：Olist 订单商品行运费之和。
-- 公式：`SUM(freight_value)`。
-- 单位：BRL。
-- 时间口径：订单购买时间。
-- 支持维度：日期、月份、商品品类、客户州、卖家州、订单状态。
+## 口径边界
 
-#### `M_OLIST_ORDER_COUNT` - Olist订单量
+- 不支持商品成本、毛利、退款、库存、广告、优惠券或预测指标。
+- 支付金额、支付方式、评价分数尚未发布为指标。
+- “成交总额”是商品价格与运费之和，不使用支付表。
+- 比率和平均指标不能跨维度直接相加；结果画像不会把分组比率当加法指标汇总。
 
-- 定义：订单商品事实中的去重订单数。
-- 公式：`COUNT_DISTINCT(order_id)`。
-- 单位：order。
-- 时间口径：订单购买时间。
-- 支持维度：日期、月份、商品品类、客户州、卖家州、订单状态。
+## 维护规则
 
-## 能力边界
-
-- 不支持成本、毛利、广告、库存、优惠券、客户人口属性和预测。
-- 不支持支付、评价与订单商品的跨事实联查，防止 Fanout 造成重复聚合。
-- 无法唯一确定指标时返回澄清，不生成 SQL。
+指标只能通过草稿校验和版本发布进入在线检索。修改现有口径必须生成新版本，不直接覆盖已发布版本。新增指标后需重建语义索引并补充黄金问题。

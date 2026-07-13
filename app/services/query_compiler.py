@@ -96,12 +96,28 @@ def compile_metric_expression(
     model_aliases: dict[str, str] | None = None,
 ) -> str:
     operation = expression.get("op")
-    if operation in {"sum", "count_distinct"}:
+    if operation in {"sum", "count", "count_distinct"}:
         source_model_id = str(expression.get("source_model_id") or model_id)
         field = require_field(source_model_id, str(expression.get("field", "")))
         lineage_fields.add(field)
         qualified = qualified_field(source_model_id, field, model_aliases)
-        return f"sum({qualified})" if operation == "sum" else f"uniqExact({qualified})"
+        if operation == "sum":
+            return f"sum({qualified})"
+        if operation == "count":
+            return f"count({qualified})"
+        return f"uniqExact({qualified})"
+    if operation == "add":
+        terms = expression.get("terms")
+        if not isinstance(terms, list) or len(terms) < 2:
+            raise CompilationError("add expression requires at least two terms")
+        compiled_terms = [
+            compile_metric_expression(term, model_id, lineage_fields, model_aliases)
+            for term in terms
+            if isinstance(term, dict)
+        ]
+        if len(compiled_terms) != len(terms):
+            raise CompilationError("add expression terms must be objects")
+        return "(" + " + ".join(compiled_terms) + ")"
     if operation == "ratio":
         numerator = compile_metric_expression(
             expression["numerator"], model_id, lineage_fields, model_aliases
@@ -237,7 +253,7 @@ def compile_query(
 
     params: dict[str, Any] = {
         "time_start": dsl.time_range.start.isoformat(),
-        "time_end": dsl.time_range.end.isoformat(),
+        "time_end_exclusive": (dsl.time_range.end + timedelta(days=1)).isoformat(),
     }
     time_dimension = dimensions[time_dimension_id]
     time_mapping = time_dimension.mapping_json[model_id]
@@ -245,7 +261,8 @@ def compile_query(
         {**time_mapping, "kind": "field"}, model_id, lineage_fields, model_aliases
     )
     where_parts = [
-        f"{time_expression} BETWEEN {{time_start:Date}} AND {{time_end:Date}}"
+        f"toDate({time_expression}) >= {{time_start:Date}} AND "
+        f"toDate({time_expression}) < {{time_end_exclusive:Date}}"
     ]
 
     param_index = 0

@@ -340,10 +340,6 @@ pre { max-height: 360px; overflow: auto; border-radius: 6px; padding: 14px; back
 .context-row { display: flex; justify-content: space-between; gap: 10px; font-size: 9px; }
 .context-row span { color: var(--muted); }
 .trust-panel .pipeline li { min-height: 48px; padding-left: 27px; }
-.trust-panel .evidence-list { max-height: 260px; }
-.trust-panel button.evidence-item { width: 100%; color: #344054; font: inherit; text-align: left; }
-.evidence-item[data-evidence-id] { cursor: pointer; }
-.evidence-item[data-evidence-id]:hover, .evidence-item.evidence-active { border-color: var(--primary); background: #eef3ff; }
 .suggested-followups { display: grid; gap: 7px; }
 .suggested-followups button { display: flex; justify-content: space-between; gap: 8px; width: 100%; border: 1px solid var(--line); border-radius: 5px; padding: 8px; background: #fff; color: #344054; font-size: 9px; text-align: left; }
 .suggested-followups button::after { content: "→"; color: var(--primary); }

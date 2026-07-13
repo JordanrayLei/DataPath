@@ -41,6 +41,9 @@ def expression_model_ids(expression: dict, default_model_id: str) -> set[str]:
         nested = expression.get(key)
         if isinstance(nested, dict):
             models.update(expression_model_ids(nested, default_model_id))
+    for nested in expression.get("terms") or []:
+        if isinstance(nested, dict):
+            models.update(expression_model_ids(nested, default_model_id))
     return models
 
 

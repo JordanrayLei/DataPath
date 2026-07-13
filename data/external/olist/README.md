@@ -1,10 +1,10 @@
 # Olist Brazilian E-Commerce
 
-Source: https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce
+Source: [Kaggle - Brazilian E-Commerce Public Dataset by Olist](https://www.kaggle.com/datasets/olistbr/brazilian-ecommerce)
 
-This is the public, anonymized Olist e-commerce dataset covering roughly 100,000 Brazilian marketplace orders from 2016 to 2018. It is staged for DataPath's future multi-table query capability and is not yet published to the metric center.
+DataPath 使用该公开匿名数据集验证电商多表 ChatBI。数据覆盖约 10 万笔 2016-2018 年巴西市场订单。
 
-## Local setup
+## 本地准备
 
 ```bash
 uv run python -m scripts.download_olist
@@ -12,12 +12,16 @@ uv run python -m scripts.load_olist
 uv run python -m scripts.validate_olist
 ```
 
-The nine extracted CSV files are intentionally ignored by Git. `relationships.json` is the version-controlled contract for table grain, join cardinality, and future safe join paths.
+九个 CSV 默认不纳入 Git；`relationships.json` 保存表粒度、基数和推荐 Join 契约。公开分发原始数据前需再次核对数据集许可和 Kaggle 条款。
 
-## Current boundary
+## 当前产品状态
 
-- Physical tables and source data: implemented.
-- Row-count, key, and relationship validation: implemented.
-- Semantic models and published metrics: not yet enabled.
-- Multi-table planning and SQL Join compilation: not yet implemented.
-- Natural-language questions use the published Olist fact-to-dimension join graph. Payment and review fact joins remain staged until aggregate-before-join is implemented.
+- 九张 ClickHouse 表：已加载并校验。
+- Semantic Model / Entity：已建立；支付、评价和地理模型部分暂存。
+- 已发布指标：12 个。
+- 已发布安全 Join：5 条。
+- 多表自然语言问数：已实现。
+- 支付/评价多事实查询：未实现，等待 Aggregate-Before-Join。
+- 地理 Zip Prefix 关系：未发布，避免多行映射导致 Fanout。
+
+数据快照与行数见 `data/evaluation/golden/olist_golden_manifest.json`，指标口径见 `document/initial-metric-catalog.md`。

@@ -1,0 +1,1662 @@
+[
+  {
+    "case_id": "CORE_022_1",
+    "query": "2018年前九个月每月Olist成交商品数趋势",
+    "category": "core_metric",
+    "expected_status": "SUCCESS",
+    "expected_metric_id": "M_OLIST_PRODUCT_COUNT",
+    "expected_intent": "trend_query",
+    "expected_query_mode": "multi_entity",
+    "expected_dimensions": [
+      "D_MONTH"
+    ],
+    "expected_time_range": {
+      "start": "2018-01-01",
+      "end": "2018-09-30"
+    },
+    "expected_models": [
+      "SM_OLIST_ORDER_ITEMS",
+      "SM_OLIST_ORDERS"
+    ],
+    "expected_join_relations": [
+      "J_OLIST_ITEMS_ORDERS"
+    ],
+    "result_assertions": {
+      "row_count": 9,
+      "result_checksum_sha256": "94ac5fb0d056eadc6e9ebedcd94672c17f93a6deb251e556022f6a8ba3375d4f",
+      "total_value": 33050.0,
+      "top_dimension": "2018-08-01",
+      "top_value": 4369.0,
+      "numeric_tolerance": 0.01,
+      "canonical_sql_sha256": "4782388162101212d6c0773454bf8686dcd8df32b9b861003f6adad021249173"
+    },
+    "expected_unit": "product",
+    "must_not_leak_sql": true,
+    "expected_reflection_status": "PASS",
+    "split": "blind"
+  },
+  {
+    "case_id": "CORE_022_2",
+    "query": "帮我查一下2018年前九个月每月Olist成交商品数",
+    "category": "core_metric",
+    "expected_status": "SUCCESS",
+    "expected_metric_id": "M_OLIST_PRODUCT_COUNT",
+    "expected_intent": "trend_query",
+    "expected_query_mode": "multi_entity",
+    "expected_dimensions": [
+      "D_MONTH"
+    ],
+    "expected_time_range": {
+      "start": "2018-01-01",
+      "end": "2018-09-30"
+    },
+    "expected_models": [
+      "SM_OLIST_ORDER_ITEMS",
+      "SM_OLIST_ORDERS"
+    ],
+    "expected_join_relations": [
+      "J_OLIST_ITEMS_ORDERS"
+    ],
+    "result_assertions": {
+      "row_count": 9,
+      "result_checksum_sha256": "94ac5fb0d056eadc6e9ebedcd94672c17f93a6deb251e556022f6a8ba3375d4f",
+      "total_value": 33050.0,
+      "top_dimension": "2018-08-01",
+      "top_value": 4369.0,
+      "numeric_tolerance": 0.01,
+      "canonical_sql_sha256": "4782388162101212d6c0773454bf8686dcd8df32b9b861003f6adad021249173"
+    },
+    "expected_unit": "product",
+    "must_not_leak_sql": true,
+    "expected_reflection_status": "PASS",
+    "split": "blind"
+  },
+  {
+    "case_id": "CORE_022_3",
+    "query": "想看2018年前九个月Olist成交商品数按每月统计",
+    "category": "core_metric",
+    "expected_status": "SUCCESS",
+    "expected_metric_id": "M_OLIST_PRODUCT_COUNT",
+    "expected_intent": "trend_query",
+    "expected_query_mode": "multi_entity",
+    "expected_dimensions": [
+      "D_MONTH"
+    ],
+    "expected_time_range": {
+      "start": "2018-01-01",
+      "end": "2018-09-30"
+    },
+    "expected_models": [
+      "SM_OLIST_ORDER_ITEMS",
+      "SM_OLIST_ORDERS"
+    ],
+    "expected_join_relations": [
+      "J_OLIST_ITEMS_ORDERS"
+    ],
+    "result_assertions": {
+      "row_count": 9,
+      "result_checksum_sha256": "94ac5fb0d056eadc6e9ebedcd94672c17f93a6deb251e556022f6a8ba3375d4f",
+      "total_value": 33050.0,
+      "top_dimension": "2018-08-01",
+      "top_value": 4369.0,
+      "numeric_tolerance": 0.01,
+      "canonical_sql_sha256": "4782388162101212d6c0773454bf8686dcd8df32b9b861003f6adad021249173"
+    },
+    "expected_unit": "product",
+    "must_not_leak_sql": true,
+    "expected_reflection_status": "PASS",
+    "split": "blind"
+  },
+  {
+    "case_id": "CORE_022_4",
+    "query": "2018年前九个月 每月 Olist成交商品数 数据",
+    "category": "core_metric",
+    "expected_status": "SUCCESS",
+    "expected_metric_id": "M_OLIST_PRODUCT_COUNT",
+    "expected_intent": "trend_query",
+    "expected_query_mode": "multi_entity",
+    "expected_dimensions": [
+      "D_MONTH"
+    ],
+    "expected_time_range": {
+      "start": "2018-01-01",
+      "end": "2018-09-30"
+    },
+    "expected_models": [
+      "SM_OLIST_ORDER_ITEMS",
+      "SM_OLIST_ORDERS"
+    ],
+    "expected_join_relations": [
+      "J_OLIST_ITEMS_ORDERS"
+    ],
+    "result_assertions": {
+      "row_count": 9,
+      "result_checksum_sha256": "94ac5fb0d056eadc6e9ebedcd94672c17f93a6deb251e556022f6a8ba3375d4f",
+      "total_value": 33050.0,
+      "top_dimension": "2018-08-01",
+      "top_value": 4369.0,
+      "numeric_tolerance": 0.01,
+      "canonical_sql_sha256": "4782388162101212d6c0773454bf8686dcd8df32b9b861003f6adad021249173"
+    },
+    "expected_unit": "product",
+    "must_not_leak_sql": true,
+    "expected_reflection_status": "PASS",
+    "split": "blind"
+  },
+  {
+    "case_id": "CORE_023_1",
+    "query": "2018年前九个月每月Olist活跃卖家数趋势",
+    "category": "core_metric",
+    "expected_status": "SUCCESS",
+    "expected_metric_id": "M_OLIST_SELLER_COUNT",
+    "expected_intent": "trend_query",
+    "expected_query_mode": "multi_entity",
+    "expected_dimensions": [
+      "D_MONTH"
+    ],
+    "expected_time_range": {
+      "start": "2018-01-01",
+      "end": "2018-09-30"
+    },
+    "expected_models": [
+      "SM_OLIST_ORDER_ITEMS",
+      "SM_OLIST_ORDERS"
+    ],
+    "expected_join_relations": [
+      "J_OLIST_ITEMS_ORDERS"
+    ],
+    "result_assertions": {
+      "row_count": 9,
+      "result_checksum_sha256": "77edac9a6761cb553d9b6ead7a8d6d80b944b92cbafbdb319b53f5ef0b6ee128",
+      "total_value": 8866.0,
+      "top_dimension": "2018-08-01",
+      "top_value": 1278.0,
+      "numeric_tolerance": 0.01,
+      "canonical_sql_sha256": "8b8470c4c3eac6feb49e2e0ec3a559797d40fcc42e2376c16c50676e7f14fc70"
+    },
+    "expected_unit": "seller",
+    "must_not_leak_sql": true,
+    "expected_reflection_status": "PASS",
+    "split": "blind"
+  },
+  {
+    "case_id": "CORE_023_2",
+    "query": "帮我查一下2018年前九个月每月Olist活跃卖家数",
+    "category": "core_metric",
+    "expected_status": "SUCCESS",
+    "expected_metric_id": "M_OLIST_SELLER_COUNT",
+    "expected_intent": "trend_query",
+    "expected_query_mode": "multi_entity",
+    "expected_dimensions": [
+      "D_MONTH"
+    ],
+    "expected_time_range": {
+      "start": "2018-01-01",
+      "end": "2018-09-30"
+    },
+    "expected_models": [
+      "SM_OLIST_ORDER_ITEMS",
+      "SM_OLIST_ORDERS"
+    ],
+    "expected_join_relations": [
+      "J_OLIST_ITEMS_ORDERS"
+    ],
+    "result_assertions": {
+      "row_count": 9,
+      "result_checksum_sha256": "77edac9a6761cb553d9b6ead7a8d6d80b944b92cbafbdb319b53f5ef0b6ee128",
+      "total_value": 8866.0,
+      "top_dimension": "2018-08-01",
+      "top_value": 1278.0,
+      "numeric_tolerance": 0.01,
+      "canonical_sql_sha256": "8b8470c4c3eac6feb49e2e0ec3a559797d40fcc42e2376c16c50676e7f14fc70"
+    },
+    "expected_unit": "seller",
+    "must_not_leak_sql": true,
+    "expected_reflection_status": "PASS",
+    "split": "blind"
+  },
+  {
+    "case_id": "CORE_023_3",
+    "query": "想看2018年前九个月Olist活跃卖家数按每月统计",
+    "category": "core_metric",
+    "expected_status": "SUCCESS",
+    "expected_metric_id": "M_OLIST_SELLER_COUNT",
+    "expected_intent": "trend_query",
+    "expected_query_mode": "multi_entity",
+    "expected_dimensions": [
+      "D_MONTH"
+    ],
+    "expected_time_range": {
+      "start": "2018-01-01",
+      "end": "2018-09-30"
+    },
+    "expected_models": [
+      "SM_OLIST_ORDER_ITEMS",
+      "SM_OLIST_ORDERS"
+    ],
+    "expected_join_relations": [
+      "J_OLIST_ITEMS_ORDERS"
+    ],
+    "result_assertions": {
+      "row_count": 9,
+      "result_checksum_sha256": "77edac9a6761cb553d9b6ead7a8d6d80b944b92cbafbdb319b53f5ef0b6ee128",
+      "total_value": 8866.0,
+      "top_dimension": "2018-08-01",
+      "top_value": 1278.0,
+      "numeric_tolerance": 0.01,
+      "canonical_sql_sha256": "8b8470c4c3eac6feb49e2e0ec3a559797d40fcc42e2376c16c50676e7f14fc70"
+    },
+    "expected_unit": "seller",
+    "must_not_leak_sql": true,
+    "expected_reflection_status": "PASS",
+    "split": "blind"
+  },
+  {
+    "case_id": "CORE_023_4",
+    "query": "2018年前九个月 每月 Olist活跃卖家数 数据",
+    "category": "core_metric",
+    "expected_status": "SUCCESS",
+    "expected_metric_id": "M_OLIST_SELLER_COUNT",
+    "expected_intent": "trend_query",
+    "expected_query_mode": "multi_entity",
+    "expected_dimensions": [
+      "D_MONTH"
+    ],
+    "expected_time_range": {
+      "start": "2018-01-01",
+      "end": "2018-09-30"
+    },
+    "expected_models": [
+      "SM_OLIST_ORDER_ITEMS",
+      "SM_OLIST_ORDERS"
+    ],
+    "expected_join_relations": [
+      "J_OLIST_ITEMS_ORDERS"
+    ],
+    "result_assertions": {
+      "row_count": 9,
+      "result_checksum_sha256": "77edac9a6761cb553d9b6ead7a8d6d80b944b92cbafbdb319b53f5ef0b6ee128",
+      "total_value": 8866.0,
+      "top_dimension": "2018-08-01",
+      "top_value": 1278.0,
+      "numeric_tolerance": 0.01,
+      "canonical_sql_sha256": "8b8470c4c3eac6feb49e2e0ec3a559797d40fcc42e2376c16c50676e7f14fc70"
+    },
+    "expected_unit": "seller",
+    "must_not_leak_sql": true,
+    "expected_reflection_status": "PASS",
+    "split": "blind"
+  },
+  {
+    "case_id": "CORE_024_1",
+    "query": "2018年前九个月每月Olist购买客户数趋势",
+    "category": "core_metric",
+    "expected_status": "SUCCESS",
+    "expected_metric_id": "M_OLIST_CUSTOMER_COUNT",
+    "expected_intent": "trend_query",
+    "expected_query_mode": "multi_entity",
+    "expected_dimensions": [
+      "D_MONTH"
+    ],
+    "expected_time_range": {
+      "start": "2018-01-01",
+      "end": "2018-09-30"
+    },
+    "expected_models": [
+      "SM_OLIST_ORDER_ITEMS",
+      "SM_OLIST_ORDERS",
+      "SM_OLIST_CUSTOMERS"
+    ],
+    "expected_join_relations": [
+      "J_OLIST_ITEMS_ORDERS",
+      "J_OLIST_ORDERS_CUSTOMERS"
+    ],
+    "result_assertions": {
+      "row_count": 9,
+      "result_checksum_sha256": "e0c471106e2cb27bd75dd924d67a0e4d6f545eacab2ac8012537468e24c98c02",
+      "total_value": 53170.0,
+      "top_dimension": "2018-01-01",
+      "top_value": 7120.0,
+      "numeric_tolerance": 0.01,
+      "canonical_sql_sha256": "da1095b8353a5e5b0dd9b3746c2a0592a0e4c6b5fddc92fb273067d494ff8f41"
+    },
+    "expected_unit": "customer",
+    "must_not_leak_sql": true,
+    "expected_reflection_status": "PASS",
+    "split": "blind"
+  },
+  {
+    "case_id": "CORE_024_2",
+    "query": "帮我查一下2018年前九个月每月Olist购买客户数",
+    "category": "core_metric",
+    "expected_status": "SUCCESS",
+    "expected_metric_id": "M_OLIST_CUSTOMER_COUNT",
+    "expected_intent": "trend_query",
+    "expected_query_mode": "multi_entity",
+    "expected_dimensions": [
+      "D_MONTH"
+    ],
+    "expected_time_range": {
+      "start": "2018-01-01",
+      "end": "2018-09-30"
+    },
+    "expected_models": [
+      "SM_OLIST_ORDER_ITEMS",
+      "SM_OLIST_ORDERS",
+      "SM_OLIST_CUSTOMERS"
+    ],
+    "expected_join_relations": [
+      "J_OLIST_ITEMS_ORDERS",
+      "J_OLIST_ORDERS_CUSTOMERS"
+    ],
+    "result_assertions": {
+      "row_count": 9,
+      "result_checksum_sha256": "e0c471106e2cb27bd75dd924d67a0e4d6f545eacab2ac8012537468e24c98c02",
+      "total_value": 53170.0,
+      "top_dimension": "2018-01-01",
+      "top_value": 7120.0,
+      "numeric_tolerance": 0.01,
+      "canonical_sql_sha256": "da1095b8353a5e5b0dd9b3746c2a0592a0e4c6b5fddc92fb273067d494ff8f41"
+    },
+    "expected_unit": "customer",
+    "must_not_leak_sql": true,
+    "expected_reflection_status": "PASS",
+    "split": "blind"
+  },
+  {
+    "case_id": "CORE_024_3",
+    "query": "想看2018年前九个月Olist购买客户数按每月统计",
+    "category": "core_metric",
+    "expected_status": "SUCCESS",
+    "expected_metric_id": "M_OLIST_CUSTOMER_COUNT",
+    "expected_intent": "trend_query",
+    "expected_query_mode": "multi_entity",
+    "expected_dimensions": [
+      "D_MONTH"
+    ],
+    "expected_time_range": {
+      "start": "2018-01-01",
+      "end": "2018-09-30"
+    },
+    "expected_models": [
+      "SM_OLIST_ORDER_ITEMS",
+      "SM_OLIST_ORDERS",
+      "SM_OLIST_CUSTOMERS"
+    ],
+    "expected_join_relations": [
+      "J_OLIST_ITEMS_ORDERS",
+      "J_OLIST_ORDERS_CUSTOMERS"
+    ],
+    "result_assertions": {
+      "row_count": 9,
+      "result_checksum_sha256": "e0c471106e2cb27bd75dd924d67a0e4d6f545eacab2ac8012537468e24c98c02",
+      "total_value": 53170.0,
+      "top_dimension": "2018-01-01",
+      "top_value": 7120.0,
+      "numeric_tolerance": 0.01,
+      "canonical_sql_sha256": "da1095b8353a5e5b0dd9b3746c2a0592a0e4c6b5fddc92fb273067d494ff8f41"
+    },
+    "expected_unit": "customer",
+    "must_not_leak_sql": true,
+    "expected_reflection_status": "PASS",
+    "split": "blind"
+  },
+  {
+    "case_id": "CORE_024_4",
+    "query": "2018年前九个月 每月 Olist购买客户数 数据",
+    "category": "core_metric",
+    "expected_status": "SUCCESS",
+    "expected_metric_id": "M_OLIST_CUSTOMER_COUNT",
+    "expected_intent": "trend_query",
+    "expected_query_mode": "multi_entity",
+    "expected_dimensions": [
+      "D_MONTH"
+    ],
+    "expected_time_range": {
+      "start": "2018-01-01",
+      "end": "2018-09-30"
+    },
+    "expected_models": [
+      "SM_OLIST_ORDER_ITEMS",
+      "SM_OLIST_ORDERS",
+      "SM_OLIST_CUSTOMERS"
+    ],
+    "expected_join_relations": [
+      "J_OLIST_ITEMS_ORDERS",
+      "J_OLIST_ORDERS_CUSTOMERS"
+    ],
+    "result_assertions": {
+      "row_count": 9,
+      "result_checksum_sha256": "e0c471106e2cb27bd75dd924d67a0e4d6f545eacab2ac8012537468e24c98c02",
+      "total_value": 53170.0,
+      "top_dimension": "2018-01-01",
+      "top_value": 7120.0,
+      "numeric_tolerance": 0.01,
+      "canonical_sql_sha256": "da1095b8353a5e5b0dd9b3746c2a0592a0e4c6b5fddc92fb273067d494ff8f41"
+    },
+    "expected_unit": "customer",
+    "must_not_leak_sql": true,
+    "expected_reflection_status": "PASS",
+    "split": "blind"
+  },
+  {
+    "case_id": "CORE_025_1",
+    "query": "最近三个月Olist销售额",
+    "category": "core_metric",
+    "expected_status": "SUCCESS",
+    "expected_metric_id": "M_OLIST_ITEM_REVENUE",
+    "expected_intent": "aggregate_query",
+    "expected_query_mode": "multi_entity",
+    "expected_dimensions": [],
+    "expected_time_range": {
+      "start": "2018-07-01",
+      "end": "2018-09-30"
+    },
+    "expected_models": [
+      "SM_OLIST_ORDER_ITEMS",
+      "SM_OLIST_ORDERS"
+    ],
+    "expected_join_relations": [
+      "J_OLIST_ITEMS_ORDERS"
+    ],
+    "result_assertions": {
+      "row_count": 1,
+      "result_checksum_sha256": "d472accfb54359b2b2eb8847ef2d8cdd8a5e9d2d792e9a36ec6c22b733990cf4",
+      "total_value": 1750338.55,
+      "top_dimension": null,
+      "top_value": 1750338.55,
+      "numeric_tolerance": 0.01,
+      "canonical_sql_sha256": "21ba942648743fedfd0b5bf6cd5a7a94646edd765f8ae3ec7ac2e6c9d623239f"
+    },
+    "expected_unit": "BRL",
+    "must_not_leak_sql": true,
+    "expected_reflection_status": "PASS",
+    "split": "blind"
+  },
+  {
+    "case_id": "CORE_025_2",
+    "query": "帮我查一下最近三个月Olist销售额",
+    "category": "core_metric",
+    "expected_status": "SUCCESS",
+    "expected_metric_id": "M_OLIST_ITEM_REVENUE",
+    "expected_intent": "aggregate_query",
+    "expected_query_mode": "multi_entity",
+    "expected_dimensions": [],
+    "expected_time_range": {
+      "start": "2018-07-01",
+      "end": "2018-09-30"
+    },
+    "expected_models": [
+      "SM_OLIST_ORDER_ITEMS",
+      "SM_OLIST_ORDERS"
+    ],
+    "expected_join_relations": [
+      "J_OLIST_ITEMS_ORDERS"
+    ],
+    "result_assertions": {
+      "row_count": 1,
+      "result_checksum_sha256": "d472accfb54359b2b2eb8847ef2d8cdd8a5e9d2d792e9a36ec6c22b733990cf4",
+      "total_value": 1750338.55,
+      "top_dimension": null,
+      "top_value": 1750338.55,
+      "numeric_tolerance": 0.01,
+      "canonical_sql_sha256": "21ba942648743fedfd0b5bf6cd5a7a94646edd765f8ae3ec7ac2e6c9d623239f"
+    },
+    "expected_unit": "BRL",
+    "must_not_leak_sql": true,
+    "expected_reflection_status": "PASS",
+    "split": "blind"
+  },
+  {
+    "case_id": "CORE_025_3",
+    "query": "想看最近三个月Olist销售额按整体统计",
+    "category": "core_metric",
+    "expected_status": "SUCCESS",
+    "expected_metric_id": "M_OLIST_ITEM_REVENUE",
+    "expected_intent": "aggregate_query",
+    "expected_query_mode": "multi_entity",
+    "expected_dimensions": [],
+    "expected_time_range": {
+      "start": "2018-07-01",
+      "end": "2018-09-30"
+    },
+    "expected_models": [
+      "SM_OLIST_ORDER_ITEMS",
+      "SM_OLIST_ORDERS"
+    ],
+    "expected_join_relations": [
+      "J_OLIST_ITEMS_ORDERS"
+    ],
+    "result_assertions": {
+      "row_count": 1,
+      "result_checksum_sha256": "d472accfb54359b2b2eb8847ef2d8cdd8a5e9d2d792e9a36ec6c22b733990cf4",
+      "total_value": 1750338.55,
+      "top_dimension": null,
+      "top_value": 1750338.55,
+      "numeric_tolerance": 0.01,
+      "canonical_sql_sha256": "21ba942648743fedfd0b5bf6cd5a7a94646edd765f8ae3ec7ac2e6c9d623239f"
+    },
+    "expected_unit": "BRL",
+    "must_not_leak_sql": true,
+    "expected_reflection_status": "PASS",
+    "split": "blind"
+  },
+  {
+    "case_id": "CORE_025_4",
+    "query": "最近三个月  Olist销售额 数据",
+    "category": "core_metric",
+    "expected_status": "SUCCESS",
+    "expected_metric_id": "M_OLIST_ITEM_REVENUE",
+    "expected_intent": "aggregate_query",
+    "expected_query_mode": "multi_entity",
+    "expected_dimensions": [],
+    "expected_time_range": {
+      "start": "2018-07-01",
+      "end": "2018-09-30"
+    },
+    "expected_models": [
+      "SM_OLIST_ORDER_ITEMS",
+      "SM_OLIST_ORDERS"
+    ],
+    "expected_join_relations": [
+      "J_OLIST_ITEMS_ORDERS"
+    ],
+    "result_assertions": {
+      "row_count": 1,
+      "result_checksum_sha256": "d472accfb54359b2b2eb8847ef2d8cdd8a5e9d2d792e9a36ec6c22b733990cf4",
+      "total_value": 1750338.55,
+      "top_dimension": null,
+      "top_value": 1750338.55,
+      "numeric_tolerance": 0.01,
+      "canonical_sql_sha256": "21ba942648743fedfd0b5bf6cd5a7a94646edd765f8ae3ec7ac2e6c9d623239f"
+    },
+    "expected_unit": "BRL",
+    "must_not_leak_sql": true,
+    "expected_reflection_status": "PASS",
+    "split": "blind"
+  },
+  {
+    "case_id": "JOIN_022_1",
+    "query": "2018年前九个月各卖家州Olist成交商品数排名",
+    "category": "multi_entity",
+    "expected_status": "SUCCESS",
+    "expected_metric_id": "M_OLIST_PRODUCT_COUNT",
+    "expected_intent": "ranking_query",
+    "expected_query_mode": "multi_entity",
+    "expected_dimensions": [
+      "D_OLIST_SELLER_STATE"
+    ],
+    "expected_time_range": {
+      "start": "2018-01-01",
+      "end": "2018-09-30"
+    },
+    "expected_models": [
+      "SM_OLIST_ORDER_ITEMS",
+      "SM_OLIST_ORDERS",
+      "SM_OLIST_SELLERS"
+    ],
+    "expected_join_relations": [
+      "J_OLIST_ITEMS_ORDERS",
+      "J_OLIST_ITEMS_SELLERS"
+    ],
+    "result_assertions": {
+      "row_count": 21,
+      "result_checksum_sha256": "5e6a10ab98bcd415eb2e2270fa644f8c393b36f32f380feb24220fa6c07981f7",
+      "total_value": 20826.0,
+      "top_dimension": "SP",
+      "top_value": 14388.0,
+      "numeric_tolerance": 0.01,
+      "canonical_sql_sha256": "ca4eb3e8453170b8284d31028598069097ad72c1e17dbddffdd21aa65e924d87"
+    },
+    "expected_unit": "product",
+    "must_not_leak_sql": true,
+    "expected_reflection_status": "PASS",
+    "split": "blind"
+  },
+  {
+    "case_id": "JOIN_022_2",
+    "query": "帮我查一下2018年前九个月各卖家州Olist成交商品数",
+    "category": "multi_entity",
+    "expected_status": "SUCCESS",
+    "expected_metric_id": "M_OLIST_PRODUCT_COUNT",
+    "expected_intent": "aggregate_query",
+    "expected_query_mode": "multi_entity",
+    "expected_dimensions": [
+      "D_OLIST_SELLER_STATE"
+    ],
+    "expected_time_range": {
+      "start": "2018-01-01",
+      "end": "2018-09-30"
+    },
+    "expected_models": [
+      "SM_OLIST_ORDER_ITEMS",
+      "SM_OLIST_ORDERS",
+      "SM_OLIST_SELLERS"
+    ],
+    "expected_join_relations": [
+      "J_OLIST_ITEMS_ORDERS",
+      "J_OLIST_ITEMS_SELLERS"
+    ],
+    "result_assertions": {
+      "row_count": 21,
+      "result_checksum_sha256": "5e6a10ab98bcd415eb2e2270fa644f8c393b36f32f380feb24220fa6c07981f7",
+      "total_value": 20826.0,
+      "top_dimension": "SP",
+      "top_value": 14388.0,
+      "numeric_tolerance": 0.01,
+      "canonical_sql_sha256": "ca4eb3e8453170b8284d31028598069097ad72c1e17dbddffdd21aa65e924d87"
+    },
+    "expected_unit": "product",
+    "must_not_leak_sql": true,
+    "expected_reflection_status": "PASS",
+    "split": "blind"
+  },
+  {
+    "case_id": "JOIN_022_3",
+    "query": "想看2018年前九个月Olist成交商品数按卖家州统计",
+    "category": "multi_entity",
+    "expected_status": "SUCCESS",
+    "expected_metric_id": "M_OLIST_PRODUCT_COUNT",
+    "expected_intent": "aggregate_query",
+    "expected_query_mode": "multi_entity",
+    "expected_dimensions": [
+      "D_OLIST_SELLER_STATE"
+    ],
+    "expected_time_range": {
+      "start": "2018-01-01",
+      "end": "2018-09-30"
+    },
+    "expected_models": [
+      "SM_OLIST_ORDER_ITEMS",
+      "SM_OLIST_ORDERS",
+      "SM_OLIST_SELLERS"
+    ],
+    "expected_join_relations": [
+      "J_OLIST_ITEMS_ORDERS",
+      "J_OLIST_ITEMS_SELLERS"
+    ],
+    "result_assertions": {
+      "row_count": 21,
+      "result_checksum_sha256": "5e6a10ab98bcd415eb2e2270fa644f8c393b36f32f380feb24220fa6c07981f7",
+      "total_value": 20826.0,
+      "top_dimension": "SP",
+      "top_value": 14388.0,
+      "numeric_tolerance": 0.01,
+      "canonical_sql_sha256": "ca4eb3e8453170b8284d31028598069097ad72c1e17dbddffdd21aa65e924d87"
+    },
+    "expected_unit": "product",
+    "must_not_leak_sql": true,
+    "expected_reflection_status": "PASS",
+    "split": "blind"
+  },
+  {
+    "case_id": "JOIN_022_4",
+    "query": "2018年前九个月 各卖家州 Olist成交商品数 数据",
+    "category": "multi_entity",
+    "expected_status": "SUCCESS",
+    "expected_metric_id": "M_OLIST_PRODUCT_COUNT",
+    "expected_intent": "aggregate_query",
+    "expected_query_mode": "multi_entity",
+    "expected_dimensions": [
+      "D_OLIST_SELLER_STATE"
+    ],
+    "expected_time_range": {
+      "start": "2018-01-01",
+      "end": "2018-09-30"
+    },
+    "expected_models": [
+      "SM_OLIST_ORDER_ITEMS",
+      "SM_OLIST_ORDERS",
+      "SM_OLIST_SELLERS"
+    ],
+    "expected_join_relations": [
+      "J_OLIST_ITEMS_ORDERS",
+      "J_OLIST_ITEMS_SELLERS"
+    ],
+    "result_assertions": {
+      "row_count": 21,
+      "result_checksum_sha256": "5e6a10ab98bcd415eb2e2270fa644f8c393b36f32f380feb24220fa6c07981f7",
+      "total_value": 20826.0,
+      "top_dimension": "SP",
+      "top_value": 14388.0,
+      "numeric_tolerance": 0.01,
+      "canonical_sql_sha256": "ca4eb3e8453170b8284d31028598069097ad72c1e17dbddffdd21aa65e924d87"
+    },
+    "expected_unit": "product",
+    "must_not_leak_sql": true,
+    "expected_reflection_status": "PASS",
+    "split": "blind"
+  },
+  {
+    "case_id": "JOIN_023_1",
+    "query": "2018年前九个月各订单状态Olist活跃卖家数排名",
+    "category": "multi_entity",
+    "expected_status": "SUCCESS",
+    "expected_metric_id": "M_OLIST_SELLER_COUNT",
+    "expected_intent": "ranking_query",
+    "expected_query_mode": "multi_entity",
+    "expected_dimensions": [
+      "D_OLIST_ORDER_STATUS"
+    ],
+    "expected_time_range": {
+      "start": "2018-01-01",
+      "end": "2018-09-30"
+    },
+    "expected_models": [
+      "SM_OLIST_ORDER_ITEMS",
+      "SM_OLIST_ORDERS"
+    ],
+    "expected_join_relations": [
+      "J_OLIST_ITEMS_ORDERS"
+    ],
+    "result_assertions": {
+      "row_count": 5,
+      "result_checksum_sha256": "fa7952e82c788d59f4e385e820d8277904062e466ab82a93f227335dafcf2c51",
+      "total_value": 2943.0,
+      "top_dimension": "delivered",
+      "top_value": 2330.0,
+      "numeric_tolerance": 0.01,
+      "canonical_sql_sha256": "a577ccbf3bba0c7b450fa104dfcec72863138cd4a21d7e53ff636906f4fabd91"
+    },
+    "expected_unit": "seller",
+    "must_not_leak_sql": true,
+    "expected_reflection_status": "PASS",
+    "split": "blind"
+  },
+  {
+    "case_id": "JOIN_023_2",
+    "query": "帮我查一下2018年前九个月各订单状态Olist活跃卖家数",
+    "category": "multi_entity",
+    "expected_status": "SUCCESS",
+    "expected_metric_id": "M_OLIST_SELLER_COUNT",
+    "expected_intent": "aggregate_query",
+    "expected_query_mode": "multi_entity",
+    "expected_dimensions": [
+      "D_OLIST_ORDER_STATUS"
+    ],
+    "expected_time_range": {
+      "start": "2018-01-01",
+      "end": "2018-09-30"
+    },
+    "expected_models": [
+      "SM_OLIST_ORDER_ITEMS",
+      "SM_OLIST_ORDERS"
+    ],
+    "expected_join_relations": [
+      "J_OLIST_ITEMS_ORDERS"
+    ],
+    "result_assertions": {
+      "row_count": 5,
+      "result_checksum_sha256": "fa7952e82c788d59f4e385e820d8277904062e466ab82a93f227335dafcf2c51",
+      "total_value": 2943.0,
+      "top_dimension": "delivered",
+      "top_value": 2330.0,
+      "numeric_tolerance": 0.01,
+      "canonical_sql_sha256": "a577ccbf3bba0c7b450fa104dfcec72863138cd4a21d7e53ff636906f4fabd91"
+    },
+    "expected_unit": "seller",
+    "must_not_leak_sql": true,
+    "expected_reflection_status": "PASS",
+    "split": "blind"
+  },
+  {
+    "case_id": "JOIN_023_3",
+    "query": "想看2018年前九个月Olist活跃卖家数按订单状态统计",
+    "category": "multi_entity",
+    "expected_status": "SUCCESS",
+    "expected_metric_id": "M_OLIST_SELLER_COUNT",
+    "expected_intent": "aggregate_query",
+    "expected_query_mode": "multi_entity",
+    "expected_dimensions": [
+      "D_OLIST_ORDER_STATUS"
+    ],
+    "expected_time_range": {
+      "start": "2018-01-01",
+      "end": "2018-09-30"
+    },
+    "expected_models": [
+      "SM_OLIST_ORDER_ITEMS",
+      "SM_OLIST_ORDERS"
+    ],
+    "expected_join_relations": [
+      "J_OLIST_ITEMS_ORDERS"
+    ],
+    "result_assertions": {
+      "row_count": 5,
+      "result_checksum_sha256": "fa7952e82c788d59f4e385e820d8277904062e466ab82a93f227335dafcf2c51",
+      "total_value": 2943.0,
+      "top_dimension": "delivered",
+      "top_value": 2330.0,
+      "numeric_tolerance": 0.01,
+      "canonical_sql_sha256": "a577ccbf3bba0c7b450fa104dfcec72863138cd4a21d7e53ff636906f4fabd91"
+    },
+    "expected_unit": "seller",
+    "must_not_leak_sql": true,
+    "expected_reflection_status": "PASS",
+    "split": "blind"
+  },
+  {
+    "case_id": "JOIN_023_4",
+    "query": "2018年前九个月 各订单状态 Olist活跃卖家数 数据",
+    "category": "multi_entity",
+    "expected_status": "SUCCESS",
+    "expected_metric_id": "M_OLIST_SELLER_COUNT",
+    "expected_intent": "aggregate_query",
+    "expected_query_mode": "multi_entity",
+    "expected_dimensions": [
+      "D_OLIST_ORDER_STATUS"
+    ],
+    "expected_time_range": {
+      "start": "2018-01-01",
+      "end": "2018-09-30"
+    },
+    "expected_models": [
+      "SM_OLIST_ORDER_ITEMS",
+      "SM_OLIST_ORDERS"
+    ],
+    "expected_join_relations": [
+      "J_OLIST_ITEMS_ORDERS"
+    ],
+    "result_assertions": {
+      "row_count": 5,
+      "result_checksum_sha256": "fa7952e82c788d59f4e385e820d8277904062e466ab82a93f227335dafcf2c51",
+      "total_value": 2943.0,
+      "top_dimension": "delivered",
+      "top_value": 2330.0,
+      "numeric_tolerance": 0.01,
+      "canonical_sql_sha256": "a577ccbf3bba0c7b450fa104dfcec72863138cd4a21d7e53ff636906f4fabd91"
+    },
+    "expected_unit": "seller",
+    "must_not_leak_sql": true,
+    "expected_reflection_status": "PASS",
+    "split": "blind"
+  },
+  {
+    "case_id": "JOIN_024_1",
+    "query": "2018年前九个月各商品品类Olist购买客户数排名",
+    "category": "multi_entity",
+    "expected_status": "SUCCESS",
+    "expected_metric_id": "M_OLIST_CUSTOMER_COUNT",
+    "expected_intent": "ranking_query",
+    "expected_query_mode": "multi_entity",
+    "expected_dimensions": [
+      "D_OLIST_CATEGORY"
+    ],
+    "expected_time_range": {
+      "start": "2018-01-01",
+      "end": "2018-09-30"
+    },
+    "expected_models": [
+      "SM_OLIST_ORDER_ITEMS",
+      "SM_OLIST_ORDERS",
+      "SM_OLIST_CUSTOMERS",
+      "SM_OLIST_PRODUCTS",
+      "SM_OLIST_CATEGORY_TRANSLATION"
+    ],
+    "expected_join_relations": [
+      "J_OLIST_ITEMS_ORDERS",
+      "J_OLIST_ITEMS_PRODUCTS",
+      "J_OLIST_PRODUCTS_CATEGORY",
+      "J_OLIST_ORDERS_CUSTOMERS"
+    ],
+    "result_assertions": {
+      "row_count": 71,
+      "result_checksum_sha256": "341c01997fdffb0ddb9c944e3f4a2a3c8473df867c4f03ba9b76b12a7fc0ccf1",
+      "total_value": 53579.0,
+      "top_dimension": "health_beauty",
+      "top_value": 5342.0,
+      "numeric_tolerance": 0.01,
+      "canonical_sql_sha256": "4a99c776585d1b8213d32a94950b2f3348a9378f8d845438f524e01496cc7976"
+    },
+    "expected_unit": "customer",
+    "must_not_leak_sql": true,
+    "expected_reflection_status": "PASS",
+    "split": "blind"
+  },
+  {
+    "case_id": "JOIN_024_2",
+    "query": "帮我查一下2018年前九个月各商品品类Olist购买客户数",
+    "category": "multi_entity",
+    "expected_status": "SUCCESS",
+    "expected_metric_id": "M_OLIST_CUSTOMER_COUNT",
+    "expected_intent": "aggregate_query",
+    "expected_query_mode": "multi_entity",
+    "expected_dimensions": [
+      "D_OLIST_CATEGORY"
+    ],
+    "expected_time_range": {
+      "start": "2018-01-01",
+      "end": "2018-09-30"
+    },
+    "expected_models": [
+      "SM_OLIST_ORDER_ITEMS",
+      "SM_OLIST_ORDERS",
+      "SM_OLIST_CUSTOMERS",
+      "SM_OLIST_PRODUCTS",
+      "SM_OLIST_CATEGORY_TRANSLATION"
+    ],
+    "expected_join_relations": [
+      "J_OLIST_ITEMS_ORDERS",
+      "J_OLIST_ITEMS_PRODUCTS",
+      "J_OLIST_PRODUCTS_CATEGORY",
+      "J_OLIST_ORDERS_CUSTOMERS"
+    ],
+    "result_assertions": {
+      "row_count": 71,
+      "result_checksum_sha256": "341c01997fdffb0ddb9c944e3f4a2a3c8473df867c4f03ba9b76b12a7fc0ccf1",
+      "total_value": 53579.0,
+      "top_dimension": "health_beauty",
+      "top_value": 5342.0,
+      "numeric_tolerance": 0.01,
+      "canonical_sql_sha256": "4a99c776585d1b8213d32a94950b2f3348a9378f8d845438f524e01496cc7976"
+    },
+    "expected_unit": "customer",
+    "must_not_leak_sql": true,
+    "expected_reflection_status": "PASS",
+    "split": "blind"
+  },
+  {
+    "case_id": "JOIN_024_3",
+    "query": "想看2018年前九个月Olist购买客户数按商品品类统计",
+    "category": "multi_entity",
+    "expected_status": "SUCCESS",
+    "expected_metric_id": "M_OLIST_CUSTOMER_COUNT",
+    "expected_intent": "aggregate_query",
+    "expected_query_mode": "multi_entity",
+    "expected_dimensions": [
+      "D_OLIST_CATEGORY"
+    ],
+    "expected_time_range": {
+      "start": "2018-01-01",
+      "end": "2018-09-30"
+    },
+    "expected_models": [
+      "SM_OLIST_ORDER_ITEMS",
+      "SM_OLIST_ORDERS",
+      "SM_OLIST_CUSTOMERS",
+      "SM_OLIST_PRODUCTS",
+      "SM_OLIST_CATEGORY_TRANSLATION"
+    ],
+    "expected_join_relations": [
+      "J_OLIST_ITEMS_ORDERS",
+      "J_OLIST_ITEMS_PRODUCTS",
+      "J_OLIST_PRODUCTS_CATEGORY",
+      "J_OLIST_ORDERS_CUSTOMERS"
+    ],
+    "result_assertions": {
+      "row_count": 71,
+      "result_checksum_sha256": "341c01997fdffb0ddb9c944e3f4a2a3c8473df867c4f03ba9b76b12a7fc0ccf1",
+      "total_value": 53579.0,
+      "top_dimension": "health_beauty",
+      "top_value": 5342.0,
+      "numeric_tolerance": 0.01,
+      "canonical_sql_sha256": "4a99c776585d1b8213d32a94950b2f3348a9378f8d845438f524e01496cc7976"
+    },
+    "expected_unit": "customer",
+    "must_not_leak_sql": true,
+    "expected_reflection_status": "PASS",
+    "split": "blind"
+  },
+  {
+    "case_id": "JOIN_024_4",
+    "query": "2018年前九个月 各商品品类 Olist购买客户数 数据",
+    "category": "multi_entity",
+    "expected_status": "SUCCESS",
+    "expected_metric_id": "M_OLIST_CUSTOMER_COUNT",
+    "expected_intent": "aggregate_query",
+    "expected_query_mode": "multi_entity",
+    "expected_dimensions": [
+      "D_OLIST_CATEGORY"
+    ],
+    "expected_time_range": {
+      "start": "2018-01-01",
+      "end": "2018-09-30"
+    },
+    "expected_models": [
+      "SM_OLIST_ORDER_ITEMS",
+      "SM_OLIST_ORDERS",
+      "SM_OLIST_CUSTOMERS",
+      "SM_OLIST_PRODUCTS",
+      "SM_OLIST_CATEGORY_TRANSLATION"
+    ],
+    "expected_join_relations": [
+      "J_OLIST_ITEMS_ORDERS",
+      "J_OLIST_ITEMS_PRODUCTS",
+      "J_OLIST_PRODUCTS_CATEGORY",
+      "J_OLIST_ORDERS_CUSTOMERS"
+    ],
+    "result_assertions": {
+      "row_count": 71,
+      "result_checksum_sha256": "341c01997fdffb0ddb9c944e3f4a2a3c8473df867c4f03ba9b76b12a7fc0ccf1",
+      "total_value": 53579.0,
+      "top_dimension": "health_beauty",
+      "top_value": 5342.0,
+      "numeric_tolerance": 0.01,
+      "canonical_sql_sha256": "4a99c776585d1b8213d32a94950b2f3348a9378f8d845438f524e01496cc7976"
+    },
+    "expected_unit": "customer",
+    "must_not_leak_sql": true,
+    "expected_reflection_status": "PASS",
+    "split": "blind"
+  },
+  {
+    "case_id": "JOIN_025_1",
+    "query": "最近三个月各商品品类Olist销售额排名",
+    "category": "multi_entity",
+    "expected_status": "SUCCESS",
+    "expected_metric_id": "M_OLIST_ITEM_REVENUE",
+    "expected_intent": "ranking_query",
+    "expected_query_mode": "multi_entity",
+    "expected_dimensions": [
+      "D_OLIST_CATEGORY"
+    ],
+    "expected_time_range": {
+      "start": "2018-07-01",
+      "end": "2018-09-30"
+    },
+    "expected_models": [
+      "SM_OLIST_ORDER_ITEMS",
+      "SM_OLIST_ORDERS",
+      "SM_OLIST_PRODUCTS",
+      "SM_OLIST_CATEGORY_TRANSLATION"
+    ],
+    "expected_join_relations": [
+      "J_OLIST_ITEMS_ORDERS",
+      "J_OLIST_ITEMS_PRODUCTS",
+      "J_OLIST_PRODUCTS_CATEGORY"
+    ],
+    "result_assertions": {
+      "row_count": 67,
+      "result_checksum_sha256": "5be35c65595788eeb4ad1c19af32803713bcbeb51ba82a7d1327ea48832cca33",
+      "total_value": 1750338.55,
+      "top_dimension": "health_beauty",
+      "top_value": 226616.97,
+      "numeric_tolerance": 0.01,
+      "canonical_sql_sha256": "46751beb516da364052c75f4fea80b539256c53b4273f2d4427166e5810a9e2a"
+    },
+    "expected_unit": "BRL",
+    "must_not_leak_sql": true,
+    "expected_reflection_status": "PASS",
+    "split": "blind"
+  },
+  {
+    "case_id": "JOIN_025_2",
+    "query": "帮我查一下最近三个月各商品品类Olist销售额",
+    "category": "multi_entity",
+    "expected_status": "SUCCESS",
+    "expected_metric_id": "M_OLIST_ITEM_REVENUE",
+    "expected_intent": "aggregate_query",
+    "expected_query_mode": "multi_entity",
+    "expected_dimensions": [
+      "D_OLIST_CATEGORY"
+    ],
+    "expected_time_range": {
+      "start": "2018-07-01",
+      "end": "2018-09-30"
+    },
+    "expected_models": [
+      "SM_OLIST_ORDER_ITEMS",
+      "SM_OLIST_ORDERS",
+      "SM_OLIST_PRODUCTS",
+      "SM_OLIST_CATEGORY_TRANSLATION"
+    ],
+    "expected_join_relations": [
+      "J_OLIST_ITEMS_ORDERS",
+      "J_OLIST_ITEMS_PRODUCTS",
+      "J_OLIST_PRODUCTS_CATEGORY"
+    ],
+    "result_assertions": {
+      "row_count": 67,
+      "result_checksum_sha256": "5be35c65595788eeb4ad1c19af32803713bcbeb51ba82a7d1327ea48832cca33",
+      "total_value": 1750338.55,
+      "top_dimension": "health_beauty",
+      "top_value": 226616.97,
+      "numeric_tolerance": 0.01,
+      "canonical_sql_sha256": "46751beb516da364052c75f4fea80b539256c53b4273f2d4427166e5810a9e2a"
+    },
+    "expected_unit": "BRL",
+    "must_not_leak_sql": true,
+    "expected_reflection_status": "PASS",
+    "split": "blind"
+  },
+  {
+    "case_id": "JOIN_025_3",
+    "query": "想看最近三个月Olist销售额按商品品类统计",
+    "category": "multi_entity",
+    "expected_status": "SUCCESS",
+    "expected_metric_id": "M_OLIST_ITEM_REVENUE",
+    "expected_intent": "aggregate_query",
+    "expected_query_mode": "multi_entity",
+    "expected_dimensions": [
+      "D_OLIST_CATEGORY"
+    ],
+    "expected_time_range": {
+      "start": "2018-07-01",
+      "end": "2018-09-30"
+    },
+    "expected_models": [
+      "SM_OLIST_ORDER_ITEMS",
+      "SM_OLIST_ORDERS",
+      "SM_OLIST_PRODUCTS",
+      "SM_OLIST_CATEGORY_TRANSLATION"
+    ],
+    "expected_join_relations": [
+      "J_OLIST_ITEMS_ORDERS",
+      "J_OLIST_ITEMS_PRODUCTS",
+      "J_OLIST_PRODUCTS_CATEGORY"
+    ],
+    "result_assertions": {
+      "row_count": 67,
+      "result_checksum_sha256": "5be35c65595788eeb4ad1c19af32803713bcbeb51ba82a7d1327ea48832cca33",
+      "total_value": 1750338.55,
+      "top_dimension": "health_beauty",
+      "top_value": 226616.97,
+      "numeric_tolerance": 0.01,
+      "canonical_sql_sha256": "46751beb516da364052c75f4fea80b539256c53b4273f2d4427166e5810a9e2a"
+    },
+    "expected_unit": "BRL",
+    "must_not_leak_sql": true,
+    "expected_reflection_status": "PASS",
+    "split": "blind"
+  },
+  {
+    "case_id": "JOIN_025_4",
+    "query": "最近三个月 各商品品类 Olist销售额 数据",
+    "category": "multi_entity",
+    "expected_status": "SUCCESS",
+    "expected_metric_id": "M_OLIST_ITEM_REVENUE",
+    "expected_intent": "aggregate_query",
+    "expected_query_mode": "multi_entity",
+    "expected_dimensions": [
+      "D_OLIST_CATEGORY"
+    ],
+    "expected_time_range": {
+      "start": "2018-07-01",
+      "end": "2018-09-30"
+    },
+    "expected_models": [
+      "SM_OLIST_ORDER_ITEMS",
+      "SM_OLIST_ORDERS",
+      "SM_OLIST_PRODUCTS",
+      "SM_OLIST_CATEGORY_TRANSLATION"
+    ],
+    "expected_join_relations": [
+      "J_OLIST_ITEMS_ORDERS",
+      "J_OLIST_ITEMS_PRODUCTS",
+      "J_OLIST_PRODUCTS_CATEGORY"
+    ],
+    "result_assertions": {
+      "row_count": 67,
+      "result_checksum_sha256": "5be35c65595788eeb4ad1c19af32803713bcbeb51ba82a7d1327ea48832cca33",
+      "total_value": 1750338.55,
+      "top_dimension": "health_beauty",
+      "top_value": 226616.97,
+      "numeric_tolerance": 0.01,
+      "canonical_sql_sha256": "46751beb516da364052c75f4fea80b539256c53b4273f2d4427166e5810a9e2a"
+    },
+    "expected_unit": "BRL",
+    "must_not_leak_sql": true,
+    "expected_reflection_status": "PASS",
+    "split": "blind"
+  },
+  {
+    "case_id": "SEM_SUCCESS_026",
+    "query": "freight value 帮我查下",
+    "category": "semantic_robustness",
+    "expected_status": "SUCCESS",
+    "expected_metric_id": "M_OLIST_FREIGHT_VALUE",
+    "expected_intent": "aggregate_query",
+    "expected_query_mode": "multi_entity",
+    "expected_dimensions": [],
+    "expected_time_range": {
+      "start": "2017-01-01",
+      "end": "2017-12-31"
+    },
+    "expected_models": [
+      "SM_OLIST_ORDER_ITEMS",
+      "SM_OLIST_ORDERS"
+    ],
+    "expected_join_relations": [
+      "J_OLIST_ITEMS_ORDERS"
+    ],
+    "result_assertions": {
+      "row_count": 1,
+      "result_checksum_sha256": "8075223c2a8e60174f6fb5f6e2b1713842798a173b9631b294359d3a7d7c69ab",
+      "total_value": 986865.45,
+      "top_dimension": null,
+      "top_value": 986865.45,
+      "numeric_tolerance": 0.01,
+      "canonical_sql_sha256": "2fdea663fdf75fd308c976f534a51bf61da79b8492c34f789fcdf5c743952dca"
+    },
+    "expected_unit": "BRL",
+    "must_not_leak_sql": true,
+    "expected_reflection_status": "PASS",
+    "split": "blind"
+  },
+  {
+    "case_id": "SEM_SUCCESS_027",
+    "query": "最近单子有多少 帮我查下",
+    "category": "semantic_robustness",
+    "expected_status": "SUCCESS",
+    "expected_metric_id": "M_OLIST_ORDER_COUNT",
+    "expected_intent": "aggregate_query",
+    "expected_query_mode": "multi_entity",
+    "expected_dimensions": [],
+    "expected_time_range": {
+      "start": "2017-01-01",
+      "end": "2017-12-31"
+    },
+    "expected_models": [
+      "SM_OLIST_ORDER_ITEMS",
+      "SM_OLIST_ORDERS"
+    ],
+    "expected_join_relations": [
+      "J_OLIST_ITEMS_ORDERS"
+    ],
+    "result_assertions": {
+      "row_count": 1,
+      "result_checksum_sha256": "058def35ab76c1d63dd807c1f43ba0c9c3f8f1d04142051df8fe445bbe99dc4e",
+      "total_value": 44579.0,
+      "top_dimension": null,
+      "top_value": 44579.0,
+      "numeric_tolerance": 0.01,
+      "canonical_sql_sha256": "ab37e2d1d19ebc2c239c8ff3ddd48b204a1dbc14fae6858e434561a52c435d68"
+    },
+    "expected_unit": "order",
+    "must_not_leak_sql": true,
+    "expected_reflection_status": "PASS",
+    "split": "blind"
+  },
+  {
+    "case_id": "SEM_SUCCESS_028",
+    "query": "每个订单平均多少钱 帮我查下",
+    "category": "semantic_robustness",
+    "expected_status": "SUCCESS",
+    "expected_metric_id": "M_OLIST_AVERAGE_ORDER_VALUE",
+    "expected_intent": "aggregate_query",
+    "expected_query_mode": "multi_entity",
+    "expected_dimensions": [],
+    "expected_time_range": {
+      "start": "2017-01-01",
+      "end": "2017-12-31"
+    },
+    "expected_models": [
+      "SM_OLIST_ORDER_ITEMS",
+      "SM_OLIST_ORDERS"
+    ],
+    "expected_join_relations": [
+      "J_OLIST_ITEMS_ORDERS"
+    ],
+    "result_assertions": {
+      "row_count": 1,
+      "result_checksum_sha256": "5566e1a4f9d6107f6a955abc64eaca170f7b9578ef9a037bf1551c923c7a3e63",
+      "total_value": 138.09,
+      "top_dimension": null,
+      "top_value": 138.09,
+      "numeric_tolerance": 0.01,
+      "canonical_sql_sha256": "999d76f24b8d948f538514c34f2c9bb95f353eda6190b4b12345f85efbcaf5c5"
+    },
+    "expected_unit": "BRL/order",
+    "must_not_leak_sql": true,
+    "expected_reflection_status": "PASS",
+    "split": "blind"
+  },
+  {
+    "case_id": "SEM_SUCCESS_029",
+    "query": "有多少买家下过单 帮我查下",
+    "category": "semantic_robustness",
+    "expected_status": "SUCCESS",
+    "expected_metric_id": "M_OLIST_CUSTOMER_COUNT",
+    "expected_intent": "aggregate_query",
+    "expected_query_mode": "multi_entity",
+    "expected_dimensions": [],
+    "expected_time_range": {
+      "start": "2017-01-01",
+      "end": "2017-12-31"
+    },
+    "expected_models": [
+      "SM_OLIST_ORDER_ITEMS",
+      "SM_OLIST_ORDERS",
+      "SM_OLIST_CUSTOMERS"
+    ],
+    "expected_join_relations": [
+      "J_OLIST_ITEMS_ORDERS",
+      "J_OLIST_ORDERS_CUSTOMERS"
+    ],
+    "result_assertions": {
+      "row_count": 1,
+      "result_checksum_sha256": "188c7a66ca489dca87e7db19e6663abfa2f392c4e90df35742618fe438391400",
+      "total_value": 43225.0,
+      "top_dimension": null,
+      "top_value": 43225.0,
+      "numeric_tolerance": 0.01,
+      "canonical_sql_sha256": "314a289facd92959160cb8fec72ee9b7f621811dbed7f155752494ecce39df59"
+    },
+    "expected_unit": "customer",
+    "must_not_leak_sql": true,
+    "expected_reflection_status": "PASS",
+    "split": "blind"
+  },
+  {
+    "case_id": "SEM_SUCCESS_030",
+    "query": "卖出去多少件商品 帮我查下",
+    "category": "semantic_robustness",
+    "expected_status": "SUCCESS",
+    "expected_metric_id": "M_OLIST_ITEM_COUNT",
+    "expected_intent": "aggregate_query",
+    "expected_query_mode": "multi_entity",
+    "expected_dimensions": [],
+    "expected_time_range": {
+      "start": "2017-01-01",
+      "end": "2017-12-31"
+    },
+    "expected_models": [
+      "SM_OLIST_ORDER_ITEMS",
+      "SM_OLIST_ORDERS"
+    ],
+    "expected_join_relations": [
+      "J_OLIST_ITEMS_ORDERS"
+    ],
+    "result_assertions": {
+      "row_count": 1,
+      "result_checksum_sha256": "ccde696e4aff888eff7a41d67acc6fee5753b5b665348b6b5546e34fb7276761",
+      "total_value": 50864.0,
+      "top_dimension": null,
+      "top_value": 50864.0,
+      "numeric_tolerance": 0.01,
+      "canonical_sql_sha256": "4f6a4bba6edde1f8f8a96d2d6a49515b859b6f7432811a5d0f5e074e9d015408"
+    },
+    "expected_unit": "item",
+    "must_not_leak_sql": true,
+    "expected_reflection_status": "PASS",
+    "split": "blind"
+  },
+  {
+    "case_id": "SEM_CLARIFY_017",
+    "query": "最近有什么变化？",
+    "category": "ambiguity",
+    "expected_status": "CLARIFY",
+    "expected_candidate_count_min": 2,
+    "must_not_compile": true,
+    "must_not_execute": true,
+    "split": "blind"
+  },
+  {
+    "case_id": "SEM_CLARIFY_018",
+    "query": "Olist情况？",
+    "category": "ambiguity",
+    "expected_status": "CLARIFY",
+    "expected_candidate_count_min": 2,
+    "must_not_compile": true,
+    "must_not_execute": true,
+    "split": "blind"
+  },
+  {
+    "case_id": "SEM_CLARIFY_019",
+    "query": "帮我分析一下？",
+    "category": "ambiguity",
+    "expected_status": "CLARIFY",
+    "expected_candidate_count_min": 2,
+    "must_not_compile": true,
+    "must_not_execute": true,
+    "split": "blind"
+  },
+  {
+    "case_id": "SEM_CLARIFY_020",
+    "query": "整体表现？",
+    "category": "ambiguity",
+    "expected_status": "CLARIFY",
+    "expected_candidate_count_min": 2,
+    "must_not_compile": true,
+    "must_not_execute": true,
+    "split": "blind"
+  },
+  {
+    "case_id": "CTX_09_1",
+    "conversation_id": "GOLDEN_CONTEXT_09",
+    "turn": 1,
+    "query": "先查：2017年各品类Olist销售额",
+    "category": "multi_turn",
+    "expected_status": "SUCCESS",
+    "inherit_context": false,
+    "must_not_leak_sql": true,
+    "split": "blind"
+  },
+  {
+    "case_id": "CTX_09_2",
+    "conversation_id": "GOLDEN_CONTEXT_09",
+    "turn": 2,
+    "query": "接着换成订单量",
+    "category": "multi_turn",
+    "expected_status": "SUCCESS",
+    "inherit_context": true,
+    "must_not_leak_sql": true,
+    "split": "blind"
+  },
+  {
+    "case_id": "CTX_09_3",
+    "conversation_id": "GOLDEN_CONTEXT_09",
+    "turn": 3,
+    "query": "然后只看最近三个月，继续沿用上一轮条件",
+    "category": "multi_turn",
+    "expected_status": "SUCCESS",
+    "inherit_context": true,
+    "must_not_leak_sql": true,
+    "split": "blind"
+  },
+  {
+    "case_id": "CTX_09_4",
+    "conversation_id": "GOLDEN_CONTEXT_09",
+    "turn": 4,
+    "query": "最后再看客户州",
+    "category": "multi_turn",
+    "expected_status": "SUCCESS",
+    "inherit_context": true,
+    "must_not_leak_sql": true,
+    "split": "blind"
+  },
+  {
+    "case_id": "CTX_10_1",
+    "conversation_id": "GOLDEN_CONTEXT_10",
+    "turn": 1,
+    "query": "先查：2018年Olist订单量",
+    "category": "multi_turn",
+    "expected_status": "SUCCESS",
+    "inherit_context": false,
+    "must_not_leak_sql": true,
+    "split": "blind"
+  },
+  {
+    "case_id": "CTX_10_2",
+    "conversation_id": "GOLDEN_CONTEXT_10",
+    "turn": 2,
+    "query": "接着按卖家州拆解",
+    "category": "multi_turn",
+    "expected_status": "SUCCESS",
+    "inherit_context": true,
+    "must_not_leak_sql": true,
+    "split": "blind"
+  },
+  {
+    "case_id": "CTX_10_3",
+    "conversation_id": "GOLDEN_CONTEXT_10",
+    "turn": 3,
+    "query": "然后换成销售额",
+    "category": "multi_turn",
+    "expected_status": "SUCCESS",
+    "inherit_context": true,
+    "must_not_leak_sql": true,
+    "split": "blind"
+  },
+  {
+    "case_id": "CTX_10_4",
+    "conversation_id": "GOLDEN_CONTEXT_10",
+    "turn": 4,
+    "query": "最后再看商品品类",
+    "category": "multi_turn",
+    "expected_status": "SUCCESS",
+    "inherit_context": true,
+    "must_not_leak_sql": true,
+    "split": "blind"
+  },
+  {
+    "case_id": "BOUNDARY_030",
+    "query": "自由连接支付表和商品表",
+    "category": "scope_and_safety",
+    "expected_status": "REJECT",
+    "must_not_compile": true,
+    "must_not_execute": true,
+    "split": "blind"
+  },
+  {
+    "case_id": "BOUNDARY_031",
+    "query": "使用任意SQL查数",
+    "category": "scope_and_safety",
+    "expected_status": "REJECT",
+    "must_not_compile": true,
+    "must_not_execute": true,
+    "split": "blind"
+  },
+  {
+    "case_id": "BOUNDARY_032",
+    "query": "明年收入目标",
+    "category": "scope_and_safety",
+    "expected_status": "REJECT",
+    "must_not_compile": true,
+    "must_not_execute": true,
+    "split": "blind"
+  },
+  {
+    "case_id": "BOUNDARY_033",
+    "query": "因果分析销量下降",
+    "category": "scope_and_safety",
+    "expected_status": "REJECT",
+    "must_not_compile": true,
+    "must_not_execute": true,
+    "split": "blind"
+  },
+  {
+    "case_id": "BOUNDARY_034",
+    "query": "为什么客户减少",
+    "category": "scope_and_safety",
+    "expected_status": "REJECT",
+    "must_not_compile": true,
+    "must_not_execute": true,
+    "split": "blind"
+  },
+  {
+    "case_id": "BOUNDARY_035",
+    "query": "推荐最优广告预算",
+    "category": "scope_and_safety",
+    "expected_status": "REJECT",
+    "must_not_compile": true,
+    "must_not_execute": true,
+    "split": "blind"
+  },
+  {
+    "case_id": "PERMISSION_013",
+    "query": "我需要客户州销售额",
+    "category": "permission",
+    "workspace_id": "unauthorized_0",
+    "expected_status": "BLOCKED",
+    "must_not_compile": true,
+    "must_not_execute": true,
+    "split": "blind"
+  },
+  {
+    "case_id": "PERMISSION_014",
+    "query": "帮我统计卖家州订单量",
+    "category": "permission",
+    "workspace_id": "unauthorized_1",
+    "expected_status": "BLOCKED",
+    "must_not_compile": true,
+    "must_not_execute": true,
+    "split": "blind"
+  },
+  {
+    "case_id": "PERMISSION_015",
+    "query": "请查最近一年物流费",
+    "category": "permission",
+    "workspace_id": "unauthorized_2",
+    "expected_status": "BLOCKED",
+    "must_not_compile": true,
+    "must_not_execute": true,
+    "split": "blind"
+  },
+  {
+    "case_id": "EDGE_019",
+    "query": "检查分组基数并查2017年 各订单状态 Olist订单量 数据",
+    "category": "data_edge",
+    "expected_status": "SUCCESS",
+    "expected_metric_id": "M_OLIST_ORDER_COUNT",
+    "expected_intent": "aggregate_query",
+    "expected_query_mode": "multi_entity",
+    "expected_dimensions": [
+      "D_OLIST_ORDER_STATUS"
+    ],
+    "expected_time_range": {
+      "start": "2017-01-01",
+      "end": "2017-12-31"
+    },
+    "expected_models": [
+      "SM_OLIST_ORDER_ITEMS",
+      "SM_OLIST_ORDERS"
+    ],
+    "expected_join_relations": [
+      "J_OLIST_ITEMS_ORDERS"
+    ],
+    "result_assertions": {
+      "row_count": 6,
+      "result_checksum_sha256": "b9d8e6f473ee15e1f0456ad8334dfd1fdb150ef2105a1bbbd707bd4c9e882433",
+      "total_value": 44579.0,
+      "top_dimension": "delivered",
+      "top_value": 43428.0,
+      "numeric_tolerance": 0.01,
+      "canonical_sql_sha256": "ea75270aaeef24ea929721f9e19b0968f014874f04cba215849ae721b00762ac"
+    },
+    "expected_unit": "order",
+    "must_not_leak_sql": true,
+    "expected_reflection_status": "PASS",
+    "edge_focus": "status_cardinality",
+    "split": "blind"
+  },
+  {
+    "case_id": "EDGE_020",
+    "query": "检查分组基数并查2018年前九个月 各客户州 Olist销售额 数据",
+    "category": "data_edge",
+    "expected_status": "SUCCESS",
+    "expected_metric_id": "M_OLIST_ITEM_REVENUE",
+    "expected_intent": "aggregate_query",
+    "expected_query_mode": "multi_entity",
+    "expected_dimensions": [
+      "D_OLIST_CUSTOMER_STATE"
+    ],
+    "expected_time_range": {
+      "start": "2018-01-01",
+      "end": "2018-09-30"
+    },
+    "expected_models": [
+      "SM_OLIST_ORDER_ITEMS",
+      "SM_OLIST_ORDERS",
+      "SM_OLIST_CUSTOMERS"
+    ],
+    "expected_join_relations": [
+      "J_OLIST_ITEMS_ORDERS",
+      "J_OLIST_ORDERS_CUSTOMERS"
+    ],
+    "result_assertions": {
+      "row_count": 27,
+      "result_checksum_sha256": "3a7f46477482115386575400abc1d66cd387ecec103ab476c71931af27962b46",
+      "total_value": 7386050.8,
+      "top_dimension": "SP",
+      "top_value": 2975757.23,
+      "numeric_tolerance": 0.01,
+      "canonical_sql_sha256": "3f633cc6d05350b7767472d91c8bd432c1bb6988abd58b56715395aba6bdaa0f"
+    },
+    "expected_unit": "BRL",
+    "must_not_leak_sql": true,
+    "expected_reflection_status": "PASS",
+    "edge_focus": "status_cardinality",
+    "split": "blind"
+  }
+]

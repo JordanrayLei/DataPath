@@ -1,123 +1,91 @@
-# DataPath 指标语义检索长期架构
+# DataPath 指标语义检索架构
 
-> 版本：V1.0  
-> 日期：2026-07-12  
-> 状态：已实现
+> 版本：V2.0
+> 更新日期：2026-07-13
 
-## 1. 改造目标
+## 1. 目标
 
-本次改造将指标理解从问数入口的硬编码词表迁移到指标中心，使新增指标、别名和典型问法不再要求修改业务代码。LLM负责可选的结构化语言理解，指标检索、权限、DSL校验和SQL编译继续作为确定性执行门禁。
+将指标识别从难维护的提示词和硬编码短语，升级为以指标中心为事实源的 Hybrid Retrieval，同时保留发布、权限、歧义和能力边界门禁。
 
-## 2. 当前链路
+## 2. 语义资产
 
-```mermaid
-flowchart LR
-    A[用户问题] --> B[Query Understanding Provider]
-    B --> C[指标中心语义资产]
-    C --> D[混合召回与重排]
-    D --> E{置信度门禁}
-    E -->|PASS| F[Query DSL]
-    E -->|CLARIFY| G[候选指标澄清]
-    E -->|REJECT| H[能力边界拒绝]
-    F --> I[权限与DSL校验]
-    I --> J[确定性SQL编译]
-    J --> K[ClickHouse执行]
+每个已发布指标可提供：
+
+- 名称、别名、业务定义、类型和单位。
+- 典型问题与负例。
+- 公式、语义模型、可用维度和血缘。
+- 版本、Owner 和发布状态。
+
+当前共有 12 个指标、121 条向量语义文档和 9 条能力边界样本。Embedding 使用阿里云百炼 `text-embedding-v3`，1024 维，存储于 PostgreSQL pgvector。
+
+## 3. 在线流程
+
+```text
+Query
+-> 完整名称/最长别名匹配
+-> 词法相似度与正负例
+-> BM25
+-> Embedding TopK
+-> qwen3-rerank
+-> 分数融合与候选排序
+-> Scope Gate
+-> PASS / CLARIFY / REJECT
 ```
 
-## 3. 指标语义资产
+强显式命中优先：当“运费”和“运费率”同时出现在候选中，最长完整指标名获得优先级，短名称不能因包含关系获得同分。
 
-每个已发布指标维护：
+只有弱词法召回才触发向量扩召回和 Reranker，避免外部模型降低明确名称命中的稳定性。
 
-- 指标名称和业务定义。
-- 可维护别名。
-- 正向问题样例。
-- 反向问题样例。
-- 检索策略配置和维护人。
+## 4. 分数与门禁
 
-语义资产存放在 `metric_center.metric_alias` 和 `metric_center.metric_semantic_profile`。指标草稿新增正向问法和反向问法字段，发布新版本时同步更新语义资产。
+当前配置包含向量最低相似度、正例证据阈值、边界负例阈值和候选间距。这些是 Olist 数据集上的工程基线，不是概率，也不是跨业务域永久常量。
 
-## 4. 混合检索
+门禁原则：
 
-当前检索组合以下信号：
+- 没有支持证据：`REJECT`。
+- 多个合法指标差距不足：`CLARIFY`。
+- 边界负例接近或高于支持证据：`REJECT`。
+- 权限或危险动作：应进入独立 `BLOCKED` 安全门禁。
+- 只有 `PASS` 或受控消歧结果才能生成 DSL。
 
-1. 完整指标名称精确匹配。
-2. 指标别名精确匹配。
-3. 名称和别名包含匹配。
-4. BM25稀疏检索，覆盖关键词、缩写和专有名词。
-5. 名称、别名和正例文本相似度。
-6. 反例相似度降权。
-7. `text-embedding-v3` 向量相似度和 pgvector HNSW 近邻召回。
-8. `qwen3-rerank` 对弱匹配Top候选进行精排。
-9. 独立的业务域能力边界反例召回。
+## 5. Reranker
 
-完整名称包含分值高于短别名包含，避免“真实销售”覆盖“真实销售件数”。弱文本匹配才触发BM25与向量扩召回，并由Reranker对候选的名称、定义、别名和典型问法进行请求内相对排序。Reranker分数不作为绝对置信度，也不能绕过能力边界：边界反例与支持证据接近时返回 `REJECT`，多个指标候选分差小于门限时返回 `CLARIFY`，两种情况都不会生成DSL或执行SQL。
+`qwen3-rerank` 对 Query 与候选文档进行 Cross-Encoder 相对排序。它只处理有限 TopK，并与基础分融合。
 
-在线链路为：`精确规则 -> BM25 + Embedding候选融合 -> qwen3-rerank -> Confidence Gate`。Embedding或Reranker不可用时分别退回BM25/规则候选及融合前排序。
+Reranker 不能：
 
-向量层采用阿里云百炼 `text-embedding-v3` 的 1024 维向量，存放于 PostgreSQL 16 + pgvector。`metric_center.metric_embedding` 保存指标名称、定义、别名、正例和反例向量；`metric_center.semantic_scope_example` 独立保存当前业务域无法回答的问题类型，避免把能力边界混入指标定义。
+- 把未发布指标变成可执行指标。
+- 绕过权限或能力边界。
+- 将相关度分数解释为正确概率。
+- 覆盖完整名称的确定性优先级。
 
-## 5. 结构化理解Provider
+外部服务异常时系统回退到规则、词法和 BM25，不中断已明确的指标查询。
 
-默认Provider为 `metric_center`，完全本地、可复现，适合开发、回归和外部模型不可用场景。
-
-通过环境变量可以切换HTTP LLM/Dify Provider：
-
-```env
-QUERY_UNDERSTANDING_PROVIDER=http
-QUERY_UNDERSTANDING_URL=https://example.internal/query-understanding
-QUERY_UNDERSTANDING_TOKEN=replace-with-secret
-QUERY_UNDERSTANDING_TIMEOUT_SECONDS=15
-```
-
-HTTP Provider请求包含用户问题、业务域、继承指标和响应Schema。响应可以提供：
-
-- `normalized_query`
-- `metric_mentions`
-- `dimension_mentions`
-- `filter_mentions`
-- `time_text`
-- `time_start`
-- `time_end`
-
-外部Provider异常、超时或返回结构不合法时自动回退到本地指标中心Provider。无论使用哪个Provider，结果都不能绕过指标候选门禁、权限校验、DSL Schema和SQL编译器。
-
-## 6. 维护流程
-
-Badcase应按以下方式修复：
-
-| 问题类型 | 维护位置 |
-| --- | --- |
-| 指标同义表达未召回 | 指标别名或正向样例 |
-| 易混淆指标误选 | 反向样例或共享歧义样例 |
-| 候选分差不合理 | 检索重排策略 |
-| 时间解析错误 | 通用时间解析器或结构化Provider |
-| 维度值未识别 | 维度实体映射 |
-| 数据字段不存在或当前产品不支持 | 业务域能力边界样例 |
-| 越权或危险查询 | 权限与DSL门禁 |
-
-禁止将每个Badcase直接追加为问数入口中的 `if/else`。
-
-## 7. 索引维护
-
-发布或调整指标语义资产、能力边界样例后执行：
+## 6. 索引维护
 
 ```bash
+uv run python -m scripts.seed_metric_center
 uv run python -m scripts.rebuild_metric_vector_index
 ```
 
-索引构建按百炼每批最多10条调用，写入模型名、维度、源文本哈希和启用状态。在线查询在向量服务不可用时自动退回本地文本检索，不绕过既有安全门禁。
+重建过程读取所有已发布指标，删除当前模型的旧向量并批量写入新向量。失败事务会回滚，避免留下半套索引。
 
-## 8. 验证结果
+当前仍是手动重建。后续应在指标发布/废弃时增量更新，并记录 Embedding 模型、维度、Source Hash、时间和失败重试。
 
-- AI模拟用户盲测：100/100通过。
-- 开发业务用例：250/250通过。
-- 系统门禁：6/6通过。
-- 指标同义词来自数据库语义资产，问数入口不再维护指标词表。
+## 7. 维护策略
 
-## 9. 后续演进
+- 名称、别名和定义由指标 Owner 治理。
+- 正例优先来自真实日志和已确认 Bad Case；AI 生成问法只能作为候选，经审核后进入开发资产。
+- 负例用于表达相邻指标和越界能力，不能无限堆积为手工规则库。
+- 低置信日志应自动聚类，生成指标别名、边界或新能力候选。
+- Regression 和 Blind 问题不得直接复制进语义资产。
 
-- 使用新的未见AI问题集持续盲测，避免在同一集合上过拟合。
-- 接入真实用户查询后，以匿名日志替换部分AI模拟表达。
-- 对检索权重、门限、Provider和Prompt进行版本化并关联测评报告。
-- 为在线查询向量增加短期缓存，并对百炼延迟、错误率和调用成本建立监控。
-- 多表Join不在当前阶段范围内。
+## 8. 当前结果与缺口
+
+当前 80 条回归中语义鲁棒性 7/7，完整指标名冲突已修复。仍需：
+
+- 按领域/指标族校准阈值和 Top1/Top2 Margin。
+- 增加 Recall@K、MRR、Reject Precision 和校准曲线。
+- 缓存 Embedding/Reranker 请求并记录成本与延迟。
+- 使用真实用户日志做自动 Bad Case Mining。
+- 将安全动作分类从指标检索中解耦。

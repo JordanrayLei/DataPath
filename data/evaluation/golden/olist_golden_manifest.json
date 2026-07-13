@@ -1,0 +1,46 @@
+{
+  "snapshot_id": "olist-local-2026-07-13",
+  "generated_at": "2026-07-13T05:48:21.580301+00:00",
+  "database": "data_warehouse",
+  "table_row_counts": {
+    "olist_orders": 99441,
+    "olist_order_items": 112650,
+    "olist_order_payments": 103886,
+    "olist_order_reviews": 99224,
+    "olist_customers": 99441,
+    "olist_products": 32951,
+    "olist_sellers": 3095,
+    "olist_geolocation": 1000163,
+    "olist_product_category_translation": 71
+  },
+  "metric_versions": {
+    "M_OLIST_ITEM_REVENUE": 1,
+    "M_OLIST_FREIGHT_VALUE": 1,
+    "M_OLIST_ORDER_COUNT": 1,
+    "M_OLIST_TOTAL_ORDER_VALUE": 1,
+    "M_OLIST_AVERAGE_ORDER_VALUE": 1,
+    "M_OLIST_FREIGHT_PER_ORDER": 1,
+    "M_OLIST_FREIGHT_RATE": 1,
+    "M_OLIST_ITEM_COUNT": 1,
+    "M_OLIST_ITEMS_PER_ORDER": 1,
+    "M_OLIST_PRODUCT_COUNT": 1,
+    "M_OLIST_SELLER_COUNT": 1,
+    "M_OLIST_CUSTOMER_COUNT": 1
+  },
+  "join_graph_contract": "data/external/olist/relationships.json",
+  "case_distribution": {
+    "core_metric": 100,
+    "multi_entity": 100,
+    "semantic_robustness": 30,
+    "ambiguity": 20,
+    "multi_turn": 40,
+    "scope_and_safety": 35,
+    "permission": 15,
+    "data_edge": 20
+  },
+  "split_distribution": {
+    "development": 220,
+    "regression": 80,
+    "blind": 60
+  }
+}

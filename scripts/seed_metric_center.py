@@ -1,4 +1,4 @@
-"""Seed the first six published metrics, dimensions, and semantic models."""
+"""Seed the governed Olist metrics, dimensions, and semantic models."""
 
 from __future__ import annotations
 

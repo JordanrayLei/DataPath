@@ -53,8 +53,6 @@ const conversationTitle = document.querySelector("#conversation-title");
 const conversationTurnCount = document.querySelector("#conversation-turn-count");
 const contextChips = document.querySelector("#context-chips");
 const contextMemory = document.querySelector("#context-memory");
-const evidenceInspector = document.querySelector("#evidence-inspector");
-const evidenceCount = document.querySelector("#evidence-count");
 const metricAdminNew = document.querySelector("#metric-admin-new");
 const metricAdminRefresh = document.querySelector("#metric-admin-refresh");
 const metricDraftCount = document.querySelector("#metric-draft-count");
@@ -312,11 +310,6 @@ function updateContextPanels(data) {
     <div class="context-row"><span>时间范围</span><strong>${escapeHtml(context.timeRange)}</strong></div>
     <div class="context-row"><span>分析维度</span><strong>${escapeHtml(context.dimensions)}</strong></div>
     <div class="context-row"><span>查询意图</span><strong>${escapeHtml(context.intent)}</strong></div>`;
-  const items = data.profile?.evidence || [];
-  evidenceCount.textContent = `${items.length} 条`;
-  evidenceInspector.innerHTML = items.length
-    ? items.map((item) => `<button class="evidence-item" type="button" data-evidence-id="${escapeHtml(item.evidence_id)}"><strong>${escapeHtml(item.evidence_id)}</strong><div>${escapeHtml(item.statement)}</div><small>${escapeHtml(item.metric_id)} · rows ${(item.row_refs || []).join(",")}</small></button>`).join("")
-    : `<div class="evidence-item">暂无 Evidence。</div>`;
 }
 
 function interactiveResultMarkup(data) {
@@ -340,9 +333,6 @@ function interactiveResultMarkup(data) {
       <header class="interactive-result-head"><div><h3>${escapeHtml(insightTitle || spec.title || "查询结果")}</h3><p>沿用 ${escapeHtml(context.metric)} · ${escapeHtml(context.timeRange)}</p></div><span class="status success">✓ 可信</span></header>
       <div class="result-controls">
         <button class="result-control active" type="button">${escapeHtml(context.dimensions)}</button>
-        <button class="result-control" type="button" data-followup-query="各地区${escapeHtml(context.metricName)}排名">地区</button>
-        <button class="result-control" type="button" data-followup-query="按渠道拆解${escapeHtml(context.metricName)}">渠道</button>
-        <button class="result-control" type="button" data-followup-query="只看最近三个月的${escapeHtml(context.metricName)}">最近 3 个月</button>
         <button class="result-control result-view-control active" type="button" data-result-view="chart">图表</button>
         <button class="result-control" type="button" data-result-view="table">数据表</button>
       </div>
@@ -353,7 +343,7 @@ function interactiveResultMarkup(data) {
       </div>
       <div class="interactive-chart" data-result-chart>${chart.innerHTML}</div>
       <div class="interactive-table result-tab-hidden" data-result-table>${table.innerHTML}</div>
-      <div class="result-actions"><button type="button" data-result-view="table">查看明细</button><button type="button">导出</button><button type="button">固定到看板</button></div>
+      <div class="result-actions"><button type="button" data-result-view="table">查看明细</button><button type="button">导出</button></div>
     </section>
     <p class="assistant-meta">${escapeHtml(data.selected_metric?.metric_id || "")} · ${escapeHtml(data.compiled?.query_id || data.trace_id || "")} · Reflection ${escapeHtml(data.reflection?.status || "-")}</p>
   </div></article>`;
@@ -370,17 +360,30 @@ function renderActiveConversation() {
   const turns = conversation.messages.filter((item) => item.role === "user").length;
   conversationTurnCount.textContent = `${turns} 轮对话`;
   if (!conversation.messages.length) {
-    chatThread.innerHTML = `<section id="empty-state" class="chat-empty"><span class="empty-icon">AI</span><h3>从一个业务问题开始</h3><p>我会记住本次会话中的指标、时间、维度和筛选条件。</p><div class="empty-examples"><button type="button" data-example="2011年每月真实净收入趋势">净收入趋势</button><button type="button" data-example="各国家真实商品销售额排名">国家排名</button><button type="button" data-example="商品真实销售件数排名">商品排名</button></div></section>`;
+    chatThread.innerHTML = `<section id="empty-state" class="chat-empty"><span class="empty-icon">AI</span><h3>从一个业务问题开始</h3><p>我会记住本次会话中的指标、时间、维度和筛选条件。</p><div class="empty-examples"><button type="button" data-example="2018年前九个月每月Olist成交总额趋势">成交总额趋势</button><button type="button" data-example="2017年各客户州Olist购买客户数排名">客户州买家排名</button><button type="button" data-example="2017年各商品品类Olist客单价排名">品类客单价</button></div></section>`;
     contextChips.innerHTML = "<span>新会话 · 暂无继承条件</span>";
     return;
   }
-  chatThread.innerHTML = conversation.messages.map((item) => item.role === "user" ? userMessageMarkup(item.text) : item.html).join("");
+  chatThread.innerHTML = conversation.messages.map((item) => item.role === "user" ? userMessageMarkup(item.text) : sanitizeStoredResultMarkup(item.html)).join("");
   const lastAssistant = [...conversation.messages].reverse().find((item) => item.role === "assistant" && item.data);
   if (lastAssistant) {
     renderResult(lastAssistant.data);
     updateContextPanels(lastAssistant.data);
   }
   chatThread.scrollTop = chatThread.scrollHeight;
+}
+
+function sanitizeStoredResultMarkup(markup = "") {
+  const template = document.createElement("template");
+  template.innerHTML = markup;
+  template.content.querySelectorAll("[data-followup-query]").forEach((button) => {
+    const label = button.textContent.trim();
+    if (["地区", "渠道", "最近 3 个月"].includes(label)) button.remove();
+  });
+  template.content.querySelectorAll(".result-actions button").forEach((button) => {
+    if (button.textContent.trim() === "固定到看板") button.remove();
+  });
+  return template.innerHTML;
 }
 
 function renderClarification(data) {
@@ -1353,8 +1356,6 @@ newConversationButton.addEventListener("click", () => {
   setOverall("IDLE");
   pipeline.innerHTML = "<li>提交问题后展示完整链路。</li>";
   contextMemory.innerHTML = "<p>完成第一轮分析后显示继承条件。</p>";
-  evidenceInspector.innerHTML = '<div class="evidence-item">暂无 Evidence。</div>';
-  evidenceCount.textContent = "0 条";
   queryInput.value = "";
   persistConversations();
   renderConversationList();
@@ -1394,14 +1395,9 @@ function handleConversationAction(event) {
     card.querySelectorAll("[data-result-view]").forEach((button) => button.classList.toggle("active", button.dataset.resultView === view));
     return;
   }
-  const evidenceButton = event.target.closest("[data-evidence-id]");
-  if (evidenceButton) {
-    evidenceInspector.querySelectorAll("[data-evidence-id]").forEach((item) => item.classList.toggle("evidence-active", item === evidenceButton));
-  }
 }
 
 chatThread.addEventListener("click", handleConversationAction);
-evidenceInspector.addEventListener("click", handleConversationAction);
 
 feedbackForm.addEventListener("submit", (event) => {
   event.preventDefault();

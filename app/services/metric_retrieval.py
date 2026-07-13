@@ -76,9 +76,9 @@ def score_term(term: str, record: MetricRecord) -> tuple[float, list[str]]:
         return 0.96, ["alias"]
     if normalized in positive_examples:
         return 0.88, ["positive_example"]
-    if normalized in name or name in normalized:
-        return 0.995, ["exact_name"]
-    if any(normalized in alias or alias in normalized for alias in aliases):
+    if name in normalized:
+        return 0.98, ["name_in_query"]
+    if any(alias in normalized for alias in aliases):
         return 0.91, ["alias"]
     if any(normalized in example or example in normalized for example in positive_examples):
         return 0.86, ["positive_example"]
@@ -104,6 +104,23 @@ def score_term(term: str, record: MetricRecord) -> tuple[float, list[str]]:
     if score >= 0.42:
         return round(max(0.0, min(score, 0.89)), 4), sources
     return 0.0, []
+
+
+def explicit_match_lengths(term: str, records: list[MetricRecord]) -> dict[str, int]:
+    """Return the longest governed name or alias explicitly present per metric."""
+
+    normalized = term.strip().casefold()
+    matches: dict[str, int] = {}
+    for record in records:
+        governed_terms = [record.metric.name, *record.aliases]
+        lengths = [
+            len(value.strip())
+            for value in governed_terms
+            if value.strip() and value.strip().casefold() in normalized
+        ]
+        if lengths:
+            matches[record.metric.id] = max(lengths)
+    return matches
 
 
 def metric_search_document(record: MetricRecord) -> str:
@@ -279,10 +296,19 @@ def retrieve_metrics(
 
     for mention in mentions:
         scored = []
+        explicit_lengths = explicit_match_lengths(mention, records)
+        longest_explicit = max(explicit_lengths.values(), default=0)
         search_documents = [metric_search_document(record) for record in records]
         bm25_scores = bm25_relevance_scores(mention, search_documents)
         for record in records:
             score, sources = score_term(mention, record)
+            explicit_length = explicit_lengths.get(record.metric.id, 0)
+            if explicit_length and explicit_length == longest_explicit:
+                score = max(score, 0.995)
+                sources = [*sources, "longest_explicit_match"]
+            elif explicit_length:
+                score = min(score, 0.88)
+                sources = [*sources, "shorter_explicit_match"]
             if score >= 0.45:
                 scored.append((score, sources, record))
         lexical_top = max((item[0] for item in scored), default=0.0)
