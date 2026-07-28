@@ -1,0 +1,480 @@
+{
+  "publication_id": "zero-to-one-ai-preheat-v1",
+  "generated_at": "2026-07-19T08:51:31.373991+00:00",
+  "transport": "frontend-equivalent public APIs",
+  "generation_note": "Uses previously generated and provenance-restricted definition-only AI packages because the application has no DEEPSEEK_API_KEY configured.",
+  "sources": [
+    {
+      "path": "data/semantic_bootstrap/production_ai_preheat_v1.json",
+      "package_id": "production-ai-preheat-v1",
+      "sha256": "bf669950ef0b4517de7745f02bd2bcdc45cc0b29ae23dc4725de4d422a7fc746",
+      "source_restriction": "Generated only from canonical metric names, definitions, formulas, units, dimensions and lineage. Evaluation queries, historical Bad Cases and prior reports are forbidden inputs."
+    },
+    {
+      "path": "data/semantic_bootstrap/production_cross_fact_preheat_v1.json",
+      "package_id": "production-cross-fact-preheat-v1",
+      "sha256": "5181af50a4610860bd13ffc5367f571b6ae19317fc84116e5ef327004bebdd32",
+      "source_restriction": "metric definitions and schema contract only; no evaluation questions, Bad Cases, feedback, or runtime logs"
+    }
+  ],
+  "forbidden_inputs_opened": [],
+  "runtime_history_before_publication": {
+    "query_runs": 0,
+    "feedback": 0,
+    "golden_questions": 0
+  },
+  "metric_count": 11,
+  "records": [
+    {
+      "metric_id": "M_PROD_ORDER_COUNT",
+      "review": {
+        "aliases": [
+          "订单笔数",
+          "成交单数",
+          "下单单量",
+          "交易订单数",
+          "成交笔数",
+          "下单规模"
+        ],
+        "positive_examples": [
+          "今年一共成交了多少笔订单",
+          "按月看订单笔数变化",
+          "各业务区域的成交单数",
+          "统计指定时间段的下单单量",
+          "不同订单状态分别有多少单",
+          "最近一年交易订单数趋势",
+          "币种为CNY的成交笔数",
+          "每天的下单规模是多少"
+        ],
+        "negative_examples": [
+          "订单原始金额是多少",
+          "支付到账金额是多少",
+          "发出了多少个包裹",
+          "商品卖出了多少件",
+          "有多少个购买客户",
+          "退款金额合计"
+        ],
+        "reviewed_by": "simulated_metric_admin",
+        "decision": "APPROVED",
+        "checks": [
+          "non_generic_alias",
+          "cross_metric_alias_unique",
+          "positive_examples_present",
+          "neighbor_negatives_present",
+          "formula_immutable"
+        ]
+      },
+      "published_version": 2,
+      "indexed_documents": 22,
+      "immutable_contract_preserved": true
+    },
+    {
+      "metric_id": "M_PROD_ORDER_GROSS_AMOUNT",
+      "review": {
+        "aliases": [
+          "下单原始总额",
+          "订单毛额",
+          "下单毛额",
+          "订单头金额",
+          "订单标价总额",
+          "原始交易额"
+        ],
+        "positive_examples": [
+          "今年下单原始总额是多少",
+          "按月查看订单毛额趋势",
+          "各区域的下单毛额",
+          "不同状态的订单头金额",
+          "统计订单标价总额",
+          "最近一年原始交易额变化",
+          "CNY订单的原始金额",
+          "每天形成的订单毛额"
+        ],
+        "negative_examples": [
+          "折扣后的商品净收入",
+          "实际支付到账金额",
+          "退款金额",
+          "扣除退款后的净收入",
+          "订单笔数",
+          "支付退款率"
+        ],
+        "reviewed_by": "simulated_metric_admin",
+        "decision": "APPROVED",
+        "checks": [
+          "non_generic_alias",
+          "cross_metric_alias_unique",
+          "positive_examples_present",
+          "neighbor_negatives_present",
+          "formula_immutable"
+        ]
+      },
+      "published_version": 2,
+      "indexed_documents": 22,
+      "immutable_contract_preserved": true
+    },
+    {
+      "metric_id": "M_PROD_ITEM_NET_REVENUE",
+      "review": {
+        "aliases": [
+          "商品行净额",
+          "商品折后收入",
+          "明细净销售额",
+          "商品成交净额",
+          "商品行实销额",
+          "货品净销售收入"
+        ],
+        "positive_examples": [
+          "今年商品折后收入是多少",
+          "按月看商品行净额",
+          "各区域的明细净销售额",
+          "统计商品成交净额趋势",
+          "不同订单状态的商品行实销额",
+          "最近一年货品净销售收入",
+          "CNY商品净收入",
+          "每天商品明细的净额"
+        ],
+        "negative_examples": [
+          "订单未折扣的原始金额",
+          "支付实际到账金额",
+          "退款后的净收入",
+          "退款金额",
+          "商品件数",
+          "发货包裹数"
+        ],
+        "reviewed_by": "simulated_metric_admin",
+        "decision": "APPROVED",
+        "checks": [
+          "non_generic_alias",
+          "cross_metric_alias_unique",
+          "positive_examples_present",
+          "neighbor_negatives_present",
+          "formula_immutable"
+        ]
+      },
+      "published_version": 2,
+      "indexed_documents": 22,
+      "immutable_contract_preserved": true
+    },
+    {
+      "metric_id": "M_PROD_PAYMENT_AMOUNT",
+      "review": {
+        "aliases": [
+          "支付净到账",
+          "实际收款额",
+          "支付到账金额",
+          "已收支付款",
+          "资金到账额",
+          "收款净额"
+        ],
+        "positive_examples": [
+          "今年实际收到了多少支付款",
+          "按月看支付净到账",
+          "各区域的实际收款额",
+          "统计支付到账金额趋势",
+          "不同支付状态的已收支付款",
+          "最近一年资金到账额",
+          "CNY收款净额",
+          "每天实际到账多少"
+        ],
+        "negative_examples": [
+          "下单时的订单原始金额",
+          "商品折后净收入",
+          "退款金额",
+          "尚未支付的应收款",
+          "支付记录笔数",
+          "订单笔数"
+        ],
+        "reviewed_by": "simulated_metric_admin",
+        "decision": "APPROVED",
+        "checks": [
+          "non_generic_alias",
+          "cross_metric_alias_unique",
+          "positive_examples_present",
+          "neighbor_negatives_present",
+          "formula_immutable"
+        ]
+      },
+      "published_version": 2,
+      "indexed_documents": 22,
+      "immutable_contract_preserved": true
+    },
+    {
+      "metric_id": "M_PROD_REFUND_AMOUNT",
+      "review": {
+        "aliases": [
+          "已退金额",
+          "退款支出",
+          "退回款项",
+          "退款净额",
+          "资金退回额",
+          "实际退款额"
+        ],
+        "positive_examples": [
+          "今年实际退款了多少钱",
+          "按月看已退金额",
+          "各区域的退款支出",
+          "统计退回款项趋势",
+          "不同退款状态的退款净额",
+          "最近一年资金退回额",
+          "CNY实际退款额",
+          "每天发生的退款金额"
+        ],
+        "negative_examples": [
+          "退款订单有多少笔",
+          "订单原始金额",
+          "支付实际到账",
+          "商品净收入",
+          "取消订单金额",
+          "支付退款率"
+        ],
+        "reviewed_by": "simulated_metric_admin",
+        "decision": "APPROVED",
+        "checks": [
+          "non_generic_alias",
+          "cross_metric_alias_unique",
+          "positive_examples_present",
+          "neighbor_negatives_present",
+          "formula_immutable"
+        ]
+      },
+      "published_version": 2,
+      "indexed_documents": 22,
+      "immutable_contract_preserved": true
+    },
+    {
+      "metric_id": "M_PROD_SHIPMENT_COUNT",
+      "review": {
+        "aliases": [
+          "发运包裹数",
+          "物流包裹量",
+          "出库包裹数",
+          "配送包裹数",
+          "履约包裹数",
+          "已发包裹量"
+        ],
+        "positive_examples": [
+          "今年发出了多少个包裹",
+          "按月看发运包裹数",
+          "各仓库的物流包裹量",
+          "统计出库包裹数趋势",
+          "不同履约状态的配送包裹数",
+          "最近一年履约包裹数",
+          "各区域已发包裹量",
+          "每天发出的包裹数量"
+        ],
+        "negative_examples": [
+          "成交订单有多少笔",
+          "订单商品件数",
+          "当前库存件数",
+          "物流费用",
+          "发货订单数",
+          "客服工单数"
+        ],
+        "reviewed_by": "simulated_metric_admin",
+        "decision": "APPROVED",
+        "checks": [
+          "non_generic_alias",
+          "cross_metric_alias_unique",
+          "positive_examples_present",
+          "neighbor_negatives_present",
+          "formula_immutable"
+        ]
+      },
+      "published_version": 2,
+      "indexed_documents": 22,
+      "immutable_contract_preserved": true
+    },
+    {
+      "metric_id": "M_PROD_INVENTORY_UNITS",
+      "review": {
+        "aliases": [
+          "在库件数",
+          "库存数量",
+          "库存余额",
+          "现有库存量",
+          "仓储存量",
+          "快照库存量"
+        ],
+        "positive_examples": [
+          "当前有多少库存件",
+          "按月看在库件数变化",
+          "各仓库的库存数量",
+          "统计库存余额趋势",
+          "不同状态的现有库存量",
+          "最近一年仓储存量",
+          "各区域快照库存量",
+          "指定日期库存有多少件"
+        ],
+        "negative_examples": [
+          "库存商品金额",
+          "订单商品件数",
+          "发货包裹数量",
+          "可售商品种类数",
+          "订单笔数",
+          "商品净收入"
+        ],
+        "reviewed_by": "simulated_metric_admin",
+        "decision": "APPROVED",
+        "checks": [
+          "non_generic_alias",
+          "cross_metric_alias_unique",
+          "positive_examples_present",
+          "neighbor_negatives_present",
+          "formula_immutable"
+        ]
+      },
+      "published_version": 2,
+      "indexed_documents": 22,
+      "immutable_contract_preserved": true
+    },
+    {
+      "metric_id": "M_PROD_SERVICE_TICKET_COUNT",
+      "review": {
+        "aliases": [
+          "服务工单数",
+          "客服单量",
+          "售后工单数",
+          "客户请求单数",
+          "咨询工单量",
+          "客诉工单数"
+        ],
+        "positive_examples": [
+          "今年产生了多少客服工单",
+          "按月看服务工单数",
+          "各区域的客服单量",
+          "统计售后工单数趋势",
+          "不同状态的客户请求单数",
+          "最近一年咨询工单量",
+          "各订单状态关联的客诉工单数",
+          "每天新增多少服务工单"
+        ],
+        "negative_examples": [
+          "成交订单数",
+          "购买客户数",
+          "退款订单数",
+          "营销触达次数",
+          "工单处理时长",
+          "退款金额"
+        ],
+        "reviewed_by": "simulated_metric_admin",
+        "decision": "APPROVED",
+        "checks": [
+          "non_generic_alias",
+          "cross_metric_alias_unique",
+          "positive_examples_present",
+          "neighbor_negatives_present",
+          "formula_immutable"
+        ]
+      },
+      "published_version": 2,
+      "indexed_documents": 22,
+      "immutable_contract_preserved": true
+    },
+    {
+      "metric_id": "M_PROD_MARKETING_TOUCH_COUNT",
+      "review": {
+        "aliases": [
+          "营销触达次数",
+          "推广触点数",
+          "活动触达量",
+          "市场接触次数",
+          "营销接触量",
+          "推广触达记录数"
+        ],
+        "positive_examples": [
+          "今年一共进行了多少次营销触达",
+          "按月看营销触达次数",
+          "各渠道的推广触点数",
+          "统计活动触达量趋势",
+          "不同活动的市场接触次数",
+          "最近一年营销接触量",
+          "各租户的推广触达记录数",
+          "每天产生多少营销触点"
+        ],
+        "negative_examples": [
+          "被触达的去重客户数",
+          "广告投放费用",
+          "营销转化订单数",
+          "客服工单数",
+          "订单笔数",
+          "活动收入"
+        ],
+        "reviewed_by": "simulated_metric_admin",
+        "decision": "APPROVED",
+        "checks": [
+          "non_generic_alias",
+          "cross_metric_alias_unique",
+          "positive_examples_present",
+          "neighbor_negatives_present",
+          "formula_immutable"
+        ]
+      },
+      "published_version": 2,
+      "indexed_documents": 22,
+      "immutable_contract_preserved": true
+    },
+    {
+      "metric_id": "M_PROD_REFUND_ADJUSTED_REVENUE",
+      "review": {
+        "aliases": [
+          "扣除退款后的净收入",
+          "退款调整后收入",
+          "净收入扣退款",
+          "实际净收入"
+        ],
+        "positive_examples": [
+          "统计指定期间商品净收入扣除同期退款后的金额",
+          "查看所选时间范围内退款调整后的净收入总额"
+        ],
+        "negative_examples": [
+          "只看商品行折后净收入，不扣退款",
+          "只看退款金额",
+          "查看支付实际到账金额"
+        ],
+        "reviewed_by": "simulated_metric_admin",
+        "decision": "APPROVED",
+        "checks": [
+          "non_generic_alias",
+          "cross_metric_alias_unique",
+          "positive_examples_present",
+          "neighbor_negatives_present",
+          "formula_immutable"
+        ]
+      },
+      "published_version": 2,
+      "indexed_documents": 11,
+      "immutable_contract_preserved": true
+    },
+    {
+      "metric_id": "M_PROD_PAYMENT_REFUND_RATE",
+      "review": {
+        "aliases": [
+          "退款金额占支付金额比例",
+          "支付金额退款比例",
+          "实收退款率",
+          "支付退款占比"
+        ],
+        "positive_examples": [
+          "统计指定期间退款金额占支付实收金额的比例",
+          "查看所选时间范围内支付退款占比"
+        ],
+        "negative_examples": [
+          "只看退款金额",
+          "只看支付实收金额",
+          "按退款笔数除以支付笔数计算退款率"
+        ],
+        "reviewed_by": "simulated_metric_admin",
+        "decision": "APPROVED",
+        "checks": [
+          "non_generic_alias",
+          "cross_metric_alias_unique",
+          "positive_examples_present",
+          "neighbor_negatives_present",
+          "formula_immutable"
+        ]
+      },
+      "published_version": 2,
+      "indexed_documents": 11,
+      "immutable_contract_preserved": true
+    }
+  ]
+}

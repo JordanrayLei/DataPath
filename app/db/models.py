@@ -7,6 +7,7 @@ from sqlalchemy import (
     Boolean,
     DateTime,
     ForeignKey,
+    Float,
     Index,
     Integer,
     String,
@@ -28,9 +29,139 @@ class BusinessDomain(Base):
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     description: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    owner: Mapped[str] = mapped_column(String(128), nullable=False, default="data-platform")
+    business_goal: Mapped[str] = mapped_column(Text, nullable=False, default="")
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="ACTIVE")
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class WarehouseSource(Base):
+    __tablename__ = "warehouse_source"
+    __table_args__ = (
+        UniqueConstraint("workspace_id", "name", name="uq_warehouse_source_workspace_name"),
+        {"schema": "metric_center"},
+    )
+
+    id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    workspace_id: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(200), nullable=False)
+    kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    business_domain_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    connection_json: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    scan_snapshot_json: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    governance_json: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="DRAFT")
+    created_by: Mapped[str] = mapped_column(String(128), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+    )
+
+
+class PhysicalTableAsset(Base):
+    __tablename__ = "physical_table_asset"
+    __table_args__ = (
+        UniqueConstraint("source_id", "table_name", name="uq_physical_table_asset_source_table"),
+        {"schema": "metric_center"},
+    )
+
+    id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    source_id: Mapped[str] = mapped_column(
+        ForeignKey("metric_center.warehouse_source.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    database_name: Mapped[str] = mapped_column(String(128), nullable=False)
+    table_name: Mapped[str] = mapped_column(String(128), nullable=False)
+    physical_table: Mapped[str] = mapped_column(String(255), nullable=False)
+    columns_json: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    governance_json: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    schema_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="ACTIVE")
+    scanned_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+    )
+
+
+class SchemaChangeEvent(Base):
+    __tablename__ = "schema_change_event"
+    __table_args__ = (
+        Index("ix_schema_change_source_status", "source_id", "status"),
+        Index("ix_schema_change_asset_detected", "physical_asset_id", "detected_at"),
+        {"schema": "metric_center"},
+    )
+
+    id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    source_id: Mapped[str] = mapped_column(
+        ForeignKey("metric_center.warehouse_source.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    physical_asset_id: Mapped[str] = mapped_column(
+        ForeignKey("metric_center.physical_table_asset.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    change_type: Mapped[str] = mapped_column(String(40), nullable=False)
+    severity: Mapped[str] = mapped_column(String(20), nullable=False)
+    old_schema_sha256: Mapped[str] = mapped_column(String(64), nullable=False, default="")
+    new_schema_sha256: Mapped[str] = mapped_column(String(64), nullable=False, default="")
+    diff_json: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    impact_json: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    status: Mapped[str] = mapped_column(String(24), nullable=False, default="OPEN")
+    detected_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    resolved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class BusinessDomainTableBinding(Base):
+    __tablename__ = "business_domain_table_binding"
+    __table_args__ = (
+        UniqueConstraint(
+            "business_domain_id",
+            "physical_asset_id",
+            name="uq_domain_physical_table_binding",
+        ),
+        UniqueConstraint("semantic_model_id", name="uq_domain_binding_semantic_model"),
+        UniqueConstraint("entity_id", name="uq_domain_binding_entity"),
+        {"schema": "metric_center"},
+    )
+
+    id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    business_domain_id: Mapped[str] = mapped_column(
+        ForeignKey("metric_center.business_domain.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    physical_asset_id: Mapped[str] = mapped_column(
+        ForeignKey("metric_center.physical_table_asset.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    semantic_model_id: Mapped[str] = mapped_column(String(100), nullable=False)
+    model_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    description: Mapped[str] = mapped_column(Text, nullable=False, default="")
+    entity_id: Mapped[str] = mapped_column(String(100), nullable=False)
+    entity_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    entity_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    grain: Mapped[str] = mapped_column(String(500), nullable=False)
+    primary_keys_json: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    default_time_field: Mapped[str] = mapped_column(String(128), nullable=False)
+    exposed_fields_json: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    schema_contract_json: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="CONFIRMED")
+    version: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_by: Mapped[str] = mapped_column(String(128), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
     )
 
 
@@ -46,6 +177,7 @@ class SemanticModel(Base):
     warehouse: Mapped[str] = mapped_column(String(64), nullable=False, default="clickhouse")
     physical_table: Mapped[str] = mapped_column(String(255), nullable=False)
     default_time_field: Mapped[str] = mapped_column(String(128), nullable=False)
+    fields_json: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
     status: Mapped[str] = mapped_column(String(32), nullable=False, default="ACTIVE")
 
     business_domain: Mapped[BusinessDomain] = relationship()
@@ -297,6 +429,27 @@ class SemanticScopeExample(Base):
     )
 
 
+class SemanticScopePolicy(Base):
+    __tablename__ = "semantic_scope_policy"
+    __table_args__ = {"schema": "metric_center"}
+
+    business_domain_id: Mapped[str] = mapped_column(
+        ForeignKey("metric_center.business_domain.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    negative_threshold: Mapped[float] = mapped_column(Float, nullable=False, default=0.64)
+    margin: Mapped[float] = mapped_column(Float, nullable=False, default=0.06)
+    selection_margin: Mapped[float] = mapped_column(Float, nullable=False, default=0.08)
+    ambiguity_threshold: Mapped[float] = mapped_column(Float, nullable=False, default=0.64)
+    ambiguity_margin: Mapped[float] = mapped_column(Float, nullable=False, default=0.06)
+    specificity_threshold: Mapped[float] = mapped_column(Float, nullable=False, default=0.60)
+    specificity_margin: Mapped[float] = mapped_column(Float, nullable=False, default=0.02)
+    updated_by: Mapped[str] = mapped_column(String(128), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
 class MetricDraft(Base):
     __tablename__ = "metric_draft"
     __table_args__ = (
@@ -396,6 +549,33 @@ class QueryRun(Base):
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
     executed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class ProductEvent(Base):
+    __tablename__ = "product_event"
+    __table_args__ = (
+        Index("ix_product_event_workspace_name_created", "workspace_id", "event_name", "created_at"),
+        Index("ix_product_event_trace", "trace_id"),
+        Index("ix_product_event_query", "query_id"),
+        {"schema": "audit"},
+    )
+
+    event_id: Mapped[str] = mapped_column(String(128), primary_key=True)
+    workspace_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    actor_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    conversation_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    trace_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    query_id: Mapped[str | None] = mapped_column(
+        ForeignKey("audit.query_run.query_id", ondelete="SET NULL"), nullable=True
+    )
+    event_name: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="")
+    reason_code: Mapped[str] = mapped_column(String(128), nullable=False, default="")
+    properties_json: Mapped[dict] = mapped_column(JSONB, nullable=False, default=dict)
+    duration_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
 
 
 class ResultProfile(Base):

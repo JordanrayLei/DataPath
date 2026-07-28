@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "profile_id": "cross_fact_v1",
+  "description": "Reinterpret only the sealed Development cases that became supported after governed aggregate-before-join cross-fact publication.",
+  "base_split": "development",
+  "base_split_sha256": "7a4d8da501b68dffeec710b054463be123681341ef0e06f978ac0c064df2d64e",
+  "source_restriction": "The current 1,128-case Development input excludes data-quality audit semantics. This overlay uses published capability metadata and read-only Oracle results, not runtime outcomes, Bad Cases, feedback, or query logs.",
+  "capability_package": {
+    "path": "data/semantic_bootstrap/production_cross_fact_preheat_v1.json",
+    "sha256": "5181af50a4610860bd13ffc5367f571b6ae19317fc84116e5ef327004bebdd32",
+    "expected_alias_count": 8,
+    "expected_semantic_profile_count": 2,
+    "required_published_metric_ids": [
+      "M_PROD_REFUND_ADJUSTED_REVENUE",
+      "M_PROD_PAYMENT_REFUND_RATE"
+    ]
+  },
+  "eligibility": {
+    "original_expected_status": "REJECT",
+    "category": "grain_and_fanout",
+    "sql_skeleton_id": "aggregate_before_join_multi_fact",
+    "metric_count": 1,
+    "question_must_contain": "2024年",
+    "dimensions_must_be_empty": true,
+    "filters_must_be_empty": true,
+    "expected_case_count": 120,
+    "expected_cases_per_metric": 60
+  },
+  "oracle": {
+    "database": "production_benchmark",
+    "time_range": {
+      "start_inclusive": "2024-01-01",
+      "end_exclusive": "2025-01-01"
+    },
+    "execution_mode": "read_only_clickhouse_oracle",
+    "verified_at": "2026-07-19T09:55:29+08:00",
+    "metrics": {
+      "M_PROD_REFUND_ADJUSTED_REVENUE": {
+        "value": 3562492997.49,
+        "result_checksum_sha256": "13fc366fd80c2049d3ec0cdf435b6aff9a32e81e2fcb4f9f10488548a9211fa1"
+      },
+      "M_PROD_PAYMENT_REFUND_RATE": {
+        "value": 12.5,
+        "result_checksum_sha256": "5286d2749bef68198373aa2a74dbb8a473494360d1160e9af10e0b93fc270d44"
+      }
+    }
+  }
+}

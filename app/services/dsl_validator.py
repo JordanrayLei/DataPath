@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import copy
+import re
+
 from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
@@ -8,10 +11,47 @@ from app.config import get_settings
 from app.db.models import Dimension, Metric, MetricDimension, MetricVersion
 from app.schemas.chatbi import DslValidateResponse, QueryDsl, ValidationIssue
 from app.services.join_planner import JoinPlanningError, expression_model_ids, plan_query_models
+from app.services.query_compiler import is_cross_fact_expression
 
 
 def issue(code: str, message: str, field_path: str) -> ValidationIssue:
     return ValidationIssue(code=code, message=message, field_path=field_path)
+
+
+def normalize_report_usage_time_grain(raw_dsl: dict, query: str) -> dict:
+    """Remove an LLM-invented month grain from report-usage language only."""
+
+    normalized_query = " ".join(query.strip().split()).casefold()
+    usage_only_monthly = bool(
+        re.search(r"用于.{0,20}月度(?:复盘|报告|周报|会议)", normalized_query)
+    )
+    explicit_monthly_grouping = any(
+        token in normalized_query
+        for token in ("按月", "每月", "逐月", "月份", "月度趋势", "monthly trend")
+    )
+    if not usage_only_monthly or explicit_monthly_grouping:
+        return raw_dsl
+    dimensions = raw_dsl.get("dimensions")
+    if not isinstance(dimensions, list) or not any(
+        isinstance(item, dict) and item.get("dimension_id") == "D_MONTH"
+        for item in dimensions
+    ):
+        return raw_dsl
+
+    normalized = copy.deepcopy(raw_dsl)
+    normalized["dimensions"] = [
+        item
+        for item in normalized.get("dimensions", [])
+        if not (isinstance(item, dict) and item.get("dimension_id") == "D_MONTH")
+    ]
+    normalized["sort"] = [
+        item
+        for item in normalized.get("sort", [])
+        if not (isinstance(item, dict) and item.get("field_id") == "D_MONTH")
+    ]
+    if normalized.get("intent") == "trend_query" and not normalized["dimensions"]:
+        normalized["intent"] = "aggregate_query"
+    return normalized
 
 
 def validate_dsl(
@@ -20,7 +60,9 @@ def validate_dsl(
     policy_context: dict,
     request_id: str,
     trace_id: str,
+    query: str = "",
 ) -> DslValidateResponse:
+    raw_dsl = normalize_report_usage_time_grain(raw_dsl, query)
     try:
         dsl = QueryDsl.model_validate(raw_dsl)
     except ValidationError as error:
@@ -53,6 +95,7 @@ def validate_dsl(
     version_map = {(row.metric_id, row.version): row for row in versions}
 
     issues: list[ValidationIssue] = []
+    normalized_query_mode = dsl.query_mode
     for index, key in enumerate(metric_keys):
         row = version_map.get(key)
         if row is None or row.metric.status != "PUBLISHED":
@@ -82,7 +125,7 @@ def validate_dsl(
             message="指标或版本校验失败。",
         )
 
-    allowed_domains = set(policy_context.get("allowed_domains", ["sales", "advertising"]))
+    allowed_domains = set(policy_context.get("allowed_domains", ["production_benchmark"]))
     denied = [row.metric.business_domain_id for row in version_map.values() if row.metric.business_domain_id not in allowed_domains]
     if denied:
         return DslValidateResponse(
@@ -178,8 +221,11 @@ def validate_dsl(
 
     if len(model_ids) == 1 and not issues:
         required_model_ids = {model_id}
+        expression_source_models = {model_id}
         for row in version_map.values():
-            required_model_ids.update(expression_model_ids(row.expression_json, model_id))
+            sources = expression_model_ids(row.expression_json, model_id)
+            required_model_ids.update(sources)
+            expression_source_models.update(sources)
         for dimension_id in all_dimension_ids:
             dimension = dimensions.get(dimension_id)
             if dimension is None or model_id not in dimension.mapping_json:
@@ -193,17 +239,31 @@ def validate_dsl(
                 continue
             mapping = dimension.mapping_json[model_id]
             required_model_ids.add(str(mapping.get("source_model_id") or model_id))
-        if not issues:
+        is_cross_fact = is_cross_fact_expression(session, expression_source_models)
+        if is_cross_fact:
+            if len(metric_ids) != 1:
+                issues.append(
+                    issue(
+                        "MULTI_FACT_METRIC_COUNT_UNSUPPORTED",
+                        "跨事实 V1 每次只允许查询一个已治理指标。",
+                        "metrics",
+                    )
+                )
+            if dsl.dimensions or dsl.filters:
+                issues.append(
+                    issue(
+                        "MULTI_FACT_SHARED_GRAIN_NOT_PUBLISHED",
+                        "该跨事实指标尚未发布所选维度或筛选的共享粒度契约。",
+                        "dimensions",
+                    )
+                )
+            if dsl.dsl_version == "2.0":
+                normalized_query_mode = "multi_fact"
+        elif not issues:
             try:
                 plan = plan_query_models(session, model_id, required_model_ids)
-                if dsl.dsl_version == "2.0" and dsl.query_mode != plan.query_mode:
-                    issues.append(
-                        issue(
-                            "QUERY_MODE_MISMATCH",
-                            "查询模式与确定性Join规划结果不一致。",
-                            "query_mode",
-                        )
-                    )
+                if dsl.dsl_version == "2.0":
+                    normalized_query_mode = plan.query_mode
             except JoinPlanningError as error:
                 issues.append(issue("JOIN_PATH_NOT_SAFE", str(error), "dimensions"))
 
@@ -238,6 +298,28 @@ def validate_dsl(
         )
 
     normalized = dsl.model_dump(mode="json", exclude_none=True)
+    # query_mode is an execution-plan output, not an LLM authority.  The
+    # deterministic planner has already proved that every required model is
+    # connected by a published safe join, so expose its result downstream.
+    normalized["query_mode"] = normalized_query_mode
+    # Unordered grouped results are unstable across executions and cannot be
+    # compared reliably.  When the user did not request ranking, establish a
+    # canonical dimension order without changing the selected rows or metric.
+    if requested_dimension_ids and not normalized["sort"]:
+        time_grains = {"D_DATE", "D_WEEK", "D_MONTH", "D_QUARTER"}
+        if dsl.intent == "trend_query" or requested_dimension_ids[0] in time_grains:
+            normalized["sort"] = [
+                {"field_id": requested_dimension_ids[0], "direction": "asc"}
+            ]
+        else:
+            normalized["sort"] = [
+                {"field_id": metric_ids[0], "direction": "desc"},
+                {"field_id": requested_dimension_ids[0], "direction": "asc"},
+            ]
+    # Keep Dify and the deterministic entrypoint on the same governed result
+    # window.  Explicit TopN values below 100 remain intact; larger LLM-picked
+    # defaults cannot silently expand execution or change the result contract.
+    normalized["limit"] = min(int(normalized["limit"]), 100)
     return DslValidateResponse(
         request_id=request_id,
         trace_id=trace_id,

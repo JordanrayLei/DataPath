@@ -8,13 +8,13 @@ from app.services.chatbi_entrypoint import resolve_time_range
 @pytest.mark.parametrize(
     ("query", "expected"),
     [
-        ("2017年第一季度Olist销售额", {"start": "2017-01-01", "end": "2017-03-31"}),
-        ("2017年第二季度Olist销售额", {"start": "2017-04-01", "end": "2017-06-30"}),
-        ("2018年前九个月Olist销售额", {"start": "2018-01-01", "end": "2018-09-30"}),
-        ("2018年前3个月Olist订单量", {"start": "2018-01-01", "end": "2018-03-31"}),
-        ("2018年Olist销售额", {"start": "2018-01-01", "end": "2018-12-31"}),
-        ("最近三个月Olist销售额", {"start": "2018-07-01", "end": "2018-09-30"}),
-        ("最近一年Olist订单量", {"start": "2017-10-01", "end": "2018-09-30"}),
+        ("2024年第一季度订单量", {"start": "2024-01-01", "end": "2024-03-31"}),
+        ("2024年第二季度支付实收金额", {"start": "2024-04-01", "end": "2024-06-30"}),
+        ("2024年前九个月退款金额", {"start": "2024-01-01", "end": "2024-09-30"}),
+        ("2024年前3个月订单量", {"start": "2024-01-01", "end": "2024-03-31"}),
+        ("2024年商品净收入", {"start": "2024-01-01", "end": "2024-12-31"}),
+        ("最近三个月支付实收金额", {"start": "2024-10-01", "end": "2024-12-31"}),
+        ("最近一年订单量", {"start": "2024-01-01", "end": "2024-12-31"}),
     ],
 )
 def test_resolve_time_range_prioritizes_specific_periods(
@@ -24,5 +24,5 @@ def test_resolve_time_range_prioritizes_specific_periods(
 
 
 def test_resolve_time_range_inherits_context_without_explicit_period() -> None:
-    previous = {"time_range": {"start": "2017-04-01", "end": "2017-06-30"}}
-    assert resolve_time_range("换成Olist运费", previous) == previous["time_range"]
+    previous = {"time_range": {"start": "2024-04-01", "end": "2024-06-30"}}
+    assert resolve_time_range("换成退款金额", previous) == previous["time_range"]

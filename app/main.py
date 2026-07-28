@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import uuid
 from pathlib import Path
 
@@ -21,6 +22,7 @@ settings = get_settings()
 expose_api_docs = settings.environment == "development"
 project_root = Path(__file__).resolve().parents[1]
 frontend_dir = project_root / "frontend"
+logger = logging.getLogger(__name__)
 
 
 app = FastAPI(
@@ -94,6 +96,22 @@ async def request_validation_handler(request: Request, error: RequestValidationE
     )
 
 
+@app.exception_handler(Exception)
+async def unexpected_exception_handler(request: Request, error: Exception):
+    logger.exception(
+        "Unhandled request failure request_id=%s trace_id=%s",
+        getattr(request.state, "request_id", ""),
+        getattr(request.state, "trace_id", ""),
+        exc_info=error,
+    )
+    return error_response(
+        request,
+        500,
+        "INTERNAL_ERROR",
+        "查询执行失败，系统未返回数据，请稍后重试。",
+    )
+
+
 @app.get("/health", tags=["System"])
 def health() -> dict[str, str]:
     return {"status": "ok"}
@@ -113,7 +131,13 @@ def frontend_entry() -> FileResponse:
 
 @app.get("/portfolio/dify-chatbi-workflow.dsl.yml", tags=["Portfolio"])
 def dify_chatbi_workflow_dsl() -> FileResponse:
-    dsl_path = project_root / "document" / "dify-chatbi-workflow.zh-CN.dsl.yml"
+    dsl_path = (
+        project_root
+        / "document"
+        / "development"
+        / "technical"
+        / "dify-chatbi-workflow.zh-CN.dsl.yml"
+    )
     if not dsl_path.exists():
         raise HTTPException(
             status_code=404,

@@ -1,0 +1,167 @@
+{
+  "generated_at": "2026-07-19T12:30:12.117890+00:00",
+  "retained_domain": "production_benchmark",
+  "legacy_domains_removed": [
+    "human_onboarding_test",
+    "sales"
+  ],
+  "before": {
+    "domains": [
+      "human_onboarding_test",
+      "production_benchmark",
+      "sales"
+    ],
+    "metrics_by_domain": {
+      "human_onboarding_test": [],
+      "production_benchmark": [
+        "M_PROD_INVENTORY_UNITS",
+        "M_PROD_ITEM_NET_REVENUE",
+        "M_PROD_MARKETING_TOUCH_COUNT",
+        "M_PROD_ORDER_COUNT",
+        "M_PROD_ORDER_GROSS_AMOUNT",
+        "M_PROD_PAYMENT_AMOUNT",
+        "M_PROD_PAYMENT_REFUND_RATE",
+        "M_PROD_REFUND_ADJUSTED_REVENUE",
+        "M_PROD_REFUND_AMOUNT",
+        "M_PROD_SERVICE_TICKET_COUNT",
+        "M_PROD_SHIPMENT_COUNT"
+      ],
+      "sales": [
+        "M_OLIST_AVERAGE_ORDER_VALUE",
+        "M_OLIST_CUSTOMER_COUNT",
+        "M_OLIST_FREIGHT_PER_ORDER",
+        "M_OLIST_FREIGHT_RATE",
+        "M_OLIST_FREIGHT_VALUE",
+        "M_OLIST_ITEM_COUNT",
+        "M_OLIST_ITEM_REVENUE",
+        "M_OLIST_ITEMS_PER_ORDER",
+        "M_OLIST_ORDER_COUNT",
+        "M_OLIST_PRODUCT_COUNT",
+        "M_OLIST_SELLER_COUNT",
+        "M_OLIST_TOTAL_ORDER_VALUE"
+      ]
+    },
+    "models_by_domain": {
+      "human_onboarding_test": [],
+      "production_benchmark": [
+        "SM_PROD_CUSTOMER_SCD2",
+        "SM_PROD_INVENTORY",
+        "SM_PROD_MARKETING_TOUCH",
+        "SM_PROD_ORDER_ITEMS",
+        "SM_PROD_ORDERS",
+        "SM_PROD_PAYMENTS",
+        "SM_PROD_PRODUCT_SCD2",
+        "SM_PROD_REFUNDS",
+        "SM_PROD_SERVICE_TICKETS",
+        "SM_PROD_SHIPMENTS",
+        "SM_PROD_WAREHOUSE"
+      ],
+      "sales": [
+        "SM_OLIST_CATEGORY_TRANSLATION",
+        "SM_OLIST_CUSTOMERS",
+        "SM_OLIST_GEOLOCATION",
+        "SM_OLIST_ORDER_ITEMS",
+        "SM_OLIST_ORDERS",
+        "SM_OLIST_PAYMENTS",
+        "SM_OLIST_PRODUCTS",
+        "SM_OLIST_REVIEWS",
+        "SM_OLIST_SELLERS"
+      ]
+    },
+    "joins_by_domain": {
+      "human_onboarding_test": [],
+      "production_benchmark": [
+        "J_PROD_INVENTORY_PRODUCT_SCD2",
+        "J_PROD_ITEMS_ORDERS",
+        "J_PROD_ITEMS_PRODUCT_SCD2",
+        "J_PROD_MARKETING_CUSTOMER_SCD2",
+        "J_PROD_ORDERS_CUSTOMER_SCD2",
+        "J_PROD_PAYMENTS_ORDERS",
+        "J_PROD_REFUNDS_PAYMENTS",
+        "J_PROD_SHIPMENTS_ORDERS",
+        "J_PROD_SHIPMENTS_WAREHOUSE",
+        "J_PROD_TICKETS_ORDERS"
+      ],
+      "sales": [
+        "J_OLIST_ITEMS_ORDERS",
+        "J_OLIST_ITEMS_PRODUCTS",
+        "J_OLIST_ITEMS_SELLERS",
+        "J_OLIST_ORDERS_CUSTOMERS",
+        "J_OLIST_PAYMENTS_ORDERS",
+        "J_OLIST_PRODUCTS_CATEGORY",
+        "J_OLIST_REVIEWS_ORDERS"
+      ]
+    }
+  },
+  "deleted": {
+    "audit.evidence": 0,
+    "metric_center.metric_draft": 0,
+    "metric_center.metric_embedding": 245,
+    "metric_center.metric_alias": 31,
+    "metric_center.metric_semantic_profile": 12,
+    "metric_center.metric_dimension": 72,
+    "metric_center.metric_version": 14,
+    "metric_center.metric": 12,
+    "metric_center.semantic_scope_example": 16,
+    "metric_center.semantic_scope_policy": 0,
+    "metric_center.semantic_join_version": 25,
+    "metric_center.semantic_join_draft": 0,
+    "metric_center.semantic_join_relation": 7,
+    "metric_center.semantic_entity": 9,
+    "metric_center.semantic_model": 9,
+    "metric_center.dimension": 4,
+    "metric_center.dimension_mappings_cleaned": 2,
+    "metric_center.warehouse_source": 0,
+    "metric_center.business_domain": 2
+  },
+  "after": {
+    "domains": [
+      "production_benchmark"
+    ],
+    "metrics_by_domain": {
+      "production_benchmark": [
+        "M_PROD_INVENTORY_UNITS",
+        "M_PROD_ITEM_NET_REVENUE",
+        "M_PROD_MARKETING_TOUCH_COUNT",
+        "M_PROD_ORDER_COUNT",
+        "M_PROD_ORDER_GROSS_AMOUNT",
+        "M_PROD_PAYMENT_AMOUNT",
+        "M_PROD_PAYMENT_REFUND_RATE",
+        "M_PROD_REFUND_ADJUSTED_REVENUE",
+        "M_PROD_REFUND_AMOUNT",
+        "M_PROD_SERVICE_TICKET_COUNT",
+        "M_PROD_SHIPMENT_COUNT"
+      ]
+    },
+    "models_by_domain": {
+      "production_benchmark": [
+        "SM_PROD_CUSTOMER_SCD2",
+        "SM_PROD_INVENTORY",
+        "SM_PROD_MARKETING_TOUCH",
+        "SM_PROD_ORDER_ITEMS",
+        "SM_PROD_ORDERS",
+        "SM_PROD_PAYMENTS",
+        "SM_PROD_PRODUCT_SCD2",
+        "SM_PROD_REFUNDS",
+        "SM_PROD_SERVICE_TICKETS",
+        "SM_PROD_SHIPMENTS",
+        "SM_PROD_WAREHOUSE"
+      ]
+    },
+    "joins_by_domain": {
+      "production_benchmark": [
+        "J_PROD_INVENTORY_PRODUCT_SCD2",
+        "J_PROD_ITEMS_ORDERS",
+        "J_PROD_ITEMS_PRODUCT_SCD2",
+        "J_PROD_MARKETING_CUSTOMER_SCD2",
+        "J_PROD_ORDERS_CUSTOMER_SCD2",
+        "J_PROD_PAYMENTS_ORDERS",
+        "J_PROD_REFUNDS_PAYMENTS",
+        "J_PROD_SHIPMENTS_ORDERS",
+        "J_PROD_SHIPMENTS_WAREHOUSE",
+        "J_PROD_TICKETS_ORDERS"
+      ]
+    }
+  },
+  "valid": true
+}

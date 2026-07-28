@@ -1,0 +1,60 @@
+{
+  "package_id": "production-cross-fact-preheat-v1",
+  "generation_mode": "canonical-definition-only",
+  "source_restriction": "metric definitions and schema contract only; no evaluation questions, Bad Cases, feedback, or runtime logs",
+  "metrics": {
+    "M_PROD_REFUND_ADJUSTED_REVENUE": {
+      "canonical_name": "退款后净收入",
+      "description": "商品行折后净收入减去同期已发生退款金额。两个事实表必须分别按同一时间范围聚合后再相减，禁止直接连接明细行。",
+      "metric_type": "amount",
+      "unit": "CNY",
+      "owner": "data-platform",
+      "semantic_model_id": "SM_PROD_ORDER_ITEMS",
+      "expression": {
+        "op": "subtract",
+        "left": {"op": "sum", "field": "net_amount"},
+        "right": {"op": "sum", "field": "net_amount", "source_model_id": "SM_PROD_REFUNDS"}
+      },
+      "default_aggregation": "default",
+      "time_dimension_id": "D_DATE",
+      "dimension_ids": ["D_DATE"],
+      "aliases": ["扣除退款后的净收入", "退款调整后收入", "净收入扣退款", "实际净收入"],
+      "positive_examples": [
+        "统计指定期间商品净收入扣除同期退款后的金额",
+        "查看所选时间范围内退款调整后的净收入总额"
+      ],
+      "negative_examples": [
+        "只看商品行折后净收入，不扣退款",
+        "只看退款金额",
+        "查看支付实际到账金额"
+      ]
+    },
+    "M_PROD_PAYMENT_REFUND_RATE": {
+      "canonical_name": "支付退款率",
+      "description": "同期退款金额占支付实收金额的百分比。退款与支付分别聚合后相除，分母为零时返回空值，禁止直接连接支付与退款明细。",
+      "metric_type": "ratio",
+      "unit": "%",
+      "owner": "data-platform",
+      "semantic_model_id": "SM_PROD_PAYMENTS",
+      "expression": {
+        "op": "ratio",
+        "numerator": {"op": "sum", "field": "net_amount", "source_model_id": "SM_PROD_REFUNDS"},
+        "denominator": {"op": "sum", "field": "net_amount"},
+        "scale": 100
+      },
+      "default_aggregation": "default",
+      "time_dimension_id": "D_DATE",
+      "dimension_ids": ["D_DATE"],
+      "aliases": ["退款金额占支付金额比例", "支付金额退款比例", "实收退款率", "支付退款占比"],
+      "positive_examples": [
+        "统计指定期间退款金额占支付实收金额的比例",
+        "查看所选时间范围内支付退款占比"
+      ],
+      "negative_examples": [
+        "只看退款金额",
+        "只看支付实收金额",
+        "按退款笔数除以支付笔数计算退款率"
+      ]
+    }
+  }
+}

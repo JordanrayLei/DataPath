@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "DataPath production-readiness case",
+  "type": "object",
+  "required": [
+    "case_id",
+    "query",
+    "domain",
+    "category",
+    "question_source",
+    "intent_family",
+    "sql_skeleton_id",
+    "expected_status",
+    "complexity"
+  ],
+  "properties": {
+    "case_id": {"type": "string", "minLength": 1},
+    "source_case_id": {"type": "string", "minLength": 1},
+    "query": {"type": "string", "minLength": 1},
+    "domain": {"enum": ["commerce", "payment_and_finance", "fulfillment_and_service", "cross_domain"]},
+    "category": {
+      "enum": [
+        "core_metric",
+        "cross_fact_join",
+        "grain_and_fanout",
+        "time_and_window",
+        "semantic_ambiguity",
+        "scope_safety",
+        "multi_turn",
+        "permission",
+        "schema_change",
+        "performance"
+      ]
+    },
+    "question_source": {"enum": ["independent_author", "external_benchmark", "adversarial_review", "production_like_log"]},
+    "intent_family": {"type": "string", "minLength": 1},
+    "sql_skeleton_id": {"type": "string", "minLength": 1},
+    "metric_ids": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "join_path_ids": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "expected_status": {"enum": ["SUCCESS", "CLARIFY", "REJECT", "BLOCKED"]},
+    "complexity": {
+      "type": "object",
+      "required": ["level", "join_count", "fact_table_count"],
+      "properties": {
+        "level": {"enum": ["basic", "medium", "complex", "adversarial"]},
+        "join_count": {"type": "integer", "minimum": 0},
+        "fact_table_count": {"type": "integer", "minimum": 0},
+        "uses_window": {"type": "boolean"},
+        "uses_scd2": {"type": "boolean"},
+        "uses_bridge": {"type": "boolean"},
+        "schema_perturbation": {"type": ["string", "null"]}
+      },
+      "additionalProperties": false
+    },
+    "expected_result": {"type": ["object", "null"]},
+    "turns": {
+      "type": "array",
+      "minItems": 2,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "repeat_group_id": {"type": ["string", "null"]},
+    "must_not_compile": {"type": "boolean"},
+    "must_not_execute": {"type": "boolean"},
+    "split": {"enum": ["development", "regression", "locked_blind"]},
+    "semantic_mutation": {
+      "type": "object",
+      "required": ["changed", "metric_ids", "variant_family"],
+      "properties": {
+        "changed": {"type": "boolean"},
+        "metric_ids": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "variant_family": {"enum": ["development", "regression", "locked_blind"]}
+      },
+      "additionalProperties": false
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"expected_status": {"const": "SUCCESS"}}},
+      "then": {"required": ["expected_result"]}
+    },
+    {
+      "if": {"properties": {"expected_status": {"enum": ["REJECT", "BLOCKED"]}}},
+      "then": {
+        "required": ["must_not_compile", "must_not_execute"],
+        "properties": {
+          "must_not_compile": {"const": true},
+          "must_not_execute": {"const": true}
+        }
+      }
+    }
+  ],
+  "additionalProperties": false
+}

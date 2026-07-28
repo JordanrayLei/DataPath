@@ -20,14 +20,32 @@ class ContextLoadRequest(StrictModel):
     workspace_id: str = Field(min_length=1, max_length=128)
     conversation_id: str = Field(min_length=1, max_length=128)
     identity_token: str = Field(min_length=1, max_length=4096)
+    biz_domain: Literal["production_benchmark"] | None = None
+    query: str = Field(default="", max_length=4000)
 
 
 class ContextLoadResponse(TraceFields):
+    context_ok: bool = True
+    blocked_reason_code: str | None = None
     operator_id: str
     allowed_domains: list[str]
     role_ids: list[str]
     row_policy_token: str
     last_query_context: dict[str, Any]
+
+
+class ContextSaveRequest(StrictModel):
+    workspace_id: str = Field(min_length=1, max_length=128)
+    conversation_id: str = Field(min_length=1, max_length=128)
+    operator_id: str = Field(min_length=1, max_length=128)
+    biz_domain: Literal["production_benchmark"]
+    dsl: dict[str, Any]
+
+
+class ContextSaveResponse(TraceFields):
+    status: Literal["SUCCESS"]
+    conversation_id: str
+    message: str
 
 
 class FilterMention(StrictModel):
@@ -51,7 +69,7 @@ class MetricRetrieveRequest(StrictModel):
     query: str = Field(min_length=1, max_length=4000)
     normalized_query: str = Field(min_length=1, max_length=4000)
     workspace_id: str
-    biz_domain: Literal["sales", "advertising"]
+    biz_domain: Literal["production_benchmark"]
     operator_id: str
     context: dict[str, Any]
     preprocess: PreprocessData
@@ -64,6 +82,7 @@ class MetricCandidate(StrictModel):
     metric_type: Literal["amount", "count", "ratio", "average"]
     unit: str
     business_definition: str
+    query_mode: Literal["single_model", "multi_entity", "multi_fact"] = "single_model"
     probability: float = Field(ge=0, le=1)
     retrieval_sources: list[str]
     authorized: Literal[True] = True
@@ -78,12 +97,34 @@ class MetricMentionDecision(StrictModel):
 
 
 class MetricRetrieveResponse(TraceFields):
-    gate_status: Literal["PASS", "LLM_DISAMBIGUATE", "CLARIFY", "REJECT"]
+    gate_status: Literal["PASS", "LLM_DISAMBIGUATE", "CLARIFY", "REJECT", "BLOCKED"]
     mentions: list[MetricMentionDecision]
     reason_codes: list[str]
     clarification_message: str
     time_resolution: dict[str, Any] = Field(default_factory=dict)
     dsl_generation_constraints: list[str] = Field(default_factory=list)
+    runtime_diagnostics: dict[str, Any] = Field(default_factory=dict)
+    adjudication_token: str = ""
+
+
+class MetricAdjudicationDecision(StrictModel):
+    mention_index: int = Field(ge=0, le=9)
+    decision: Literal["SUCCESS", "CLARIFY", "REJECT"]
+    selected_metric_id: str | None = Field(default=None, max_length=100)
+    confidence: float = Field(ge=0, le=1)
+    reason_code: str = Field(min_length=1, max_length=100, pattern=r"^[A-Z][A-Z0-9_]{2,100}$")
+    clarification_question: str | None = Field(default=None, max_length=500)
+
+
+class MetricAdjudicationValidateRequest(StrictModel):
+    query: str = Field(min_length=1, max_length=4000)
+    normalized_query: str = Field(min_length=1, max_length=4000)
+    workspace_id: str = Field(min_length=1, max_length=128)
+    biz_domain: Literal["production_benchmark"]
+    operator_id: str = Field(min_length=1, max_length=128)
+    retrieval: MetricRetrieveResponse
+    adjudication_token: str = Field(min_length=1, max_length=12000)
+    decisions: list[MetricAdjudicationDecision] = Field(min_length=1, max_length=10)
 
 
 class MetricCatalogDimension(StrictModel):
@@ -99,6 +140,17 @@ class MetricCatalogSemanticModel(StrictModel):
     warehouse: str
     physical_table: str
     default_time_field: str
+
+
+class MetricCatalogLineage(StrictModel):
+    models: list[str]
+    tables: list[str]
+    fields: list[str]
+    fanout_strategy: Literal[
+        "single_model",
+        "governed_join",
+        "aggregate_before_join",
+    ]
 
 
 class MetricCatalogItem(StrictModel):
@@ -118,8 +170,14 @@ class MetricCatalogItem(StrictModel):
     dimensions: list[MetricCatalogDimension]
     semantic_model: MetricCatalogSemanticModel
     formula_text: str
-    lineage: dict[str, list[str]]
+    lineage: MetricCatalogLineage
     example_questions: list[str]
+    semantic_readiness: dict[str, Any] = Field(default_factory=dict)
+    alias_conflicts: list[dict[str, Any]] = Field(default_factory=list)
+    business_domain_status: str = "ACTIVE"
+    semantic_model_status: str = "ACTIVE"
+    read_only: bool = False
+    governance_blockers: list[str] = Field(default_factory=list)
 
 
 class MetricCatalogListResponse(TraceFields):
@@ -164,7 +222,7 @@ class MetricManagementOptionsResponse(TraceFields):
 class MetricDraftUpsertRequest(StrictModel):
     workspace_id: str = Field(default="demo", min_length=1, max_length=128)
     metric_id: str = Field(pattern=r"^M_[A-Z0-9_]{2,100}$")
-    business_domain_id: Literal["sales", "advertising"]
+    business_domain_id: str = Field(pattern=r"^[a-z][a-z0-9_]{1,63}$")
     name: str = Field(min_length=1, max_length=200)
     description: str = Field(min_length=1, max_length=2000)
     metric_type: Literal["amount", "count", "ratio", "average"]
@@ -241,6 +299,132 @@ class MetricPublishResponse(TraceFields):
     metric_id: str
     version: int
     published_at: datetime
+
+
+class MetricSemanticIndexResponse(TraceFields):
+    status: Literal["SUCCESS"]
+    metric_id: str
+    documents: int
+    total_tokens: int
+    embedding_model: str
+
+
+class SemanticScopeExampleInput(StrictModel):
+    text: str = Field(min_length=2, max_length=1000)
+    reason: str = Field(default="", max_length=200)
+
+
+class SemanticScopeExampleItem(StrictModel):
+    id: int
+    business_domain_id: str
+    text: str
+    label: Literal["OUT_OF_SCOPE", "AMBIGUOUS", "SPECIFIC"]
+    reason: str
+    is_active: bool
+    embedding_model: str
+    created_at: datetime
+
+
+class SemanticScopeExampleReplaceRequest(StrictModel):
+    workspace_id: str = Field(default="demo", min_length=1, max_length=128)
+    examples: list[SemanticScopeExampleInput] = Field(min_length=3, max_length=100)
+    negative_threshold: float = Field(default=0.64, ge=0.35, le=0.80)
+    margin: float = Field(default=0.06, ge=0.0, le=0.20)
+
+
+class SemanticScopeExampleListResponse(TraceFields):
+    status: Literal["SUCCESS"]
+    business_domain_id: str
+    items: list[SemanticScopeExampleItem]
+    total: int
+    embedding_model: str
+    total_tokens: int = 0
+    negative_threshold: float
+    margin: float
+
+
+class SemanticScopePreviewRequest(SemanticScopeExampleReplaceRequest):
+    queries: list[str] = Field(min_length=1, max_length=100)
+
+
+class SemanticScopePreviewItem(StrictModel):
+    query: str
+    top_metric_similarity: float
+    scope_similarity: float
+    nearest_scope_example: str
+    predicted_status: Literal["REJECT", "KEEP"]
+
+
+class SemanticScopePreviewResponse(TraceFields):
+    status: Literal["SUCCESS"]
+    business_domain_id: str
+    negative_threshold: float
+    margin: float
+    items: list[SemanticScopePreviewItem]
+    reject_count: int
+    keep_count: int
+
+
+class SemanticAmbiguityPolicyRequest(StrictModel):
+    workspace_id: str = Field(default="demo", min_length=1, max_length=128)
+    examples: list[SemanticScopeExampleInput] = Field(min_length=3, max_length=100)
+    specificity_examples: list[SemanticScopeExampleInput] = Field(default_factory=list, max_length=100)
+    selection_margin: float = Field(default=0.08, ge=0.02, le=0.12)
+    ambiguity_threshold: float = Field(default=0.64, ge=0.35, le=0.80)
+    ambiguity_margin: float = Field(default=0.06, ge=0.0, le=0.20)
+    specificity_threshold: float = Field(default=0.60, ge=0.35, le=0.90)
+    specificity_margin: float = Field(default=0.02, ge=0.0, le=0.20)
+
+
+class SemanticAmbiguityPolicyResponse(TraceFields):
+    status: Literal["SUCCESS"]
+    business_domain_id: str
+    items: list[SemanticScopeExampleItem]
+    total: int
+    specificity_items: list[SemanticScopeExampleItem]
+    specificity_total: int
+    embedding_model: str
+    total_tokens: int = 0
+    selection_margin: float
+    ambiguity_threshold: float
+    ambiguity_margin: float
+    specificity_threshold: float
+    specificity_margin: float
+
+
+class MetricClosureValidationRequest(StrictModel):
+    workspace_id: str = Field(default="demo", min_length=1, max_length=128)
+    feedback_id: str = Field(min_length=1, max_length=128)
+    biz_domain: Literal["auto", "production_benchmark"] = "auto"
+    expected_status: Literal["SUCCESS", "CLARIFY", "REJECT", "BLOCKED", "ERROR"]
+    expected_metric_id: str | None = Field(default=None, pattern=r"^M_[A-Z0-9_]{2,100}$")
+    expected_intent: str | None = Field(default=None, max_length=64)
+    expected_dimension_id: str | None = Field(
+        default=None, pattern=r"^D_[A-Z0-9_]{2,100}$"
+    )
+    expected_chart_type: str | None = Field(default=None, max_length=32)
+    expected_row_count: int | None = Field(default=None, ge=0)
+    expected_reflection_status: str | None = Field(default=None, max_length=32)
+    expected_notes: str = Field(default="", max_length=2000)
+
+    @model_validator(mode="after")
+    def success_requires_metric(self) -> "MetricClosureValidationRequest":
+        if self.expected_status == "SUCCESS" and not self.expected_metric_id:
+            raise ValueError("SUCCESS closure requires an expected metric")
+        return self
+
+
+class MetricClosureValidationResponse(TraceFields):
+    status: Literal["PASS", "FAIL"]
+    feedback_id: str
+    metric_id: str
+    publish_ready: bool
+    checks: list[dict[str, Any]]
+    baseline: dict[str, Any]
+    candidate: dict[str, Any]
+    regression: dict[str, Any]
+    golden_question: "GoldenQuestionItem"
+    message: str
 
 
 class QueryMetric(StrictModel):
@@ -372,6 +556,7 @@ class DslValidateRequest(StrictModel):
     workspace_id: str
     operator_id: str
     row_policy_context: dict[str, Any]
+    query: str = Field(default="", max_length=4000)
     dsl: dict[str, Any]
 
 
@@ -406,6 +591,9 @@ class Lineage(StrictModel):
     models: list[str]
     tables: list[str]
     fields: list[str]
+    query_mode: Literal["single_model", "multi_entity", "multi_fact"] | None = None
+    fanout_strategy: str = ""
+    row_policy: dict[str, Any] = Field(default_factory=dict)
 
 
 class CompileResponse(TraceFields):
@@ -628,8 +816,9 @@ class ChatbiAskRequest(StrictModel):
     query: str = Field(min_length=1, max_length=1000)
     workspace_id: str = Field(default="demo", min_length=1, max_length=128)
     conversation_id: str = Field(default="frontend_demo", min_length=1, max_length=128)
-    biz_domain: Literal["auto", "sales", "advertising"] = "auto"
+    biz_domain: Literal["auto", "production_benchmark"] = "auto"
     timezone: str = "Asia/Shanghai"
+    identity_token: str = Field(default="", max_length=4096)
 
     @field_validator("timezone")
     @classmethod
@@ -667,6 +856,13 @@ class ChatbiAskResponse(TraceFields):
     reflection: dict[str, Any] | None = None
     answer_markdown: str = ""
     steps: list[ChatbiPipelineStep]
+
+
+class ProductInteractionRequest(StrictModel):
+    workspace_id: str = Field(default="demo", min_length=1, max_length=128)
+    conversation_id: str = Field(min_length=1, max_length=128)
+    query_id: str = Field(min_length=1, max_length=128)
+    event_name: Literal["result_adopted", "result_corrected"]
 
 
 class FeedbackSubmitRequest(StrictModel):
@@ -762,9 +958,23 @@ class GoldenQuestionListResponse(TraceFields):
 
 
 class GoldenQuestionCreateFromFeedbackRequest(StrictModel):
-    biz_domain: Literal["auto", "sales", "advertising"] = "auto"
+    biz_domain: Literal["auto", "production_benchmark"] = "auto"
     expected_status: Literal["SUCCESS", "CLARIFY", "REJECT", "BLOCKED", "ERROR"] = "SUCCESS"
+    expected_metric_id: str | None = Field(default=None, pattern=r"^M_[A-Z0-9_]{2,100}$")
+    expected_intent: str | None = Field(default=None, max_length=64)
+    expected_dimension_id: str | None = Field(
+        default=None, pattern=r"^D_[A-Z0-9_]{2,100}$"
+    )
+    expected_chart_type: str | None = Field(default=None, max_length=32)
+    expected_row_count: int | None = Field(default=None, ge=0)
+    expected_reflection_status: str | None = Field(default=None, max_length=32)
     expected_notes: str = Field(default="", max_length=2000)
+
+    @model_validator(mode="after")
+    def success_requires_confirmed_metric(self) -> "GoldenQuestionCreateFromFeedbackRequest":
+        if self.expected_status == "SUCCESS" and not self.expected_metric_id:
+            raise ValueError("SUCCESS Golden contract requires an operator-confirmed metric")
+        return self
 
 
 class GoldenQuestionCreateResponse(TraceFields):

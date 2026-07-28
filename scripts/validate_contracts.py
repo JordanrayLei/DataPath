@@ -16,16 +16,17 @@ from openapi_spec_validator import validate_spec
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
-DOCUMENT = ROOT / "document"
+DOCUMENT = ROOT / "document" / "development" / "technical"
 QUERY_DSL_SCHEMA_PATH = DOCUMENT / "query-dsl-v1.schema.json"
 OPENAPI_PATH = DOCUMENT / "chatbi-openapi.yaml"
 DIFY_DSL_PATH = DOCUMENT / "dify-chatbi-workflow.zh-CN.dsl.yml"
 METRIC_CATALOG_PATH = DOCUMENT / "initial-metric-catalog.md"
-BUSINESS_EVALUATION_PATH = ROOT / "data" / "evaluation" / "olist_business_cases.json"
 
 EXPECTED_PATHS = {
     "/api/chatbi/context/load",
+    "/api/chatbi/context/save",
     "/api/chatbi/metrics/retrieve",
+    "/api/chatbi/metrics/adjudicate/validate",
     "/api/chatbi/dsl/validate",
     "/api/chatbi/query/compile",
     "/api/chatbi/query/execute",
@@ -36,7 +37,9 @@ EXPECTED_PATHS = {
 
 EXPECTED_DIFY_URL_SUFFIXES = {
     "/context/load",
+    "/context/save",
     "/metrics/retrieve",
+    "/metrics/adjudicate/validate",
     "/dsl/validate",
     "/query/compile",
     "/query/execute",
@@ -47,6 +50,11 @@ EXPECTED_DIFY_URL_SUFFIXES = {
 
 REQUIRED_DIFY_SAFETY_NODES = {
     "context_gate",
+    "context_save_http",
+    "adjudication_http",
+    "adjudication_parse",
+    "adjudication_gate",
+    "adjudication_context",
     "context_error_end",
     "execute_parse",
     "execute_gate",
@@ -66,9 +74,16 @@ REQUIRED_DIFY_SAFETY_EDGES = {
     ("context_parse", "context_gate", "source"),
     ("context_gate", "preprocess_llm", "case_ok"),
     ("context_gate", "context_error_end", "false"),
+    ("disambiguate_llm", "adjudication_http", "source"),
+    ("adjudication_http", "adjudication_parse", "source"),
+    ("adjudication_parse", "adjudication_gate", "source"),
+    ("adjudication_gate", "adjudication_context", "case_pass"),
+    ("adjudication_gate", "metric_clarify", "case_clarify"),
+    ("adjudication_gate", "reject_end", "false"),
     ("execute_http", "execute_parse", "source"),
     ("execute_parse", "execute_gate", "source"),
-    ("execute_gate", "profile_http", "case_succeeded"),
+    ("execute_gate", "context_save_http", "case_succeeded"),
+    ("context_save_http", "profile_http", "source"),
     ("execute_gate", "execute_failed_end", "false"),
     ("profile_parse", "profile_gate", "source"),
     ("profile_gate", "interpret_http", "case_ok"),
@@ -92,7 +107,9 @@ EXPECTED_DIFY_LLM_NODES = {
 
 EXPECTED_IMPLEMENTED_PATHS = {
     "/api/chatbi/context/load",
+    "/api/chatbi/context/save",
     "/api/chatbi/metrics/retrieve",
+    "/api/chatbi/metrics/adjudicate/validate",
     "/api/chatbi/dsl/validate",
     "/api/chatbi/query/compile",
     "/api/chatbi/query/execute",
@@ -107,10 +124,21 @@ OPTIONAL_PUBLIC_ENTRYPOINTS = {
     "/api/chatbi/golden-questions/from-feedback/{feedback_id}",
     "/api/chatbi/golden-questions/evaluate",
     "/api/chatbi/metrics/manage/drafts/{metric_id}/publish",
+    "/api/chatbi/metrics/manage/drafts/{metric_id}/prelaunch-publish",
+    "/api/chatbi/metrics/manage/drafts/{metric_id}/closure-validation",
+    "/api/chatbi/metrics/manage/scope-examples/{business_domain_id}/preview",
+    "/api/chatbi/metrics/manage/semantic-index/{metric_id}/refresh",
+    "/api/chatbi/metrics/manage/drafts/{metric_id}/preheat/generate",
+    "/api/chatbi/metrics/manage/drafts/{metric_id}/preheat/apply",
+    "/api/chatbi/governance/sources/{source_id}/scan",
+    "/api/chatbi/governance/sources/{source_id}/publish",
+    "/api/chatbi/governance/domains/{domain_id}/table-bindings/publish",
+    "/api/chatbi/governance/domains/{domain_id}/models/{binding_id}/publish",
     "/api/chatbi/join-graph/drafts/{relation_id}/validate",
     "/api/chatbi/join-graph/drafts/{relation_id}/publish",
     "/api/chatbi/join-graph/relations/{relation_id}/deprecate",
     "/api/chatbi/join-graph/scan",
+    "/api/chatbi/operations/interactions",
 }
 
 
@@ -249,6 +277,8 @@ def validate_dify_safety_flow() -> None:
         ("execute_http", "profile_http"),
         ("profile_parse", "interpret_http"),
         ("revision_llm", "revision_template"),
+        ("disambiguate_llm", "resolution_aggregator"),
+        ("disambiguate_llm", "dsl_llm"),
     }
     actual_pairs = {(source, target) for source, target, _ in edges}
     present_forbidden = sorted(forbidden_edges & actual_pairs)
@@ -281,6 +311,23 @@ def validate_dify_safety_flow() -> None:
                 compile(str(node["data"].get("code", "")), f"dify:{node_id}", "exec")
             except SyntaxError as error:
                 raise AssertionError(f"Dify code node is invalid: {node_id}: {error}") from error
+
+    end_output_owners: dict[str, list[str]] = {}
+    for node in nodes:
+        if node.get("data", {}).get("type") != "end":
+            continue
+        for output in node["data"].get("outputs", []):
+            variable = str(output.get("variable", ""))
+            end_output_owners.setdefault(variable, []).append(node["id"])
+    duplicate_end_outputs = {
+        variable: owners
+        for variable, owners in end_output_owners.items()
+        if variable and len(owners) > 1
+    }
+    if duplicate_end_outputs:
+        raise AssertionError(
+            f"Dify End output variables must be globally unique: {duplicate_end_outputs}"
+        )
 
     serialized_graph = yaml.safe_dump(graph, allow_unicode=True)
     referenced_node_ids = set(re.findall(r"\{\{#([A-Za-z0-9_-]+)\.", serialized_graph))
@@ -318,6 +365,19 @@ def validate_dify_safety_flow() -> None:
     if "revision_llm.structured_output" not in revision_body:
         raise AssertionError("second Reflection must validate the revised interpretation")
 
+    adjudication_body = str(
+        node_by_id["adjudication_http"]["data"].get("body", {}).get("data", "")
+    )
+    for required_reference in (
+        "retrieval_parse.retrieval_json",
+        "retrieval_parse.adjudication_token",
+        "disambiguate_llm.structured_output.decisions",
+    ):
+        if required_reference not in adjudication_body:
+            raise AssertionError(
+                f"adjudication_http must send {required_reference}"
+            )
+
     for node_id in EXPECTED_DIFY_LLM_NODES:
         model = node_by_id[node_id]["data"].get("model", {})
         if model.get("provider") != "langgenius/deepseek/deepseek":
@@ -327,7 +387,10 @@ def validate_dify_safety_flow() -> None:
 
 
 def validate_metric_catalog() -> None:
-    from scripts.seed_olist_staging import METRICS
+    from app.services.production_benchmark_semantics import (
+        PUBLISHED_METRICS,
+        STAGED_METRICS,
+    )
 
     text = METRIC_CATALOG_PATH.read_text(encoding="utf-8")
     metric_ids = re.findall(
@@ -340,7 +403,7 @@ def validate_metric_catalog() -> None:
     if len(metric_ids) != len(unique_ids):
         duplicates = sorted({item for item in metric_ids if metric_ids.count(item) > 1})
         raise AssertionError(f"Duplicate detailed metric definitions: {duplicates}")
-    expected_ids = {item[0] for item in METRICS}
+    expected_ids = {item[0] for item in [*PUBLISHED_METRICS, *STAGED_METRICS]}
     if unique_ids != expected_ids:
         raise AssertionError(
             f"Metric catalog differs from published seed definitions; "
@@ -354,33 +417,6 @@ def validate_metric_catalog() -> None:
     )
     if invalid_ids:
         raise AssertionError(f"Invalid metric IDs: {invalid_ids}")
-
-
-def validate_business_evaluation_corpus() -> None:
-    cases = load_json(BUSINESS_EVALUATION_PATH)
-    if len(cases) != 30:
-        raise AssertionError(f"Expected 30 business evaluation cases, found {len(cases)}")
-    names = [item.get("name") for item in cases]
-    if len(names) != len(set(names)):
-        raise AssertionError("Business evaluation case names must be unique")
-    non_permission_queries = [
-        item.get("query") for item in cases if item.get("expected_status") != "BLOCKED"
-    ]
-    if len(non_permission_queries) != len(set(non_permission_queries)):
-        raise AssertionError("Non-permission evaluation queries must be unique")
-    statuses = {"SUCCESS": 0, "CLARIFY": 0, "REJECT": 0, "BLOCKED": 0}
-    for item in cases:
-        status = item.get("expected_status")
-        if status not in statuses:
-            raise AssertionError(f"Invalid expected status in {item.get('name')}: {status}")
-        if not item.get("query") or not item.get("domain"):
-            raise AssertionError(f"Incomplete evaluation case: {item.get('name')}")
-        statuses[status] += 1
-    expected_distribution = {"SUCCESS": 18, "CLARIFY": 3, "REJECT": 6, "BLOCKED": 3}
-    if statuses != expected_distribution:
-        raise AssertionError(
-            f"Unexpected business evaluation distribution: {statuses}"
-        )
 
 
 def validate_fastapi_routes() -> None:
@@ -401,12 +437,11 @@ def validate_fastapi_routes() -> None:
 def main() -> None:
     checks = [
         ("Query DSL JSON Schema and examples", validate_query_dsl_schema),
-        ("OpenAPI 3.1 and eight POST paths", validate_openapi),
+        ("OpenAPI 3.1 and ten POST paths", validate_openapi),
         ("Dify HTTP endpoint alignment", validate_dify_endpoint_alignment),
         ("Dify fail-closed safety flow", validate_dify_safety_flow),
-        ("12 published Olist metric definitions", validate_metric_catalog),
-        ("30-case Olist entrypoint smoke corpus", validate_business_evaluation_corpus),
-        ("eight implemented FastAPI ChatBI routes", validate_fastapi_routes),
+        ("11 governed production metric definitions", validate_metric_catalog),
+        ("ten implemented FastAPI ChatBI routes", validate_fastapi_routes),
     ]
 
     for label, check in checks:

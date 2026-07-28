@@ -143,7 +143,13 @@ def report_to_trend_item(path: Path, report: dict[str, Any]) -> dict[str, Any]:
         "case_total": int(number_or_zero(summary.get("case_total"))),
         "gate_passed": int(number_or_zero(summary.get("gate_passed"))),
         "gate_total": int(number_or_zero(summary.get("gate_total"))),
-        "avg_latency_ms": round(sum(latencies) / len(latencies), 1) if latencies else 0,
+        "avg_latency_ms": (
+            number_or_zero(summary.get("avg_latency_ms"))
+            if summary.get("avg_latency_ms") is not None
+            else round(sum(latencies) / len(latencies), 1)
+            if latencies
+            else None
+        ),
         "failed_cases": failed_cases,
         "failed_gates": failed_gates,
     }

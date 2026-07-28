@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>DataPath｜可信 ChatBI Copilot</title>
-    <link rel="stylesheet" href="/frontend/styles.css?v=20260712-semantic-retrieval" />
+    <link rel="stylesheet" href="/frontend/styles.css?v=20260727-compact-actions-v1" />
   </head>
   <body>
     <div class="shell">
@@ -23,28 +23,30 @@
             <strong>问数工作台</strong>
             <small>日常提问、看图表和可信结果</small>
           </button>
-          <button class="nav-item" type="button" data-view="catalog">
+          <button class="nav-item" type="button" data-view="source-governance">
             <span>02</span>
-            <strong>指标口径</strong>
-            <small>查定义、公式、维度和血缘</small>
+            <strong>数据资产</strong>
+            <small>连接数据库并扫描物理表</small>
+          </button>
+          <button class="nav-item" type="button" data-view="business-domains">
+            <span>03</span>
+            <strong>业务域</strong>
+            <small>选择业务表并发布语义模型</small>
+          </button>
+          <button class="nav-item" type="button" data-view="metric-admin">
+            <span>04</span>
+            <strong>指标中心</strong>
+            <small>查口径、建指标并发布版本</small>
           </button>
           <button class="nav-item" type="button" data-view="ops">
-            <span>03</span>
+            <span>05</span>
             <strong>质量运营</strong>
             <small>Badcase、黄金问题和回归</small>
           </button>
           <button class="nav-item" type="button" data-view="quality">
-            <span>04</span>
+            <span>06</span>
             <strong>测评监控</strong>
             <small>发布前质量门禁和趋势</small>
-          </button>
-          <button class="nav-item" type="button" data-view="metric-admin">
-            <span>05</span>
-            <strong>指标管理</strong>
-            <small>创建草稿并发布版本</small>
-          </button>
-          <button class="nav-item" type="button" data-view="join-graph">
-            <span>06</span><strong>Join治理</strong><small>发现、验证并发布安全关系</small>
           </button>
         </nav>
         <div class="sidebar-spacer"></div>
@@ -52,7 +54,7 @@
           <span class="user-avatar">演</span>
           <span>
             <strong>演示工作区</strong>
-            <small>public_demo_user</small>
+            <small id="sidebar-operator-id">production_analyst</small>
           </span>
         </div>
       </aside>
@@ -72,8 +74,15 @@
                 <p><span id="conversation-turn-count">0 轮对话</span> · <span class="context-online">已保留上下文</span></p>
               </div>
               <div class="conversation-actions">
-                <button type="button" title="分享当前分析">分享</button>
-                <button type="button" title="更多操作">•••</button>
+                <span id="conversation-action-status" aria-live="polite"></span>
+                <button id="conversation-share" type="button" title="复制当前分析摘要">分享</button>
+                <div class="conversation-more-wrap">
+                  <button id="conversation-more" type="button" title="更多操作" aria-expanded="false">•••</button>
+                  <div id="conversation-menu" class="conversation-menu hidden">
+                    <button type="button" data-conversation-command="copy">复制分析摘要</button>
+                    <button type="button" data-conversation-command="new">新建分析</button>
+                  </div>
+                </div>
               </div>
             </header>
 
@@ -83,12 +92,64 @@
                 <h3>从一个业务问题开始</h3>
                 <p>我会记住本次会话中的指标、时间、维度和筛选条件。</p>
                 <div class="empty-examples" aria-label="示例问题">
-                  <button type="button" data-example="2018年前九个月每月Olist成交总额趋势">成交总额趋势</button>
-                  <button type="button" data-example="2017年各客户州Olist购买客户数排名">客户州买家排名</button>
-                  <button type="button" data-example="2017年各商品品类Olist客单价排名">品类客单价</button>
+                  <button type="button" data-example="2024年每月订单量趋势">订单量趋势</button>
+                  <button type="button" data-example="2024年各区域支付实收金额排名">区域实收排名</button>
+                  <button type="button" data-example="2024年退款后净收入">跨事实净收入</button>
                 </div>
               </section>
             </div>
+
+            <section id="chat-feedback-panel" class="chat-feedback-panel hidden" aria-label="提交 Bad Case">
+              <div class="card-title-row">
+                <div>
+                  <h3>提交 Bad Case</h3>
+                  <p class="card-subtitle">把当前错误结果沉淀为回归候选，再交给质量运营闭环修复。</p>
+                </div>
+                <div class="badcase-actions">
+                  <span id="feedback-status" class="pill">待提交</span>
+                  <button id="chat-feedback-close" type="button">关闭</button>
+                </div>
+              </div>
+              <div class="result-adoption-actions" aria-label="结果采用反馈">
+                <button type="button" data-product-interaction="result_adopted">结果可直接使用</button>
+                <button type="button" data-product-interaction="result_corrected">我做了人工修正</button>
+                <small id="result-adoption-status">仅在点击后计入采用或修正指标。</small>
+              </div>
+              <form id="feedback-form" class="feedback-form">
+                <div class="feedback-grid">
+                  <label>
+                    类型
+                    <select id="feedback-type" name="feedback_type">
+                      <option value="METRIC_WRONG">指标选错</option>
+                      <option value="DATA_WRONG">数据不对</option>
+                      <option value="INTERPRETATION_UNTRUSTED">解读不可信</option>
+                      <option value="CHART_WRONG">图表不合适</option>
+                      <option value="PERMISSION_ISSUE">权限/安全问题</option>
+                      <option value="UI_ISSUE">页面体验问题</option>
+                      <option value="OTHER">其他</option>
+                    </select>
+                  </label>
+                  <label>
+                    严重程度
+                    <select id="feedback-severity" name="severity">
+                      <option value="MEDIUM">中</option>
+                      <option value="LOW">低</option>
+                      <option value="HIGH">高</option>
+                      <option value="CRITICAL">严重</option>
+                    </select>
+                  </label>
+                </div>
+                <label>
+                  问题描述
+                  <textarea id="feedback-message" rows="3" maxlength="2000" placeholder="例如：这里应该识别为毛利率，而不是毛利额。"></textarea>
+                </label>
+                <label>
+                  期望表现
+                  <textarea id="feedback-expected" rows="2" maxlength="2000" placeholder="例如：希望系统先澄清口径，或者返回另一个指标。"></textarea>
+                </label>
+                <button id="feedback-submit" type="submit">提交反馈</button>
+              </form>
+            </section>
 
             <footer class="chat-composer">
               <div id="context-chips" class="context-chips"><span>新会话 · 暂无继承条件</span></div>
@@ -98,7 +159,13 @@
                 <div class="composer-tools">
                   <select id="domain" name="domain" aria-label="业务域">
                     <option value="auto">自动识别</option>
-                    <option value="sales">电商经营</option>
+                    <option value="production_benchmark">全渠道零售运营</option>
+                  </select>
+                  <select id="demo-role" name="demo_role" aria-label="演示数据角色">
+                    <option value="production_analyst">全域分析师</option>
+                    <option value="production_tenant_1">租户 1 分析师</option>
+                    <option value="production_tenant_2">租户 2 分析师</option>
+                    <option value="metric_admin">指标管理员（无数据权限）</option>
                   </select>
                   <button id="submit-btn" type="submit" title="发送问题">↑</button>
                 </div>
@@ -114,7 +181,7 @@
               <div id="context-memory" class="context-memory"><p>完成第一轮分析后显示继承条件。</p></div>
             </section>
             <section class="trust-card trace-card">
-              <div class="card-title-row"><h3>执行链路</h3><span id="trace-badge" class="trace-badge"></span></div>
+          <div class="card-title-row"><h3>执行链路</h3></div>
               <ol id="pipeline" class="pipeline"><li>提交问题后展示完整链路。</li></ol>
             </section>
           </aside>
@@ -123,44 +190,63 @@
         <section class="card view-hidden" data-view-panel="quality">
           <div class="card-title-row">
             <div>
-              <h3>测评看板</h3>
-              <p class="card-subtitle">展示最新产品评测报告，包括总通过率、产品用例、安全/可信门禁和耗时。</p>
+              <h3>测评监控</h3>
+              <p class="card-subtitle">发布前质量门禁与冻结证据</p>
             </div>
             <div class="badcase-actions">
               <button id="evaluation-refresh" type="button">刷新测评报告</button>
             </div>
           </div>
-          <div id="evaluation-summary" class="evaluation-summary">
+          <div class="inline-tabs" role="tablist" aria-label="测评监控视图">
+            <button class="active" type="button" role="tab" aria-selected="true" data-evaluation-tab="overview">总览</button>
+            <button type="button" role="tab" aria-selected="false" data-evaluation-tab="cases">用例结果</button>
+            <button type="button" role="tab" aria-selected="false" data-evaluation-tab="gates">门禁与证据</button>
+          </div>
+          <div id="evaluation-summary" class="evaluation-summary" data-evaluation-section="summary">
             <div class="rich-item">测评报告加载中...</div>
           </div>
-          <div id="evaluation-trend" class="evaluation-trend">
-            <div class="rich-item">Evaluation trend loading...</div>
-          </div>
-          <div class="evaluation-layout">
-            <div>
+          <div class="evaluation-dashboard-grid">
+            <section class="evaluation-cases-panel" data-evaluation-section="cases">
               <h4>产品用例</h4>
               <div id="evaluation-cases" class="evaluation-list"></div>
-            </div>
-            <div>
-              <h4>安全 / 可信门禁</h4>
-              <div id="evaluation-gates" class="evaluation-list"></div>
-            </div>
+            </section>
+            <aside>
+              <section class="evaluation-gates-panel" data-evaluation-section="gates"><h4>安全 / 可信门禁</h4><div id="evaluation-gates" class="evaluation-list"></div></section>
+            </aside>
           </div>
         </section>
 
-        <section class="card view-hidden" data-view-panel="catalog">
+        <div class="section-tabs view-hidden" data-view-tabs="metric-admin" data-subnav="metric" role="tablist" aria-label="指标中心视图">
+          <button class="active" type="button" role="tab" aria-selected="true" data-subtab="metric-catalog">指标目录</button>
+          <button type="button" role="tab" aria-selected="false" data-subtab="metric-governance">草稿与发布</button>
+        </div>
+
+        <section class="card metric-hub-section metric-hub-catalog view-hidden" data-view-panel="metric-admin" data-subpanel="metric-catalog">
           <div class="card-title-row">
             <div>
-              <h3>指标口径中心</h3>
-              <p class="card-subtitle">查看指标定义、别名、公式、可用维度、语义模型和血缘字段，避免 AI 取数口径黑盒。</p>
+              <h3>指标中心</h3>
+              <p class="card-subtitle">统一管理指标口径、版本和业务语义</p>
             </div>
-            <div class="badcase-actions">
-              <select id="metric-domain-filter" aria-label="指标业务域筛选">
-                <option value="ALL">全部业务域</option>
-                <option value="sales">电商经营</option>
-              </select>
-              <button id="metric-refresh" type="button">刷新指标</button>
-            </div>
+            <button id="metric-catalog-new" class="primary-action" type="button">新建指标</button>
+          </div>
+          <div class="metric-toolbar">
+            <label class="metric-search"><span aria-hidden="true">⌕</span><input id="metric-search" type="search" placeholder="搜索指标名称、ID 或别名" /></label>
+            <select id="metric-domain-filter" aria-label="指标业务域筛选">
+              <option value="ALL">全部业务域</option>
+            </select>
+            <select id="metric-type-filter" aria-label="指标类型筛选">
+              <option value="ALL">全部类型</option>
+              <option value="amount">金额</option>
+              <option value="count">计数</option>
+              <option value="ratio">比率</option>
+              <option value="average">均值</option>
+            </select>
+            <select id="metric-status-filter" aria-label="指标状态筛选">
+              <option value="ALL">全部状态</option>
+              <option value="PUBLISHED">已发布</option>
+              <option value="BLOCKED">已阻断</option>
+            </select>
+            <button id="metric-refresh" type="button">刷新</button>
           </div>
           <div id="metric-counts" class="badcase-counts"></div>
           <div class="metric-layout">
@@ -174,23 +260,415 @@
         </section>
 
         <section class="card view-hidden" data-view-panel="join-graph">
-          <div class="card-title-row"><div><h3>Semantic Join Graph 治理</h3><p class="card-subtitle">自动发现候选关系，检测基数、覆盖率与 Fanout，审核后发布给 Planner。</p></div><div class="badcase-actions"><button id="join-scan" type="button">扫描候选</button><button id="join-refresh" type="button">刷新</button></div></div>
+          <div class="card-title-row"><div><h3>Join 治理</h3><p class="card-subtitle">发现、验证并发布安全关系</p></div><div class="badcase-actions"><button id="join-refresh" type="button">刷新</button><button id="join-scan" type="button">扫描候选</button></div></div>
+          <div class="inline-tabs" role="tablist" aria-label="Join 治理视图">
+            <button class="active" type="button" role="tab" aria-selected="true" data-join-tab="graph">关系图谱</button>
+            <button type="button" role="tab" aria-selected="false" data-join-tab="relations">关系列表</button>
+            <button type="button" role="tab" aria-selected="false" data-join-tab="candidates">候选与草稿</button>
+          </div>
           <div class="join-summary" id="join-summary"></div>
           <div class="join-admin-layout">
-            <section><h4>语义模型</h4><div id="join-models" class="join-list"></div><h4>已发布关系</h4><div id="join-relations" class="join-list"></div></section>
-            <section class="join-editor"><h4>关系草稿</h4><form id="join-form">
-              <label>关系 ID<input id="join-id" required pattern="J_[A-Z0-9_]+" placeholder="J_ORDERS_CUSTOMERS" /></label>
-              <div class="metric-form-grid"><label>左实体<select id="join-left"></select></label><label>右实体<select id="join-right"></select></label><label>左键<input id="join-left-key" required placeholder="order_id" /></label><label>右键<input id="join-right-key" required placeholder="order_id" /></label><label>基数<select id="join-cardinality"><option value="many_to_one">多对一</option><option value="one_to_one">一对一</option><option value="one_to_many">一对多</option><option value="many_to_many">多对多</option></select></label><label>Fanout策略<select id="join-strategy"><option value="safe">safe</option><option value="aggregate_before_join">aggregate_before_join</option><option value="blocked">blocked</option></select></label></div>
-              <div id="join-validation" class="admin-message">保存草稿后执行数据检测。</div><div class="form-actions"><button type="submit">保存草稿</button><button id="join-validate" type="button" disabled>检测</button><button id="join-publish" type="button" disabled>发布</button></div>
+            <section class="join-graph-panel">
+              <div class="panel-section-heading"><h4>关系图谱</h4><div class="graph-legend"><span><i class="teal"></i>选中关系</span><span><i class="green"></i>已发布</span><span><i class="dash"></i>候选/草稿</span></div></div>
+              <div id="join-graph-canvas" class="join-graph-canvas"><div class="rich-item">关系图加载中...</div></div>
+              <details class="join-source-details">
+                <summary>查看模型与已发布关系列表</summary>
+                <h4>语义模型</h4><div id="join-models" class="join-list"></div>
+                <h4>已发布关系</h4><div id="join-relations" class="join-list"></div>
+              </details>
+            </section>
+            <section class="join-editor join-readonly"><h4>关系详情</h4><form id="join-form" aria-label="只读关系详情">
+              <fieldset disabled>
+                <label>关系 ID<input id="join-id" required pattern="J_[A-Z0-9_]+" placeholder="J_ORDERS_CUSTOMERS" /></label>
+                <div class="metric-form-grid"><label>左实体<select id="join-left"></select></label><label>右实体<select id="join-right"></select></label><label>左键<input id="join-left-key" required placeholder="order_id" /></label><label>右键<input id="join-right-key" required placeholder="order_id" /></label><label>基数<select id="join-cardinality"><option value="many_to_one">多对一</option><option value="one_to_one">一对一</option><option value="one_to_many">一对多</option><option value="many_to_many">多对多</option></select></label><label>Fanout策略<select id="join-strategy"><option value="safe">safe</option><option value="aggregate_before_join">aggregate_before_join</option><option value="blocked">blocked</option></select></label></div>
+              </fieldset>
+              <div id="join-validation" class="admin-message hidden" aria-hidden="true"></div><div class="form-actions hidden"><button type="submit">保存草稿</button><button id="join-validate" type="button" disabled>检测</button><button id="join-publish" type="button" disabled>发布</button></div>
             </form><h4>自动发现候选</h4><div id="join-candidates" class="join-list"><div class="rich-item">尚未扫描。</div></div></section>
           </div>
         </section>
 
-        <section class="card view-hidden" data-view-panel="metric-admin">
+        <section class="card view-hidden" data-view-panel="source-governance">
+          <div class="card-title-row">
+            <div><h3>数据资产</h3><p class="card-subtitle">连接数据仓库并扫描物理结构；业务解释在各业务域内独立维护</p></div>
+            <span id="source-status" class="pill">DRAFT</span>
+          </div>
+          <div class="source-stepper" role="tablist" aria-label="数据接入进度">
+            <button class="active" type="button" role="tab" aria-selected="true" data-source-step="1"><b>1</b><span>连接配置</span></button><i></i>
+            <button type="button" role="tab" aria-selected="false" data-source-step="2" disabled><b>2</b><span>扫描结构</span></button><i></i>
+            <button type="button" role="tab" aria-selected="false" data-source-step="3" disabled><b>3</b><span>物理资产</span></button>
+          </div>
+          <div id="source-message" class="admin-message source-wizard-message">请先保存数据源连接配置。</div>
+
+          <div class="source-step-panel" data-source-step-panel="1">
+            <section class="source-step-card">
+              <div class="source-step-heading"><div><span>STEP 01</span><h4>连接数据仓库</h4><p>验证并保存只读连接信息，凭据只保存环境变量名称。</p></div><strong id="source-connection-title">Production Benchmark</strong></div>
+              <form id="source-form" class="metric-admin-form source-connection-form">
+                <div class="metric-form-grid">
+                  <label>数据源 ID<input id="source-id" required pattern="[a-z][a-z0-9_]+" value="production_warehouse" /></label>
+                  <label>名称<input id="source-name" required value="生产分析仓库" /></label>
+                  <label>Host<input id="source-host" required value="127.0.0.1" /></label>
+                  <label>HTTP Port<input id="source-port" type="number" required value="8123" /></label>
+                  <label>数据库<input id="source-database" required value="production_benchmark" /></label>
+                  <label>只读用户<input id="source-username" required value="chatbi_reader" /></label>
+                  <label class="span-two">凭据环境变量<input id="source-credential-env" required value="CLICKHOUSE_READER_PASSWORD" /><small>页面和治理数据库都不保存密码，只保存服务端环境变量名。</small></label>
+                </div>
+                <div class="source-step-actions"><button class="primary-action" type="submit">保存连接并继续</button></div>
+              </form>
+            </section>
+          </div>
+
+          <div class="source-step-panel interaction-hidden" data-source-step-panel="2">
+            <section class="source-step-card source-scan-step">
+              <div class="source-step-heading"><div><span>STEP 02</span><h4>扫描数据库结构</h4><p>以只读方式扫描表和字段，并生成候选业务唯一键，不会修改仓库数据。</p></div></div>
+              <div class="source-scan-hero">
+                <span class="source-scan-icon">⌕</span>
+                <strong>准备扫描 <span id="source-scan-database">production_benchmark</span></strong>
+                <small id="source-scan-summary">尚未扫描数据库结构。</small>
+                <button id="source-scan" class="primary-action" type="button">开始扫描</button>
+              </div>
+            </section>
+          </div>
+
+          <div class="source-step-panel interaction-hidden" data-source-step-panel="3">
+            <section class="source-step-card source-asset-inventory-step">
+              <div class="source-step-heading">
+                <div>
+                  <span>STEP 03</span>
+                  <h4>物理资产清单</h4>
+                  <p>这里仅展示数据库扫描得到的客观结构；所有业务解释都在具体业务域的语义模型中维护。</p>
+                </div>
+                <button id="source-assets-refresh" class="compact-action" type="button">刷新资产</button>
+              </div>
+              <div id="source-asset-summary" class="source-publish-summary">
+                <div class="rich-item">正在加载物理资产...</div>
+              </div>
+              <section class="schema-impact-center">
+                <div class="panel-section-heading">
+                  <div>
+                    <h4>结构变更影响</h4>
+                    <small>重新扫描后自动识别删表、删字段和字段类型变化，并阻断受影响查询</small>
+                  </div>
+                  <span id="schema-impact-count" class="pill">0 个待处理</span>
+                </div>
+                <div id="schema-impact-summary" class="source-publish-summary"></div>
+                <div id="schema-impact-list" class="schema-impact-list">
+                  <div class="quality-empty"><strong>暂无结构变更</strong><small>后续扫描发现破坏性变化时会显示在这里。</small></div>
+                </div>
+              </section>
+              <div id="source-asset-inventory" class="domain-asset-list">
+                <div class="rich-item">完成结构扫描后显示物理表清单。</div>
+              </div>
+              <div class="source-publish-warning">下一步：进入“业务域”，从这份全局清单中选择业务表。同一张物理表可以被多个业务域分别引用。</div>
+              <div class="source-step-actions">
+                <button id="source-open-domains" class="primary-action" type="button">前往业务域配置</button>
+              </div>
+            </section>
+          </div>
+
+          <div class="source-step-panel interaction-hidden" data-legacy-source-governance-panel="3" aria-hidden="true">
+            <div class="source-workflow-layout">
+              <section class="source-scan-panel">
+                <div class="panel-section-heading"><div><h4>扫描结果</h4><small>选择当前业务域需要引用的物理表</small></div></div>
+                <div id="source-tables" class="join-list"><div class="rich-item">尚未扫描。</div></div>
+              </section>
+              <section class="source-confirm-panel metric-config-section">
+                <div class="admin-section-heading"><div><h4>归入业务域并确认语义</h4><small>逐表确认模型、粒度与关键字段</small></div></div>
+                <div id="source-table-detail" class="source-table-detail">
+                  <div class="quality-empty"><strong>选择左侧数据表</strong><small>点击表名后可查看并编辑模型、实体、粒度和关键字段。</small></div>
+                </div>
+                <div class="metric-form-grid">
+                  <label class="span-two">选择业务域
+                    <select id="source-domain-id" required>
+                      <option value="">请先选择已创建的业务域</option>
+                    </select>
+                    <small>这里只引用已扫描物理表；同一张表可以被多个业务域分别治理。</small>
+                  </label>
+                  <label class="span-two">当前业务域
+                    <input id="source-domain-name" readonly placeholder="选择业务域后自动显示" />
+                  </label>
+                </div>
+                <div id="source-domain-context" class="metric-domain-context">
+                  <span>Domain</span>
+                  <strong>尚未选择业务域</strong>
+                  <small>请先在“业务域”页面创建业务域，再返回这里选择。</small>
+                </div>
+                <section class="dimension-builder">
+                  <div class="admin-section-heading"><div><h4>配置可用维度</h4><small>普通配置无需编写 JSON；每个维度都必须映射到已选择模型的真实字段。</small></div></div>
+                  <div class="dimension-builder-form">
+                    <label>维度 ID<input id="source-dimension-id" placeholder="D_DATE" /></label>
+                    <label>维度名称<input id="source-dimension-name" placeholder="日期" /></label>
+                    <label>类型<select id="source-dimension-type"><option value="time_grain">时间粒度</option><option value="date">日期</option><option value="string">文本</option><option value="enum">枚举</option><option value="number">数值</option></select></label>
+                    <label>语义模型<select id="source-dimension-model"></select></label>
+                    <label>物理字段<select id="source-dimension-field"></select></label>
+                    <label>时间粒度<select id="source-dimension-grain"><option value="day">天</option><option value="week">周</option><option value="month">月</option><option value="quarter">季度</option><option value="year">年</option></select></label>
+                    <button id="source-dimension-add" type="button">添加维度映射</button>
+                  </div>
+                  <div id="source-dimension-list" class="domain-asset-list"><div class="rich-item">尚未配置维度。</div></div>
+                  <details class="semantic-family-import">
+                    <summary>高级 JSON 编辑</summary>
+                    <label>维度映射 JSON
+                      <textarea id="source-dimensions-json" rows="7" placeholder='[{"dimension_id":"D_DATE","name":"日期","dimension_type":"time_grain","allowed_operators":["eq","between"],"mappings":[{"semantic_model_id":"SM_ORDERS","field":"business_date","kind":"time_grain","grain":"day"}]}]'></textarea>
+                    </label>
+                    <small>跨模型取维度时可在高级 JSON 中填写 source_model_id。</small>
+                  </details>
+                </section>
+                <div class="source-step-actions"><button id="source-confirm" class="primary-action" type="button">保存人工确认并继续</button></div>
+              </section>
+            </div>
+          </div>
+
+          <div class="source-step-panel interaction-hidden" data-legacy-source-governance-panel="4" aria-hidden="true">
+            <section class="source-step-card source-publish-step">
+              <div class="source-step-heading"><div><span>STEP 04</span><h4>发布业务域语义模型</h4><p>发布后模型、实体和维度将可用于指标配置与跨事实查询。</p></div></div>
+              <div id="source-publish-summary" class="source-publish-summary">
+                <div class="rich-item">完成语义确认后显示发布摘要。</div>
+              </div>
+              <div class="source-publish-warning">发布会生成可被 Planner 使用的治理资产；若需修改，请返回语义确认步骤重新保存。</div>
+              <div class="source-step-actions"><button id="source-publish" class="primary-action" type="button" disabled>确认并发布模型</button></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="card domain-workspace view-hidden" data-view-panel="business-domains">
           <div class="card-title-row">
             <div>
-              <h3>指标管理</h3>
-              <p class="card-subtitle">创建指标草稿，校验公式与可用维度，并发布不可变版本。</p>
+              <h3>业务域</h3>
+              <p class="card-subtitle">定义业务边界，把已扫描物理表组织成可治理的语义空间</p>
+            </div>
+            <button id="domain-new" class="primary-action" type="button">新建业务域</button>
+          </div>
+
+          <div class="domain-layout">
+            <aside class="domain-list-panel">
+              <div class="admin-section-heading">
+                <div><h4>业务域列表</h4><small>一个域拥有独立模型、关系、指标和语义策略</small></div>
+                <button id="domain-refresh" type="button">刷新</button>
+              </div>
+              <div class="domain-list-filters">
+                <input id="domain-search" type="search" placeholder="搜索业务域、负责人或目标" aria-label="搜索业务域" />
+                <select id="domain-status-filter" aria-label="业务域状态筛选">
+                  <option value="ALL">全部状态</option>
+                  <option value="DRAFT">DRAFT</option>
+                  <option value="ACTIVE">ACTIVE</option>
+                  <option value="DEGRADED">DEGRADED</option>
+                </select>
+              </div>
+              <div id="domain-list" class="domain-list"><div class="rich-item">业务域加载中...</div></div>
+            </aside>
+
+            <section class="domain-detail-panel">
+              <div id="domain-empty" class="quality-empty">
+                <strong>选择或创建一个业务域</strong>
+                <small>然后选择物理表、确认模型和关系，最后在该域内创建指标。</small>
+              </div>
+              <div id="domain-detail" class="hidden">
+                <div class="domain-heading">
+                  <div>
+                    <span id="domain-detail-status" class="pill">DRAFT</span>
+                    <h3 id="domain-detail-name">业务域</h3>
+                    <p id="domain-detail-description"></p>
+                  </div>
+                  <div class="badcase-actions">
+                    <button id="domain-edit" type="button">编辑基本信息</button>
+                    <button id="domain-create-metric" class="primary-action" type="button">在此域创建指标</button>
+                  </div>
+                </div>
+
+                <div id="domain-summary" class="domain-summary"></div>
+
+                <div class="inline-tabs" role="tablist" aria-label="业务域详情">
+                  <button class="active" type="button" role="tab" aria-selected="true" data-domain-tab="overview">概览</button>
+                  <button type="button" role="tab" aria-selected="false" data-domain-tab="assets">数据模型</button>
+                  <button type="button" role="tab" aria-selected="false" data-domain-tab="relations">维度与关系</button>
+                  <button type="button" role="tab" aria-selected="false" data-domain-tab="metrics">指标</button>
+                  <button type="button" role="tab" aria-selected="false" data-domain-tab="semantics">语义策略</button>
+                </div>
+
+                <div class="domain-tab-panel" data-domain-tab-panel="overview">
+                  <section class="domain-readiness-card">
+                    <div class="domain-readiness-head">
+                      <div><small>业务域完成度</small><strong id="domain-readiness-score">0%</strong></div>
+                      <div class="semantic-readiness-track"><span id="domain-readiness-bar"></span></div>
+                    </div>
+                    <div id="domain-readiness-stages" class="domain-readiness-stages"></div>
+                  </section>
+                  <section class="domain-next-action">
+                    <div><small>推荐下一步</small><strong id="domain-next-action-text">完善业务域基础信息</strong></div>
+                    <button id="domain-next-action-button" class="primary-action" type="button">继续配置</button>
+                  </section>
+                  <section>
+                    <div class="panel-section-heading"><div><h4>上线阻塞项</h4><small>阻塞项解决后才能安全创建或发布指标</small></div></div>
+                    <div id="domain-blocker-list" class="domain-blocker-list"></div>
+                  </section>
+                </div>
+
+                <div class="domain-tab-panel interaction-hidden" data-domain-tab-panel="assets">
+                  <div class="panel-section-heading"><div><h4>业务域数据模型</h4><small>模型是当前业务域对全局物理表的独立治理投影</small></div><button id="domain-add-model" type="button">添加业务表</button></div>
+                  <div id="domain-model-list" class="domain-asset-list"></div>
+                </div>
+
+                <div class="domain-tab-panel interaction-hidden" data-domain-tab-panel="relations">
+                  <div class="panel-section-heading">
+                    <div><h4>维度与安全关系</h4><small>跨事实指标只使用已发布的安全 Join</small></div>
+                    <button id="domain-open-join" type="button">打开 Join 治理</button>
+                  </div>
+                  <div id="domain-relation-summary" class="domain-asset-list"></div>
+                </div>
+
+                <div class="domain-tab-panel interaction-hidden" data-domain-tab-panel="semantics">
+                  <section class="metric-config-section semantic-readiness-section">
+                    <div class="admin-section-heading">
+                      <div>
+                        <h4>业务域边界样本</h4>
+                        <small>定义该域不应回答的问题，用于 REJECT 判定。</small>
+                      </div>
+                      <span id="scope-example-count" class="pill">0 条</span>
+                    </div>
+                    <div class="metric-form-grid">
+                      <label>业务域<select id="scope-example-domain"></select></label>
+                      <label>最低边界相似度<input id="scope-negative-threshold" type="number" min="0.35" max="0.80" step="0.01" value="0.64" /><small>越低越容易 REJECT，必须结合域内保护集预览。</small></label>
+                      <label>相对候选安全差值<input id="scope-margin" type="number" min="0" max="0.20" step="0.01" value="0.06" /><small>边界分数接近指标候选时才拒绝。</small></label>
+                      <label class="span-two">域外示例与原因
+                        <textarea id="scope-example-input" rows="6" maxlength="12000" placeholder="每行一个，例如：&#10;员工离职率 | 人力资源主题不属于当前业务域&#10;服务器 CPU 使用率 | 基础设施监控不属于当前业务域&#10;天气预报 | 外部公共信息不属于当前业务域"></textarea>
+                        <small>格式为“问法 | 原因”，至少 3 条；请维护语义族，不要粘贴整套测试集。</small>
+                      </label>
+                      <label class="span-two">发布前影响预览问法
+                        <textarea id="scope-preview-input" rows="4" maxlength="8000" placeholder="每行一个待检查问法；建议同时粘贴域外 Bad Case 和域内保护问题"></textarea>
+                      </label>
+                    </div>
+                    <div id="scope-preview-result" class="admin-message">预览会展示每条问法的指标相似度、边界相似度和预计 KEEP / REJECT。</div>
+                    <div class="semantic-action-row">
+                      <button id="scope-preview-run" class="compact-action" type="button">运行影响预览</button>
+                    </div>
+                    <div id="scope-example-status" class="admin-message">选择业务域后加载已发布边界样本。</div>
+                    <button id="scope-example-save" type="button">发布业务域边界</button>
+                  </section>
+                  <section class="metric-config-section semantic-readiness-section">
+                    <div class="admin-section-heading">
+                      <div><h4>歧义边界与直接完成策略</h4><small>先识别必须澄清的宽泛表达，再决定明确 Top‑1 是否可以直接完成。</small></div>
+                      <span id="ambiguity-example-count" class="pill">0 条</span>
+                    </div>
+                    <div class="metric-form-grid">
+                      <label>直接完成最小间距<input id="selection-margin" type="number" min="0.02" max="0.12" step="0.01" value="0.08" /></label>
+                      <label>歧义相似度<input id="ambiguity-threshold" type="number" min="0.35" max="0.80" step="0.01" value="0.64" /></label>
+                      <label>歧义安全差值<input id="ambiguity-margin" type="number" min="0" max="0.20" step="0.01" value="0.06" /></label>
+                      <label>明确证据相似度<input id="specificity-threshold" type="number" min="0.35" max="0.90" step="0.01" value="0.60" /></label>
+                      <label>明确证据领先差值<input id="specificity-margin" type="number" min="0" max="0.20" step="0.01" value="0.02" /></label>
+                      <label class="span-two">必须澄清的语义示例<textarea id="ambiguity-example-input" rows="6" maxlength="12000" placeholder="每行一个，例如：销售规模 | 未说明订单量、订单金额还是商品收入"></textarea><small>格式为“问法 | 原因”，至少 3 条。</small></label>
+                      <label class="span-two">明确口径的语义示例<textarea id="specificity-example-input" rows="6" maxlength="12000" placeholder="每行一个，例如：统计成功支付到账金额 | 明确了支付方向和金额口径"></textarea><small>至少 3 条；只有明确证据领先歧义证据时才可直接完成。</small></label>
+                    </div>
+                    <div id="ambiguity-example-status" class="admin-message">选择业务域后加载歧义策略。</div>
+                    <button id="ambiguity-example-save" type="button">发布歧义策略</button>
+                  </section>
+                </div>
+
+                <div class="domain-tab-panel interaction-hidden" data-domain-tab-panel="metrics">
+                  <div class="panel-section-heading"><div><h4>已发布指标</h4><small>指标继承当前业务域的模型、维度和安全关系</small></div></div>
+                  <div id="domain-metric-list" class="domain-asset-list"></div>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <dialog id="domain-dialog">
+            <form id="domain-form" method="dialog" class="metric-admin-form">
+              <div class="admin-form-heading">
+                <div><h4 id="domain-form-title">新建业务域</h4><p>先定义责任边界，再选择数据表。</p></div>
+                <button id="domain-dialog-close" type="button" aria-label="关闭">×</button>
+              </div>
+              <div class="metric-form-grid">
+                <label>业务域 ID<input id="domain-id" required pattern="[a-z][a-z0-9_]{1,63}" placeholder="retail_operations" /></label>
+                <label>业务域名称<input id="domain-name" required maxlength="200" placeholder="零售经营" /></label>
+                <label>负责人<input id="domain-owner" required maxlength="128" value="data-platform" /></label>
+                <label class="span-two">业务目标<textarea id="domain-goal" required rows="3" maxlength="2000" placeholder="说明这个业务域为谁解决什么分析问题"></textarea></label>
+                <label class="span-two">范围说明<textarea id="domain-description" required rows="3" maxlength="2000" placeholder="说明包含的主题、核心实体和不包含的范围"></textarea></label>
+              </div>
+              <div id="domain-form-message" class="admin-message">保存业务域后，可在业务域页面继续配置业务表。</div>
+              <div class="admin-form-actions">
+                <button id="domain-cancel" type="button">取消</button>
+                <button id="domain-save" class="primary-action" type="submit">保存</button>
+              </div>
+            </form>
+          </dialog>
+          <dialog id="domain-assets-dialog">
+            <form id="domain-assets-form" method="dialog">
+              <div class="admin-form-heading">
+                <div>
+                  <h4 id="domain-assets-title">配置业务表</h4>
+                  <p>这里只建立业务域与物理表的引用关系；保存后在本域“数据模型”中定义业务解释。</p>
+                </div>
+                <button id="domain-assets-close" type="button" aria-label="关闭">×</button>
+              </div>
+              <div class="domain-assets-toolbar">
+                <label>搜索物理资产<input id="domain-assets-search" type="search" placeholder="数据源、数据库或表名" /></label>
+                <span id="domain-assets-count" class="pill">0 张表</span>
+              </div>
+              <div id="domain-assets-list" class="domain-binding-list">
+                <div class="rich-item">正在加载已扫描的物理资产...</div>
+              </div>
+              <div id="domain-assets-message" class="admin-message">
+                这里只选择当前业务域引用的表；保存后请到“数据模型”逐表定义本域业务语义。
+              </div>
+              <div class="admin-form-actions">
+                <button id="domain-assets-cancel" type="button">取消</button>
+                <button id="domain-assets-save" class="primary-action" type="button">保存选择</button>
+              </div>
+            </form>
+          </dialog>
+          <dialog id="domain-model-dialog">
+            <form id="domain-model-form" class="metric-admin-form">
+              <div class="admin-form-heading">
+                <div>
+                  <h4>治理语义模型</h4>
+                  <p id="domain-model-physical-table">选择业务域中的一张业务表。</p>
+                </div>
+                <button id="domain-model-close" type="button" aria-label="关闭">×</button>
+              </div>
+              <section class="asset-scan-readonly">
+                <div class="asset-editor-section-heading">
+                  <div><strong>物理表结构</strong><small>来自数据库扫描，只读；业务解释只属于当前业务域</small></div>
+                  <span class="pill">READ ONLY</span>
+                </div>
+                <div id="domain-model-asset-summary" class="domain-model-asset-summary"></div>
+              </section>
+              <div class="asset-editor-section-heading">
+                <div><strong>当前业务域的模型配置</strong><small>同一张物理表在不同业务域可以使用不同名称、时间口径和开放字段</small></div>
+                <span id="domain-model-version" class="pill">DRAFT · V0</span>
+              </div>
+              <div class="metric-form-grid">
+                <label>模型名称<input id="domain-model-name" required maxlength="200" /></label>
+                <label>实体类型
+                  <select id="domain-model-entity-type">
+                    <option value="fact">事实表</option>
+                    <option value="dimension">维度表</option>
+                    <option value="bridge">桥接表</option>
+                    <option value="aggregate">汇总表</option>
+                  </select>
+                </label>
+                <label class="span-two">业务说明<textarea id="domain-model-description" rows="3" maxlength="2000"></textarea></label>
+                <label class="span-two">业务粒度<input id="domain-model-grain" required maxlength="500" placeholder="例如：每行一笔销售订单" /></label>
+                <label class="span-two">业务唯一键（逗号分隔）<input id="domain-model-primary-keys" required placeholder="例如：tenant_id, order_id" /></label>
+                <label class="span-two">默认分析时间<select id="domain-model-time-field"></select><small>事实表和汇总表必须选择；维度表、桥接表可以不设置。</small></label>
+                <label class="span-two">当前业务域开放字段
+                  <div id="domain-model-fields" class="domain-model-fields"></div>
+                  <small>只有选中的字段能被当前业务域的指标和查询引用。</small>
+                </label>
+              </div>
+              <div id="domain-model-message" class="admin-message">保存草稿不会进入查询链路；发布后生成一个新版本并立即生效。</div>
+              <div class="admin-form-actions">
+                <button id="domain-model-cancel" type="button">取消</button>
+                <button id="domain-model-save" type="submit">保存草稿</button>
+                <button id="domain-model-publish" class="primary-action" type="button">发布模型</button>
+              </div>
+            </form>
+          </dialog>
+        </section>
+
+        <section class="card metric-hub-section metric-hub-governance view-hidden subpanel-hidden" data-view-panel="metric-admin" data-subpanel="metric-governance">
+          <div class="card-title-row">
+            <div>
+              <h3>指标治理与发布</h3>
+              <p class="card-subtitle">创建或修改指标草稿，校验公式、维度和语义资产，并发布不可变版本。</p>
             </div>
             <div class="badcase-actions">
               <button id="metric-admin-new" type="button">新建指标</button>
@@ -208,6 +686,11 @@
               </div>
             </aside>
             <form id="metric-admin-form" class="metric-admin-form">
+              <div id="metric-domain-context" class="metric-domain-context">
+                <span>当前业务域</span>
+                <strong>请先选择业务域</strong>
+                <small>指标只能使用当前域已发布的模型、维度和安全关系。</small>
+              </div>
               <div class="admin-form-heading">
                 <div>
                   <h4 id="metric-admin-title">创建指标草稿</h4>
@@ -228,19 +711,66 @@
                 <label class="span-two">反向问法<textarea id="metric-admin-negative-examples" rows="3" maxlength="4000" placeholder="每行一个易混淆问法，用于候选降权"></textarea></label>
                 <label class="span-two">语义模型<select id="metric-admin-model" required></select></label>
               </div>
+              <section class="metric-config-section semantic-readiness-section">
+                <div class="admin-section-heading">
+                  <div><h4>语义完整度</h4><small>建议达到 80 分；分数不改变指标公式。</small></div>
+                  <span id="metric-semantic-readiness-score" class="pill">0 / 100</span>
+                </div>
+                <div class="semantic-readiness-meter"><span id="metric-semantic-readiness-bar"></span></div>
+                <div id="metric-semantic-readiness-detail" class="admin-message">填写定义、别名和正反向问法后计算。</div>
+                <div id="metric-alias-conflicts" class="admin-message">保存草稿后检查跨指标名称与别名冲突。</div>
+                <details class="semantic-family-import">
+                  <summary>批量粘贴语义族</summary>
+                  <p>每行使用“别名:”“正例:”或“负例:”开头；应用后仍需保存草稿并通过闭环门禁。</p>
+                  <textarea id="metric-semantic-family-input" rows="6" placeholder="别名: 到账金额, 收款金额&#10;正例: 今年到账金额是多少&#10;负例: 订单原始金额"></textarea>
+                  <button id="metric-semantic-family-apply" type="button">应用到当前草稿</button>
+                  <small id="metric-semantic-family-result"></small>
+                </details>
+              </section>
+              <section class="metric-config-section semantic-readiness-section">
+                <div class="admin-section-heading">
+                  <div><h4>AI 语义预热草稿</h4><small>仅使用已确认的定义、公式、维度和血缘生成；不会修改指标口径。</small></div>
+                  <span id="metric-preheat-status" class="pill">未生成</span>
+                </div>
+                <div id="metric-preheat-preview" class="admin-message">先保存指标草稿，再让 AI 生成别名和正反向问法。人工审阅后才可应用。</div>
+                <div class="admin-form-actions"><button id="metric-preheat-generate" type="button">AI 生成预热草稿</button><button id="metric-preheat-apply" type="button" disabled>人工确认并应用</button></div>
+              </section>
               <section class="metric-config-section">
                 <h4>计算公式</h4>
                 <div class="metric-form-grid">
-                  <label>运算<select id="metric-admin-operation"><option value="sum">求和 SUM</option><option value="count_distinct">去重计数 COUNT DISTINCT</option><option value="ratio">比率 RATIO</option></select></label>
-                  <label>字段<select id="metric-admin-field" required></select></label>
-                  <label id="metric-admin-denominator-wrap" class="hidden">分母字段<select id="metric-admin-denominator"></select></label>
+                  <label>运算<select id="metric-admin-operation"><option value="sum">求和 SUM</option><option value="count_distinct">去重计数 COUNT DISTINCT</option><option value="ratio">比率 RATIO</option><option value="subtract">相减 SUBTRACT</option></select></label>
+                  <label>左侧模型<select id="metric-admin-left-model"></select></label>
+                  <label>左侧字段<select id="metric-admin-field" required></select></label>
+                  <label id="metric-admin-denominator-wrap" class="hidden">右侧字段<select id="metric-admin-denominator"></select></label>
+                  <label id="metric-admin-right-model-wrap" class="hidden">右侧模型<select id="metric-admin-right-model"></select></label>
                   <label id="metric-admin-scale-wrap" class="hidden">缩放<select id="metric-admin-scale"><option value="1">1</option><option value="100">100（百分比）</option><option value="1000">1000</option></select></label>
                 </div>
-                <div id="metric-formula-preview" class="formula">选择模型和字段后生成公式预览</div>
+                <div id="metric-formula-preview" class="formula">选择模型和字段后生成公式预览</div><small>跨事实运算会自动使用 aggregate_before_join，禁止直接连接事实明细。</small>
               </section>
               <section class="metric-config-section">
                 <div class="admin-section-heading"><h4>可用维度</h4><small>必须包含时间维度</small></div>
                 <div id="metric-admin-dimensions" class="dimension-selector"></div>
+              </section>
+              <section id="metric-closure-panel" class="metric-config-section hidden">
+                <div class="admin-section-heading">
+                  <div>
+                    <h4>Bad Case 闭环门禁</h4>
+                    <small>确认正确契约，验证当前问题和同域 Golden 后才允许发布。</small>
+                  </div>
+                  <span id="metric-closure-status" class="pill">待验证</span>
+                </div>
+                <div id="metric-closure-context" class="rich-item"></div>
+                <div class="metric-form-grid">
+                  <label>预期状态<select id="metric-closure-expected-status"><option value="SUCCESS">SUCCESS</option><option value="CLARIFY">CLARIFY</option><option value="REJECT">REJECT</option><option value="BLOCKED">BLOCKED</option><option value="ERROR">ERROR</option></select></label>
+                  <label>正确指标<select id="metric-closure-expected-metric"></select><small>选择其他指标会切换到该指标的新版本草稿。</small></label>
+                  <label>预期意图<input id="metric-closure-expected-intent" maxlength="64" placeholder="可选，例如 aggregate_query" /></label>
+                  <label>预期维度<input id="metric-closure-expected-dimension" maxlength="100" placeholder="可选，例如 D_MONTH" /></label>
+                  <label>预期图表<input id="metric-closure-expected-chart" maxlength="32" placeholder="可选，例如 line" /></label>
+                  <label>预期行数<input id="metric-closure-expected-rows" type="number" min="0" placeholder="可选" /></label>
+                  <label class="span-two">确认说明<textarea id="metric-closure-notes" rows="2" maxlength="2000" placeholder="说明为什么这是正确口径；该内容会进入 Golden。"></textarea></label>
+                </div>
+                <div id="metric-closure-result" class="admin-message">先修改并保存指标草稿，再运行闭环验证。</div>
+                <button id="metric-closure-run" type="button">保存草稿并运行闭环验证</button>
               </section>
               <div id="metric-admin-message" class="admin-message" aria-live="polite"></div>
               <div class="admin-form-actions">
@@ -251,11 +781,39 @@
           </div>
         </section>
 
-        <section class="card view-hidden" data-view-panel="ops">
+        <div class="section-tabs view-hidden" data-view-tabs="ops" data-subnav="ops" role="tablist" aria-label="质量运营视图">
+          <button type="button" role="tab" aria-selected="false" data-subtab="ops-overview">运营概览</button>
+          <button class="active" type="button" role="tab" aria-selected="true" data-subtab="ops-badcases">Bad Case</button>
+          <button type="button" role="tab" aria-selected="false" data-subtab="ops-golden">黄金问题集</button>
+        </div>
+
+        <section class="card view-hidden subpanel-hidden" data-view-panel="ops" data-subpanel="ops-overview">
           <div class="card-title-row">
             <div>
-              <h3>Badcase 看板</h3>
-              <p class="card-subtitle">查看用户反馈，确认问题并标记修复，形成回归集运营闭环。</p>
+              <h3>查询漏斗与运行指标</h3>
+              <p class="card-subtitle">查看状态分布、执行与 Reflection 漏斗、端到端延迟和模型使用信号。</p>
+            </div>
+            <button id="ops-refresh" type="button">刷新近 30 天</button>
+          </div>
+          <p id="ops-data-note" class="ops-note">正在加载数据口径...</p>
+          <div id="ops-funnel" class="ops-metric-grid"></div>
+          <div class="ops-detail-grid">
+            <article>
+              <h4>状态与质量</h4>
+              <div id="ops-quality" class="rich-list"></div>
+            </article>
+            <article>
+              <h4>延迟与成本信号</h4>
+              <div id="ops-performance" class="rich-list"></div>
+            </article>
+          </div>
+        </section>
+
+        <section class="card view-hidden" data-view-panel="ops" data-subpanel="ops-badcases">
+          <div class="card-title-row">
+            <div>
+              <h3>质量运营</h3>
+              <p class="card-subtitle">发现问题、验证修复并沉淀回归资产</p>
             </div>
             <div class="badcase-actions">
               <select id="badcase-filter" aria-label="Badcase 状态筛选">
@@ -268,13 +826,20 @@
               <button id="badcase-refresh" type="button">刷新</button>
             </div>
           </div>
-          <div id="badcase-counts" class="badcase-counts"></div>
-          <div id="badcase-list" class="badcase-list">
-            <div class="rich-item">暂无反馈。</div>
+          <div class="quality-issue-layout">
+            <section class="quality-issue-queue">
+              <div class="panel-section-heading"><h4>问题队列</h4><div id="badcase-counts" class="badcase-counts"></div></div>
+              <div id="badcase-list" class="badcase-list">
+                <div class="rich-item">暂无反馈。</div>
+              </div>
+            </section>
+            <section id="badcase-detail" class="quality-issue-detail">
+              <div class="quality-empty"><strong>选择一个问题查看详情</strong><small>关联证据、判断和处理记录将在这里展示。</small></div>
+            </section>
           </div>
         </section>
 
-        <section class="card view-hidden" data-view-panel="ops">
+        <section class="card view-hidden subpanel-hidden" data-view-panel="ops" data-subpanel="ops-golden">
           <div class="card-title-row">
             <div>
               <h3>黄金问题集 / 回归评测</h3>
@@ -341,53 +906,10 @@
             </details>
           </article>
 
-          <article class="card">
-            <div class="card-title-row">
-              <div>
-                <h3>提交 Badcase 反馈</h3>
-                <p class="card-subtitle">把指标选错、数据异常或解读不可信沉淀为回归集候选。</p>
-              </div>
-              <span id="feedback-status" class="pill">待提交</span>
-            </div>
-            <form id="feedback-form" class="feedback-form">
-              <div class="feedback-grid">
-                <label>
-                  类型
-                  <select id="feedback-type" name="feedback_type">
-                    <option value="METRIC_WRONG">指标选错</option>
-                    <option value="DATA_WRONG">数据不对</option>
-                    <option value="INTERPRETATION_UNTRUSTED">解读不可信</option>
-                    <option value="CHART_WRONG">图表不合适</option>
-                    <option value="PERMISSION_ISSUE">权限/安全问题</option>
-                    <option value="UI_ISSUE">页面体验问题</option>
-                    <option value="OTHER">其他</option>
-                  </select>
-                </label>
-                <label>
-                  严重程度
-                  <select id="feedback-severity" name="severity">
-                    <option value="MEDIUM">中</option>
-                    <option value="LOW">低</option>
-                    <option value="HIGH">高</option>
-                    <option value="CRITICAL">严重</option>
-                  </select>
-                </label>
-              </div>
-              <label>
-                问题描述
-                <textarea id="feedback-message" rows="3" maxlength="2000" placeholder="例如：这里应该识别为毛利率，而不是毛利额。"></textarea>
-              </label>
-              <label>
-                期望表现
-                <textarea id="feedback-expected" rows="2" maxlength="2000" placeholder="例如：希望系统先澄清口径，或者返回另一个指标。"></textarea>
-              </label>
-              <button id="feedback-submit" type="submit">提交反馈</button>
-            </form>
-          </article>
         </section>
       </main>
     </div>
 
-    <script src="/frontend/app.js?v=20260712-semantic-retrieval" type="module"></script>
+    <script src="/frontend/app.js?v=20260727-compact-actions-v1" type="module"></script>
   </body>
 </html>

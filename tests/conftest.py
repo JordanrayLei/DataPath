@@ -5,7 +5,7 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 from app.config import get_settings
-from scripts.seed_metric_center import seed
+from scripts.seed_production_benchmark import seed
 
 
 @pytest.fixture(scope="session", autouse=True)

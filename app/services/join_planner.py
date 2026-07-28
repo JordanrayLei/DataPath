@@ -37,7 +37,7 @@ class JoinPlan:
 
 def expression_model_ids(expression: dict, default_model_id: str) -> set[str]:
     models = {str(expression.get("source_model_id") or default_model_id)}
-    for key in ("numerator", "denominator"):
+    for key in ("numerator", "denominator", "left", "right"):
         nested = expression.get(key)
         if isinstance(nested, dict):
             models.update(expression_model_ids(nested, default_model_id))

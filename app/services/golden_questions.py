@@ -80,13 +80,9 @@ def infer_chart_type(dsl: dict[str, Any], page_context: dict[str, Any]) -> str |
 
 
 def infer_domain_from_metric(metric_id: str | None, fallback: str) -> str:
-    if fallback in {"sales", "advertising"}:
+    if fallback == "production_benchmark":
         return fallback
-    if metric_id and metric_id.startswith("M_AD_"):
-        return "advertising"
-    if metric_id and metric_id.startswith("M_SALES_"):
-        return "sales"
-    return "auto"
+    return "production_benchmark" if metric_id and metric_id.startswith("M_PROD_") else "auto"
 
 
 def infer_row_count(run: QueryRun | None) -> int | None:
@@ -120,46 +116,69 @@ def create_golden_question_from_feedback(
         raise GoldenQuestionError("only CONFIRMED or FIXED feedback can become a golden question")
     if not feedback.regression_candidate:
         raise GoldenQuestionError("feedback is not a regression candidate")
-    if not feedback.query_id:
-        raise GoldenQuestionError("feedback has no query_id to replay")
+    run = session.get(QueryRun, feedback.query_id) if feedback.query_id else None
+    if feedback.query_id and run is None:
+        raise GoldenQuestionError("feedback query_id does not exist")
 
+    dsl = (run.dsl_json if run else feedback.page_context.get("dsl")) or {}
+    fields_set = payload.model_fields_set
+    observed_metric_id = first_metric_id(dsl)
+    values = {
+        "biz_domain": infer_domain_from_metric(
+            payload.expected_metric_id or observed_metric_id, payload.biz_domain
+        ),
+        "expected_status": payload.expected_status,
+        "expected_metric_id": (
+            payload.expected_metric_id
+            if "expected_metric_id" in fields_set
+            else observed_metric_id
+        ),
+        "expected_intent": (
+            payload.expected_intent
+            if "expected_intent" in fields_set
+            else dsl.get("intent")
+        ),
+        "expected_dimension_id": (
+            payload.expected_dimension_id
+            if "expected_dimension_id" in fields_set
+            else first_dimension_id(dsl)
+        ),
+        "expected_chart_type": (
+            payload.expected_chart_type
+            if "expected_chart_type" in fields_set
+            else infer_chart_type(dsl, feedback.page_context or {})
+        ),
+        "expected_row_count": (
+            payload.expected_row_count
+            if "expected_row_count" in fields_set
+            else infer_row_count(run)
+        ),
+        "expected_reflection_status": (
+            payload.expected_reflection_status
+            if "expected_reflection_status" in fields_set
+            else infer_reflection_status(feedback.page_context or {})
+        ),
+        "expected_notes": payload.expected_notes or feedback.expected_behavior,
+        "status": "ACTIVE",
+    }
     existing = session.scalar(
         select(GoldenQuestion).where(GoldenQuestion.source_feedback_id == feedback.feedback_id)
     )
-    if existing is not None:
-        return GoldenQuestionCreateResponse(
-            request_id=request_id,
-            trace_id=trace_id,
-            status="SUCCESS",
-            golden_question=golden_question_item(existing),
-            created=False,
-            message="Golden question already exists for this feedback.",
+    created = existing is None
+    if existing is None:
+        golden = GoldenQuestion(
+            golden_id=f"gq_{uuid.uuid4().hex[:24]}",
+            workspace_id=feedback.workspace_id,
+            source_feedback_id=feedback.feedback_id,
+            query_id=feedback.query_id,
+            user_query=feedback.user_query,
+            **values,
         )
-
-    run = session.get(QueryRun, feedback.query_id)
-    if run is None:
-        raise GoldenQuestionError("feedback query_id does not exist")
-
-    dsl = run.dsl_json or {}
-    metric_id = first_metric_id(dsl)
-    golden = GoldenQuestion(
-        golden_id=f"gq_{uuid.uuid4().hex[:24]}",
-        workspace_id=feedback.workspace_id,
-        source_feedback_id=feedback.feedback_id,
-        query_id=feedback.query_id,
-        user_query=feedback.user_query,
-        biz_domain=infer_domain_from_metric(metric_id, payload.biz_domain),
-        expected_status=payload.expected_status,
-        expected_metric_id=metric_id,
-        expected_intent=dsl.get("intent"),
-        expected_dimension_id=first_dimension_id(dsl),
-        expected_chart_type=infer_chart_type(dsl, feedback.page_context or {}),
-        expected_row_count=infer_row_count(run),
-        expected_reflection_status=infer_reflection_status(feedback.page_context or {}),
-        expected_notes=payload.expected_notes or feedback.expected_behavior,
-        status="ACTIVE",
-    )
-    session.add(golden)
+        session.add(golden)
+    else:
+        golden = existing
+        for key, value in values.items():
+            setattr(golden, key, value)
     session.commit()
     session.refresh(golden)
     return GoldenQuestionCreateResponse(
@@ -167,8 +186,12 @@ def create_golden_question_from_feedback(
         trace_id=trace_id,
         status="SUCCESS",
         golden_question=golden_question_item(golden),
-        created=True,
-        message="Golden question was created from confirmed feedback.",
+        created=created,
+        message=(
+            "Golden question was created from operator-confirmed expectations."
+            if created
+            else "Golden question expectations were updated by the operator."
+        ),
     )
 
 
@@ -282,7 +305,7 @@ def evaluate_golden_questions(
                 query=row.user_query,
                 workspace_id=row.workspace_id,
                 conversation_id=f"golden_eval_{row.golden_id}",
-                biz_domain=row.biz_domain if row.biz_domain in {"auto", "sales", "advertising"} else "auto",
+                biz_domain=row.biz_domain if row.biz_domain in {"auto", "production_benchmark"} else "auto",
                 timezone="Asia/Shanghai",
             ),
             request_id,

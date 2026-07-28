@@ -24,7 +24,7 @@ services:
   clickhouse:
     image: clickhouse/clickhouse-server:25.8
     environment:
-      CLICKHOUSE_DB: ${CLICKHOUSE_DB:-data_warehouse}
+      CLICKHOUSE_DB: ${CLICKHOUSE_DB:-production_benchmark}
       CLICKHOUSE_USER: ${CLICKHOUSE_USER:-data_agent}
       CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-data_agent_dev}
       CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: '1'
@@ -35,7 +35,6 @@ services:
     volumes:
       - clickhouse_data:/var/lib/clickhouse
       - clickhouse_logs:/var/log/clickhouse-server
-      - ./infra/clickhouse/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: [CMD-SHELL, 'wget --spider -q http://localhost:8123/ping || exit 1']
       interval: 5s

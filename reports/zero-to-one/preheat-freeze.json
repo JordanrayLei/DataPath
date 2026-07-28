@@ -1,0 +1,23 @@
+{
+  "freeze_id": "zero-to-one-preheat-v1",
+  "generated_at": "2026-07-19T08:53:06.797284+00:00",
+  "business_domain": "production_benchmark",
+  "semantic_assets_sha256": "87d7b047c15f63cc210c2b62efc127017f0ae65c673f07a3a27d5a8fad01014d",
+  "product_code_sha256": "0d48d97bb7d3186d63f85539ce2ad4198ce74e03cf47a20f201ae555c0a9cb3b",
+  "human_governance_report_sha256": "1504215c924c5be856cf6d0d86f1bddea4f5bf3c2c99a2c9d329e5ba77e900a1",
+  "ai_preheat_report_sha256": "c90da1be7ce368f49e635014c20f169471035b6b0d7b861ad00e4c2626913143",
+  "counts": {
+    "models": 11,
+    "published_joins": 6,
+    "published_metrics": 11,
+    "aliases": 62,
+    "semantic_profiles": 11,
+    "embeddings": 220,
+    "query_runs": 0,
+    "feedback": 0,
+    "golden_questions": 0
+  },
+  "evaluation_case_files_opened_before_freeze": [],
+  "violations": {},
+  "valid": true
+}

@@ -3,12 +3,17 @@ from __future__ import annotations
 import base64
 import http.client
 import json
+import re
 from typing import Any
 from urllib.parse import urlencode
 
 
 class ClickHouseError(RuntimeError):
     pass
+
+
+ALLOWED_WAREHOUSE_DATABASES = {"production_benchmark"}
+IDENTIFIER_PATTERN = re.compile(r"^[a-z_][a-z0-9_]*$")
 
 
 class ClickHouseClient:
@@ -52,9 +57,14 @@ class ClickHouseClient:
         return [json.loads(line) for line in output.splitlines() if line.strip()]
 
     def estimate_table_rows(self, table: str) -> int:
-        if not table.startswith("data_warehouse."):
+        if table.count(".") != 1:
             raise ValueError("table is outside the allowed warehouse database")
         database, table_name = table.split(".", maxsplit=1)
+        if (
+            database not in ALLOWED_WAREHOUSE_DATABASES
+            or not IDENTIFIER_PATTERN.fullmatch(table_name)
+        ):
+            raise ValueError("table is outside the allowed warehouse database")
         output = self.execute(
             "SELECT coalesce(sum(rows), 0) FROM system.parts "
             "WHERE active AND database = {database:String} AND table = {table:String}",

@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from app.config import get_settings
 from app.db.models import (
     SemanticEntity, SemanticJoinDraft, SemanticJoinRelation,
-    SemanticJoinVersion, SemanticModel,
+    SemanticJoinVersion, SemanticModel, WarehouseSource,
 )
 from app.warehouse.clickhouse import ClickHouseClient
 
@@ -31,7 +31,14 @@ def _entity(session: Session, entity_id: str) -> tuple[SemanticEntity, SemanticM
     if entity is None:
         raise JoinGraphManagementError(f"entity does not exist: {entity_id}")
     model = session.get(SemanticModel, entity.semantic_model_id)
-    if model is None or not model.physical_table.startswith("data_warehouse."):
+    published_databases = {
+        str((source.connection_json or {}).get("database", ""))
+        for source in session.scalars(
+            select(WarehouseSource).where(WarehouseSource.status == "PUBLISHED")
+        ).all()
+    }
+    database = model.physical_table.split(".", 1)[0] if model else ""
+    if model is None or database not in published_databases:
         raise JoinGraphManagementError("entity model is not available in governed warehouse")
     return entity, model
 
@@ -177,13 +184,18 @@ def deprecate_relation(session: Session, relation_id: str) -> dict[str, Any]:
     return {"status": "DEPRECATED", "relation_id": relation_id, "version": relation.version}
 
 
-def scan_candidates(session: Session, domain: str = "sales") -> dict[str, Any]:
+def scan_candidates(session: Session, domain: str = "production_benchmark") -> dict[str, Any]:
     entities = session.scalars(select(SemanticEntity).where(SemanticEntity.business_domain_id == domain)).all()
     models = {e.id: session.get(SemanticModel, e.semantic_model_id) for e in entities}
+    databases = {m.physical_table.split(".", 1)[0] for m in models.values() if m}
+    if len(databases) != 1:
+        raise JoinGraphManagementError("candidate scan requires one governed warehouse database")
+    database = next(iter(databases))
     table_names = [m.physical_table.split(".", 1)[1] for m in models.values() if m]
     quoted = ",".join(f"'{name}'" for name in table_names)
     rows = _client().execute_json_rows(
-        f"SELECT table, name FROM system.columns WHERE database='data_warehouse' AND table IN ({quoted})", {}
+        f"SELECT table, name FROM system.columns WHERE database={{database:String}} AND table IN ({quoted})",
+        {"database": database},
     )
     fields_by_table: dict[str, set[str]] = {}
     for row in rows: fields_by_table.setdefault(str(row["table"]), set()).add(str(row["name"]))

@@ -1,0 +1,45 @@
+{
+  "status": "HELD_BLOCKED",
+  "scenario": "drop_column",
+  "database": "datapath_schema_ddl_acceptance",
+  "source_id": "schema_ddl_acceptance_source",
+  "domain_id": "schema_ddl_acceptance",
+  "held_at": "2026-07-26T15:18:15.657374+00:00",
+  "baseline": {
+    "source": "SCANNED",
+    "domain": "ACTIVE",
+    "asset": "ACTIVE",
+    "binding": "PUBLISHED",
+    "model": "ACTIVE",
+    "entity": "ACTIVE",
+    "relation": "PUBLISHED",
+    "metric": "PUBLISHED",
+    "events": []
+  },
+  "blocked": {
+    "source": "DEGRADED",
+    "domain": "DEGRADED",
+    "asset": "CHANGED",
+    "binding": "IMPACTED",
+    "model": "DEGRADED",
+    "entity": "DEGRADED",
+    "relation": "BLOCKED",
+    "metric": "BLOCKED",
+    "events": [
+      {
+        "type": "BREAKING_COLUMNS",
+        "severity": "HIGH",
+        "status": "OPEN",
+        "diff": {
+          "type_changes": [],
+          "added_columns": [],
+          "removed_columns": [
+            "amount"
+          ]
+        }
+      }
+    ]
+  },
+  "cleanup_performed": false,
+  "recovery_command": ".venv/bin/python -m scripts.evaluate_schema_change_ddl --recover-held"
+}

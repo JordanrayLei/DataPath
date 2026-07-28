@@ -42,20 +42,20 @@ def main() -> None:
             f"{args.base_url}/metrics/retrieve",
             headers=headers,
             json={
-                "query": "最近一年每月 GMV",
-                "normalized_query": "最近一年每月 GMV",
+                "query": "2024年每月订单量",
+                "normalized_query": "2024年每月订单量",
                 "workspace_id": "demo",
-                "biz_domain": "sales",
+                "biz_domain": "production_benchmark",
                 "operator_id": context_body["operator_id"],
                 "context": context_body,
                 "preprocess": {
-                    "normalized_query": "最近一年每月 GMV",
-                    "metric_mentions": ["GMV"],
+                    "normalized_query": "2024年每月订单量",
+                    "metric_mentions": ["订单量"],
                     "dimension_mentions": ["月份"],
                     "filter_mentions": [],
-                    "time_text": "最近一年",
-                    "time_start": "2025-07-01",
-                    "time_end": "2026-06-30",
+                    "time_text": "2024年",
+                    "time_start": "2024-01-01",
+                    "time_end": "2024-12-31",
                     "comparison": "",
                     "inherit_context": False,
                 },
@@ -66,11 +66,12 @@ def main() -> None:
         print("PASS: metrics/retrieve")
 
         dsl = {
-            "dsl_version": "1.0",
+            "dsl_version": "2.0",
+            "query_mode": "single_model",
             "intent": "trend_query",
             "metrics": [
                 {
-                    "metric_id": "M_SALES_GMV",
+                    "metric_id": "M_PROD_ORDER_COUNT",
                     "metric_version": 1,
                     "aggregation": "default",
                 }
@@ -78,8 +79,8 @@ def main() -> None:
             "dimensions": [{"dimension_id": "D_MONTH"}],
             "filters": [],
             "time_range": {
-                "start": "2025-07-01",
-                "end": "2026-06-30",
+                "start": "2024-01-01",
+                "end": "2024-12-31",
                 "timezone": "Asia/Shanghai",
             },
             "sort": [{"field_id": "D_MONTH", "direction": "asc"}],
@@ -127,7 +128,7 @@ def main() -> None:
                 "operator_id": context_body["operator_id"],
                 "query_id": compiled_body["query_id"],
                 "execution_token": compiled_body["execution_token"],
-                "compiled_query": {"sql": "DROP TABLE data_warehouse.dwd_sales_order_item"},
+                "compiled_query": {"sql": "DROP TABLE production_benchmark.fct_orders"},
             },
         )
         executed.raise_for_status()

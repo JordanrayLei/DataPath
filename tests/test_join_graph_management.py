@@ -3,18 +3,18 @@ from __future__ import annotations
 from fastapi.testclient import TestClient
 
 from app.main import app
-from scripts.seed_olist_staging import seed
+from scripts.seed_production_benchmark import seed
 
 
 def test_join_graph_governance_publish_flow() -> None:
     seed()
-    relation_id = "J_OLIST_ITEMS_PRODUCTS"
+    relation_id = "J_PROD_SHIPMENTS_WAREHOUSE"
     payload = {
         "workspace_id": "demo",
-        "left_entity_id": "E_OLIST_ORDER_ITEMS",
-        "right_entity_id": "E_OLIST_PRODUCTS",
-        "left_keys": ["product_id"],
-        "right_keys": ["product_id"],
+        "left_entity_id": "E_PROD_SHIPMENTS",
+        "right_entity_id": "E_PROD_WAREHOUSE",
+        "left_keys": ["warehouse_sk"],
+        "right_keys": ["warehouse_sk"],
         "relationship_type": "many_to_one",
         "join_type": "left",
         "fanout_strategy": "safe",
@@ -47,13 +47,13 @@ def test_join_graph_governance_publish_flow() -> None:
 
 def test_join_candidate_scan_only_creates_suggestions() -> None:
     with TestClient(app) as client:
-        response = client.post("/api/chatbi/join-graph/scan?domain=sales")
+        response = client.post("/api/chatbi/join-graph/scan?domain=production_benchmark")
     assert response.status_code == 200
     assert response.json()["status"] == "SUCCESS"
     candidates = response.json()["candidates"]
     assert any(
-        item["left_entity_id"] == "E_OLIST_ORDER_ITEMS"
-        and item["right_entity_id"] == "E_OLIST_PRODUCTS"
-        and item["left_keys"] == ["product_id"]
+        item["left_entity_id"] == "E_PROD_SHIPMENTS"
+        and item["right_entity_id"] == "E_PROD_WAREHOUSE"
+        and item["left_keys"] == ["warehouse_sk"]
         for item in candidates
     )

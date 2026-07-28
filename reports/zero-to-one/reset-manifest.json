@@ -1,0 +1,72 @@
+{
+  "reset_id": "zero-to-one-20260719T084906Z",
+  "generated_at": "2026-07-19T08:49:06.957616+00:00",
+  "domain": "production_benchmark",
+  "protocol": "NO_SEED_NO_INDEX_NO_HISTORY",
+  "before": {
+    "models": 11,
+    "entities": 11,
+    "joins": 10,
+    "metrics": 12,
+    "aliases": 62,
+    "embeddings": 220,
+    "feedback": 9,
+    "golden_questions": 3,
+    "query_runs": 123,
+    "conversation_contexts": 0,
+    "warehouse_sources": 0
+  },
+  "deleted": {
+    "audit.reflection_validation": 123,
+    "audit.evidence": 258,
+    "audit.result_profile": 123,
+    "audit.golden_question": 3,
+    "audit.user_feedback": 9,
+    "audit.product_event": 262,
+    "audit.query_run": 123,
+    "app.conversation_context": 0,
+    "metric_center.metric_draft": 1,
+    "metric_center.metric_embedding": 220,
+    "metric_center.metric_alias": 62,
+    "metric_center.metric_semantic_profile": 11,
+    "metric_center.metric_dimension": 60,
+    "metric_center.metric_version": 22,
+    "metric_center.metric": 12,
+    "metric_center.semantic_scope_example": 0,
+    "metric_center.semantic_scope_policy": 0,
+    "metric_center.semantic_join_version": 0,
+    "metric_center.semantic_join_draft": 0,
+    "metric_center.semantic_join_relation": 10,
+    "metric_center.semantic_entity": 11,
+    "metric_center.semantic_model": 11,
+    "metric_center.dimension_deleted": 8,
+    "metric_center.dimension_mappings_cleaned": 2,
+    "metric_center.warehouse_source": 1,
+    "metric_center.business_domain": 1
+  },
+  "after": {
+    "models": 0,
+    "entities": 0,
+    "joins": 0,
+    "metrics": 0,
+    "aliases": 0,
+    "embeddings": 0,
+    "feedback": 0,
+    "golden_questions": 0,
+    "query_runs": 0,
+    "conversation_contexts": 0,
+    "warehouse_sources": 0
+  },
+  "dataset_inventory_before": {
+    "file_count": 61,
+    "total_bytes": 20720184,
+    "inventory_sha256": "cbb1a613caceb04b1b78c29525ff5cefff1756a3005f454732918885e11a9b29"
+  },
+  "dataset_inventory_after": {
+    "file_count": 61,
+    "total_bytes": 20720184,
+    "inventory_sha256": "cbb1a613caceb04b1b78c29525ff5cefff1756a3005f454732918885e11a9b29"
+  },
+  "datasets_preserved": true,
+  "valid": true
+}

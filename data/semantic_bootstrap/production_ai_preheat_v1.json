@@ -1,0 +1,68 @@
+{
+  "package_id": "production-ai-preheat-v1",
+  "generated_by": "OpenAI Codex",
+  "generation_mode": "canonical-definition-only",
+  "source_restriction": "Generated only from canonical metric names, definitions, formulas, units, dimensions and lineage. Evaluation queries, historical Bad Cases and prior reports are forbidden inputs.",
+  "review_policy": {
+    "reject_generic_aliases": ["金额", "数据", "收入", "数量", "情况", "表现"],
+    "max_aliases_per_metric": 6,
+    "require_neighbor_negatives": true,
+    "immutable_fields": ["canonical_name", "formula", "semantic_model", "dimensions", "unit", "lineage"]
+  },
+  "metrics": {
+    "M_PROD_ORDER_COUNT": {
+      "canonical_name": "订单量",
+      "aliases": ["订单笔数", "成交单数", "下单单量", "交易订单数", "成交笔数", "下单规模"],
+      "positive_examples": ["今年一共成交了多少笔订单", "按月看订单笔数变化", "各业务区域的成交单数", "统计指定时间段的下单单量", "不同订单状态分别有多少单", "最近一年交易订单数趋势", "币种为CNY的成交笔数", "每天的下单规模是多少"],
+      "negative_examples": ["订单原始金额是多少", "支付到账金额是多少", "发出了多少个包裹", "商品卖出了多少件", "有多少个购买客户", "退款金额合计"]
+    },
+    "M_PROD_ORDER_GROSS_AMOUNT": {
+      "canonical_name": "订单原始金额",
+      "aliases": ["下单原始总额", "订单毛额", "下单毛额", "订单头金额", "订单标价总额", "原始交易额"],
+      "positive_examples": ["今年下单原始总额是多少", "按月查看订单毛额趋势", "各区域的下单毛额", "不同状态的订单头金额", "统计订单标价总额", "最近一年原始交易额变化", "CNY订单的原始金额", "每天形成的订单毛额"],
+      "negative_examples": ["折扣后的商品净收入", "实际支付到账金额", "退款金额", "扣除退款后的净收入", "订单笔数", "支付退款率"]
+    },
+    "M_PROD_ITEM_NET_REVENUE": {
+      "canonical_name": "商品净收入",
+      "aliases": ["商品行净额", "商品折后收入", "明细净销售额", "商品成交净额", "商品行实销额", "货品净销售收入"],
+      "positive_examples": ["今年商品折后收入是多少", "按月看商品行净额", "各区域的明细净销售额", "统计商品成交净额趋势", "不同订单状态的商品行实销额", "最近一年货品净销售收入", "CNY商品净收入", "每天商品明细的净额"],
+      "negative_examples": ["订单未折扣的原始金额", "支付实际到账金额", "退款后的净收入", "退款金额", "商品件数", "发货包裹数"]
+    },
+    "M_PROD_PAYMENT_AMOUNT": {
+      "canonical_name": "支付实收金额",
+      "aliases": ["支付净到账", "实际收款额", "支付到账金额", "已收支付款", "资金到账额", "收款净额"],
+      "positive_examples": ["今年实际收到了多少支付款", "按月看支付净到账", "各区域的实际收款额", "统计支付到账金额趋势", "不同支付状态的已收支付款", "最近一年资金到账额", "CNY收款净额", "每天实际到账多少"],
+      "negative_examples": ["下单时的订单原始金额", "商品折后净收入", "退款金额", "尚未支付的应收款", "支付记录笔数", "订单笔数"]
+    },
+    "M_PROD_REFUND_AMOUNT": {
+      "canonical_name": "退款金额",
+      "aliases": ["已退金额", "退款支出", "退回款项", "退款净额", "资金退回额", "实际退款额"],
+      "positive_examples": ["今年实际退款了多少钱", "按月看已退金额", "各区域的退款支出", "统计退回款项趋势", "不同退款状态的退款净额", "最近一年资金退回额", "CNY实际退款额", "每天发生的退款金额"],
+      "negative_examples": ["退款订单有多少笔", "订单原始金额", "支付实际到账", "商品净收入", "取消订单金额", "支付退款率"]
+    },
+    "M_PROD_SHIPMENT_COUNT": {
+      "canonical_name": "发货包裹量",
+      "aliases": ["发运包裹数", "物流包裹量", "出库包裹数", "配送包裹数", "履约包裹数", "已发包裹量"],
+      "positive_examples": ["今年发出了多少个包裹", "按月看发运包裹数", "各仓库的物流包裹量", "统计出库包裹数趋势", "不同履约状态的配送包裹数", "最近一年履约包裹数", "各区域已发包裹量", "每天发出的包裹数量"],
+      "negative_examples": ["成交订单有多少笔", "订单商品件数", "当前库存件数", "物流费用", "发货订单数", "客服工单数"]
+    },
+    "M_PROD_INVENTORY_UNITS": {
+      "canonical_name": "库存件数",
+      "aliases": ["在库件数", "库存数量", "库存余额", "现有库存量", "仓储存量", "快照库存量"],
+      "positive_examples": ["当前有多少库存件", "按月看在库件数变化", "各仓库的库存数量", "统计库存余额趋势", "不同状态的现有库存量", "最近一年仓储存量", "各区域快照库存量", "指定日期库存有多少件"],
+      "negative_examples": ["库存商品金额", "订单商品件数", "发货包裹数量", "可售商品种类数", "订单笔数", "商品净收入"]
+    },
+    "M_PROD_SERVICE_TICKET_COUNT": {
+      "canonical_name": "客服工单量",
+      "aliases": ["服务工单数", "客服单量", "售后工单数", "客户请求单数", "咨询工单量", "客诉工单数"],
+      "positive_examples": ["今年产生了多少客服工单", "按月看服务工单数", "各区域的客服单量", "统计售后工单数趋势", "不同状态的客户请求单数", "最近一年咨询工单量", "各订单状态关联的客诉工单数", "每天新增多少服务工单"],
+      "negative_examples": ["成交订单数", "购买客户数", "退款订单数", "营销触达次数", "工单处理时长", "退款金额"]
+    },
+    "M_PROD_MARKETING_TOUCH_COUNT": {
+      "canonical_name": "营销触点量",
+      "aliases": ["营销触达次数", "推广触点数", "活动触达量", "市场接触次数", "营销接触量", "推广触达记录数"],
+      "positive_examples": ["今年一共进行了多少次营销触达", "按月看营销触达次数", "各渠道的推广触点数", "统计活动触达量趋势", "不同活动的市场接触次数", "最近一年营销接触量", "各租户的推广触达记录数", "每天产生多少营销触点"],
+      "negative_examples": ["被触达的去重客户数", "广告投放费用", "营销转化订单数", "客服工单数", "订单笔数", "活动收入"]
+    }
+  }
+}

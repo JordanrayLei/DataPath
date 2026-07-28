@@ -1,0 +1,393 @@
+{
+  "status": "PASS",
+  "database": "datapath_schema_ddl_acceptance",
+  "source_id": "schema_ddl_acceptance_source",
+  "domain_id": "schema_ddl_acceptance",
+  "started_at": "2026-07-26T15:05:48.145809+00:00",
+  "completed_at": "2026-07-26T15:05:48.412923+00:00",
+  "scenarios": [
+    "DROP_TABLE",
+    "DROP_COLUMN",
+    "MODIFY_COLUMN_TYPE"
+  ],
+  "phase_count": 7,
+  "phases": [
+    {
+      "scenario": "baseline",
+      "phase": "healthy",
+      "snapshot": {
+        "source": "SCANNED",
+        "domain": "ACTIVE",
+        "asset": "ACTIVE",
+        "binding": "PUBLISHED",
+        "model": "ACTIVE",
+        "entity": "ACTIVE",
+        "relation": "PUBLISHED",
+        "metric": "PUBLISHED",
+        "events": []
+      }
+    },
+    {
+      "scenario": "drop_table",
+      "phase": "blocked",
+      "snapshot": {
+        "source": "DEGRADED",
+        "domain": "DEGRADED",
+        "asset": "MISSING",
+        "binding": "IMPACTED",
+        "model": "DEGRADED",
+        "entity": "DEGRADED",
+        "relation": "BLOCKED",
+        "metric": "BLOCKED",
+        "events": [
+          {
+            "type": "TABLE_REMOVED",
+            "severity": "CRITICAL",
+            "status": "OPEN",
+            "diff": {
+              "type_changes": [],
+              "added_columns": [],
+              "removed_columns": [
+                "amount",
+                "customer_id",
+                "event_date",
+                "order_id"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "drop_table",
+      "phase": "recovered",
+      "snapshot": {
+        "source": "SCANNED",
+        "domain": "ACTIVE",
+        "asset": "ACTIVE",
+        "binding": "PUBLISHED",
+        "model": "ACTIVE",
+        "entity": "ACTIVE",
+        "relation": "PUBLISHED",
+        "metric": "PUBLISHED",
+        "events": [
+          {
+            "type": "TABLE_REMOVED",
+            "severity": "CRITICAL",
+            "status": "RESOLVED",
+            "diff": {
+              "type_changes": [],
+              "added_columns": [],
+              "removed_columns": [
+                "amount",
+                "customer_id",
+                "event_date",
+                "order_id"
+              ]
+            }
+          },
+          {
+            "type": "TABLE_RESTORED",
+            "severity": "INFO",
+            "status": "INFORMATIONAL",
+            "diff": {
+              "type_changes": [],
+              "added_columns": [],
+              "removed_columns": []
+            }
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "drop_column",
+      "phase": "blocked",
+      "snapshot": {
+        "source": "DEGRADED",
+        "domain": "DEGRADED",
+        "asset": "CHANGED",
+        "binding": "IMPACTED",
+        "model": "DEGRADED",
+        "entity": "DEGRADED",
+        "relation": "BLOCKED",
+        "metric": "BLOCKED",
+        "events": [
+          {
+            "type": "TABLE_REMOVED",
+            "severity": "CRITICAL",
+            "status": "RESOLVED",
+            "diff": {
+              "type_changes": [],
+              "added_columns": [],
+              "removed_columns": [
+                "amount",
+                "customer_id",
+                "event_date",
+                "order_id"
+              ]
+            }
+          },
+          {
+            "type": "TABLE_RESTORED",
+            "severity": "INFO",
+            "status": "INFORMATIONAL",
+            "diff": {
+              "type_changes": [],
+              "added_columns": [],
+              "removed_columns": []
+            }
+          },
+          {
+            "type": "BREAKING_COLUMNS",
+            "severity": "HIGH",
+            "status": "OPEN",
+            "diff": {
+              "type_changes": [],
+              "added_columns": [],
+              "removed_columns": [
+                "amount"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "drop_column",
+      "phase": "recovered",
+      "snapshot": {
+        "source": "SCANNED",
+        "domain": "ACTIVE",
+        "asset": "ACTIVE",
+        "binding": "PUBLISHED",
+        "model": "ACTIVE",
+        "entity": "ACTIVE",
+        "relation": "PUBLISHED",
+        "metric": "PUBLISHED",
+        "events": [
+          {
+            "type": "TABLE_REMOVED",
+            "severity": "CRITICAL",
+            "status": "RESOLVED",
+            "diff": {
+              "type_changes": [],
+              "added_columns": [],
+              "removed_columns": [
+                "amount",
+                "customer_id",
+                "event_date",
+                "order_id"
+              ]
+            }
+          },
+          {
+            "type": "TABLE_RESTORED",
+            "severity": "INFO",
+            "status": "INFORMATIONAL",
+            "diff": {
+              "type_changes": [],
+              "added_columns": [],
+              "removed_columns": []
+            }
+          },
+          {
+            "type": "BREAKING_COLUMNS",
+            "severity": "HIGH",
+            "status": "RESOLVED",
+            "diff": {
+              "type_changes": [],
+              "added_columns": [],
+              "removed_columns": [
+                "amount"
+              ]
+            }
+          },
+          {
+            "type": "ADDITIVE_COLUMNS",
+            "severity": "INFO",
+            "status": "INFORMATIONAL",
+            "diff": {
+              "type_changes": [],
+              "added_columns": [
+                "amount"
+              ],
+              "removed_columns": []
+            }
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "modify_type",
+      "phase": "blocked",
+      "snapshot": {
+        "source": "DEGRADED",
+        "domain": "DEGRADED",
+        "asset": "CHANGED",
+        "binding": "IMPACTED",
+        "model": "DEGRADED",
+        "entity": "DEGRADED",
+        "relation": "BLOCKED",
+        "metric": "BLOCKED",
+        "events": [
+          {
+            "type": "TABLE_REMOVED",
+            "severity": "CRITICAL",
+            "status": "RESOLVED",
+            "diff": {
+              "type_changes": [],
+              "added_columns": [],
+              "removed_columns": [
+                "amount",
+                "customer_id",
+                "event_date",
+                "order_id"
+              ]
+            }
+          },
+          {
+            "type": "TABLE_RESTORED",
+            "severity": "INFO",
+            "status": "INFORMATIONAL",
+            "diff": {
+              "type_changes": [],
+              "added_columns": [],
+              "removed_columns": []
+            }
+          },
+          {
+            "type": "BREAKING_COLUMNS",
+            "severity": "HIGH",
+            "status": "RESOLVED",
+            "diff": {
+              "type_changes": [],
+              "added_columns": [],
+              "removed_columns": [
+                "amount"
+              ]
+            }
+          },
+          {
+            "type": "ADDITIVE_COLUMNS",
+            "severity": "INFO",
+            "status": "INFORMATIONAL",
+            "diff": {
+              "type_changes": [],
+              "added_columns": [
+                "amount"
+              ],
+              "removed_columns": []
+            }
+          },
+          {
+            "type": "BREAKING_COLUMNS",
+            "severity": "HIGH",
+            "status": "OPEN",
+            "diff": {
+              "type_changes": [
+                {
+                  "field": "amount",
+                  "new_type": "Float64",
+                  "old_type": "Decimal(18, 2)"
+                }
+              ],
+              "added_columns": [],
+              "removed_columns": []
+            }
+          }
+        ]
+      }
+    },
+    {
+      "scenario": "modify_type",
+      "phase": "recovered",
+      "snapshot": {
+        "source": "SCANNED",
+        "domain": "ACTIVE",
+        "asset": "ACTIVE",
+        "binding": "PUBLISHED",
+        "model": "ACTIVE",
+        "entity": "ACTIVE",
+        "relation": "PUBLISHED",
+        "metric": "PUBLISHED",
+        "events": [
+          {
+            "type": "TABLE_REMOVED",
+            "severity": "CRITICAL",
+            "status": "RESOLVED",
+            "diff": {
+              "type_changes": [],
+              "added_columns": [],
+              "removed_columns": [
+                "amount",
+                "customer_id",
+                "event_date",
+                "order_id"
+              ]
+            }
+          },
+          {
+            "type": "TABLE_RESTORED",
+            "severity": "INFO",
+            "status": "INFORMATIONAL",
+            "diff": {
+              "type_changes": [],
+              "added_columns": [],
+              "removed_columns": []
+            }
+          },
+          {
+            "type": "BREAKING_COLUMNS",
+            "severity": "HIGH",
+            "status": "RESOLVED",
+            "diff": {
+              "type_changes": [],
+              "added_columns": [],
+              "removed_columns": [
+                "amount"
+              ]
+            }
+          },
+          {
+            "type": "ADDITIVE_COLUMNS",
+            "severity": "INFO",
+            "status": "INFORMATIONAL",
+            "diff": {
+              "type_changes": [],
+              "added_columns": [
+                "amount"
+              ],
+              "removed_columns": []
+            }
+          },
+          {
+            "type": "BREAKING_COLUMNS",
+            "severity": "HIGH",
+            "status": "RESOLVED",
+            "diff": {
+              "type_changes": [
+                {
+                  "field": "amount",
+                  "new_type": "Float64",
+                  "old_type": "Decimal(18, 2)"
+                }
+              ],
+              "added_columns": [],
+              "removed_columns": []
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "cleanup": {
+    "clickhouse_database_count": 0,
+    "postgres_counts": {
+      "source": 0,
+      "domain": 0,
+      "metric": 0,
+      "schema_events": 0
+    },
+    "verified": true
+  }
+}

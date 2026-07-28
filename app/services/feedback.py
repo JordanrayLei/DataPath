@@ -14,6 +14,7 @@ from app.schemas.chatbi import (
     FeedbackSubmitRequest,
     FeedbackSubmitResponse,
 )
+from app.services.product_analytics import record_feedback_event
 
 
 REGRESSION_CANDIDATE_TYPES = {
@@ -57,11 +58,16 @@ def build_query_snapshot(run: QueryRun | None) -> dict[str, Any]:
         "workspace_id": run.workspace_id,
         "operator_id": run.operator_id,
         "status": run.status,
+        "dsl": run.dsl_json,
         "dsl_hash": run.dsl_hash,
         "sql_fingerprint": run.sql_fingerprint,
         "metric_versions": run.metric_versions,
         "lineage": run.lineage_json,
         "estimated_cost": run.estimated_cost,
+        "result_summary": {
+            "row_count": (run.result_json or {}).get("row_count"),
+            "status": (run.result_json or {}).get("status"),
+        },
         "created_at": run.created_at.isoformat() if run.created_at else None,
         "executed_at": run.executed_at.isoformat() if run.executed_at else None,
     }
@@ -79,9 +85,7 @@ def submit_feedback(
     if run is not None and run.workspace_id != payload.workspace_id:
         raise FeedbackError("query does not belong to workspace")
 
-    regression_candidate = bool(
-        payload.query_id and payload.feedback_type in REGRESSION_CANDIDATE_TYPES
-    )
+    regression_candidate = payload.feedback_type in REGRESSION_CANDIDATE_TYPES
     feedback_id = f"fb_{uuid.uuid4().hex[:24]}"
     feedback = UserFeedback(
         feedback_id=feedback_id,
@@ -101,6 +105,16 @@ def submit_feedback(
     )
     session.add(feedback)
     session.commit()
+    record_feedback_event(
+        session,
+        workspace_id=payload.workspace_id,
+        conversation_id=payload.conversation_id,
+        operator_id=run.operator_id if run is not None else "",
+        trace_id=trace_id,
+        query_id=payload.query_id,
+        feedback_type=payload.feedback_type,
+        severity=payload.severity,
+    )
 
     return FeedbackSubmitResponse(
         request_id=request_id,

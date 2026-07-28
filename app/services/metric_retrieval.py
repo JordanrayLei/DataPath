@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from difflib import SequenceMatcher
 
@@ -7,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
 from app.config import get_settings
-from app.db.models import Metric, MetricSemanticProfile, MetricVersion
+from app.db.models import Metric, MetricSemanticProfile, MetricVersion, SemanticScopePolicy
 from app.schemas.chatbi import (
     MetricCandidate,
     MetricMentionDecision,
@@ -15,15 +16,36 @@ from app.schemas.chatbi import (
     MetricRetrieveResponse,
 )
 from app.services.bm25_retrieval import bm25_relevance_scores
+from app.services.join_planner import expression_model_ids
 from app.services.metric_vector_index import search_metric_vectors
 from app.services.reranker_provider import RerankerProviderError, get_reranker_provider
+from app.services.query_policy import (
+    is_explicitly_staged_production_query,
+    is_underspecified_metric_query,
+)
 
-DEMO_REFERENCE_DATE = "2018-10-18"
-DEMO_TIMEZONE = "Asia/Shanghai"
-DEMO_LATEST_DATA_DATE = "2018-10-17"
-DEMO_LATEST_COMPLETE_MONTH = "2018-09"
-DEMO_RECENT_YEAR_START = "2017-10-01"
-DEMO_RECENT_YEAR_END = "2018-09-30"
+DEFAULT_TIMEZONE = "Asia/Shanghai"
+
+
+def _normalized_capability_phrase(value: str) -> str:
+    return re.sub(r"[\s的之？?！!。,.，、：:;；()（）]+", "", value).casefold()
+
+
+def matches_unpublished_metric_name(session: Session, domain: str, query: str) -> bool:
+    """Prevent a published metric from substituting for a governed staged metric."""
+
+    normalized_query = _normalized_capability_phrase(query)
+    staged_names = session.scalars(
+        select(Metric.name).where(
+            Metric.business_domain_id == domain,
+            Metric.status != "PUBLISHED",
+        )
+    ).all()
+    return any(
+        len(normalized_name) >= 4 and normalized_name in normalized_query
+        for name in staged_names
+        if (normalized_name := _normalized_capability_phrase(str(name)))
+    )
 
 
 @dataclass(frozen=True)
@@ -164,6 +186,8 @@ def rerank_scored_candidates(
         )
     except RerankerProviderError:
         return ordered
+    if len(reranked) != len(head):
+        return ordered
 
     rerank_by_index = {item.index: item.relevance_score for item in reranked}
     fused = []
@@ -176,7 +200,19 @@ def rerank_scored_candidates(
 
 
 def infer_mentions(request: MetricRetrieveRequest, records: list[MetricRecord]) -> list[str]:
-    mentions = [item.strip() for item in request.preprocess.metric_mentions if item.strip()]
+    # A governed name/alias explicitly present in the user's full turn is
+    # stronger evidence than an LLM-produced shortened mention.  For example,
+    # "扣除退款后的净收入" must not be reduced to the ambiguous "净收入".
+    if explicit_match_lengths(request.normalized_query, records):
+        return [request.normalized_query]
+
+    mentions = list(
+        dict.fromkeys(
+            item.strip()
+            for item in request.preprocess.metric_mentions
+            if item.strip()
+        )
+    )
     if mentions:
         return list(dict.fromkeys(mentions))
 
@@ -198,6 +234,47 @@ def infer_mentions(request: MetricRetrieveRequest, records: list[MetricRecord]) 
     return discovered[:10] or [request.normalized_query]
 
 
+def _last_query_context(request: MetricRetrieveRequest) -> dict:
+    context = request.context.get("last_query_context", {})
+    return context if isinstance(context, dict) else {}
+
+
+def _query_explicit_metric_ids(
+    query: str, records: list[MetricRecord]
+) -> set[str]:
+    """Find governed metric names/aliases explicitly written in this turn.
+
+    LLM-extracted metric mentions are deliberately not used here: on a short
+    follow-up such as "再按币种展示", preprocessors can infer a different metric
+    even though the user did not change the metric at all.
+    """
+
+    return set(explicit_match_lengths(query, records))
+
+
+def validated_inherited_metric(
+    request: MetricRetrieveRequest, records: list[MetricRecord]
+) -> MetricRecord | None:
+    """Return the unique, still-published prior metric for an implicit follow-up."""
+
+    if not request.preprocess.inherit_context:
+        return None
+    context = _last_query_context(request)
+    if context.get("biz_domain") not in (None, "", request.biz_domain):
+        return None
+    metrics = context.get("metrics")
+    if not isinstance(metrics, list) or len(metrics) != 1:
+        return None
+    inherited_id = metrics[0].get("metric_id") if isinstance(metrics[0], dict) else None
+    record = next((item for item in records if item.metric.id == inherited_id), None)
+    if record is None:
+        return None
+    explicit_ids = _query_explicit_metric_ids(request.normalized_query, records)
+    if explicit_ids and explicit_ids != {inherited_id}:
+        return None
+    return record
+
+
 def build_time_resolution_hint(request: MetricRetrieveRequest) -> dict:
     """Return semantic-layer time hints for downstream DSL generation.
 
@@ -215,57 +292,66 @@ def build_time_resolution_hint(request: MetricRetrieveRequest) -> dict:
             " ".join(request.preprocess.dimension_mentions),
         ]
     ).lower()
-    looks_monthly = any(token in requested_text for token in ["每月", "月度", "按月", "monthly"])
+    usage_only_monthly = bool(
+        re.search(r"用于.{0,20}月度(?:复盘|报告|周报|会议)", requested_text)
+    )
+    looks_monthly = any(
+        token in requested_text
+        for token in ["每月", "按月", "月份", "月度趋势", "monthly trend"]
+    ) and not usage_only_monthly
     looks_recent_year = any(
         token in requested_text
         for token in ["最近一年", "近一年", "过去一年", "last year", "recent year", "last 12 months"]
     )
 
+    prior_time_range = _last_query_context(request).get("time_range")
+    has_explicit_time = bool(
+        request.preprocess.time_start
+        or request.preprocess.time_end
+        or request.preprocess.time_text.strip()
+        or re.search(r"\b(?:19|20)\d{2}\b", requested_text)
+        or looks_recent_year
+    )
+    inherited_time_range = (
+        prior_time_range
+        if request.preprocess.inherit_context
+        and not has_explicit_time
+        and isinstance(prior_time_range, dict)
+        else None
+    )
     return {
-        "source": "metric_retrieval",
-        "reference_date": DEMO_REFERENCE_DATE,
-        "timezone": DEMO_TIMEZONE,
-        "warehouse_data_window": {
-            "latest_data_date": DEMO_LATEST_DATA_DATE,
-            "latest_complete_month": DEMO_LATEST_COMPLETE_MONTH,
-            "note": "Demo fact tables are populated through the latest complete month only.",
-        },
+        "source": "validated_conversation_context" if inherited_time_range else "metric_retrieval",
+        "timezone": DEFAULT_TIMEZONE,
         "detected_time_need": {
             "looks_recent_year": looks_recent_year,
             "looks_monthly": looks_monthly,
+            "usage_only_monthly": usage_only_monthly,
         },
-        "relative_time_policy": {
-            "recent_year_monthly_default": {
-                "applies_when": "User asks 最近一年/近一年/过去一年/last 12 months without an explicit historical year.",
-                "start": DEMO_RECENT_YEAR_START,
-                "end": DEMO_RECENT_YEAR_END,
-                "timezone": DEMO_TIMEZONE,
-                "required_intent": "trend_query",
-                "required_dimension_id": "D_MONTH",
-                "required_sort": [{"field_id": "D_MONTH", "direction": "asc"}],
-                "recommended_limit": 100,
-            }
-        },
+        "inherited_time_range": inherited_time_range,
+        "relative_time_policy": {},
+        "note": "Dates must come from the current request, governed source metadata, or validated conversation context.",
     }
 
 
 def build_dsl_generation_constraints(request: MetricRetrieveRequest) -> list[str]:
+    time_resolution = build_time_resolution_hint(request)
     constraints = [
-        (
-            "When the user asks 最近一年/近一年/过去一年/last 12 months and does not name "
-            f"an explicit historical year, generate time_range.start={DEMO_RECENT_YEAR_START} "
-            f"and time_range.end={DEMO_RECENT_YEAR_END}; use the latest complete Olist month."
-        ),
-        (
+        "Use only metric_id and metric_version returned by this metric retrieval response.",
+        "Never invent a fixed demo date window; use the request, governed source metadata, or validated conversation context.",
+    ]
+    inherited_time_range = time_resolution.get("inherited_time_range")
+    if inherited_time_range:
+        constraints.append(
+            "This follow-up omits an explicit time window: copy time_resolution.inherited_time_range exactly into DSL time_range."
+        )
+    if time_resolution["detected_time_need"].get("usage_only_monthly"):
+        constraints.append(
+            "用于某团队月度复盘/报告 describes report usage only: do not add D_MONTH or trend_query unless the user explicitly asks 按月/每月/逐月/月度趋势."
+        )
+    if time_resolution["detected_time_need"]["looks_monthly"]:
+        constraints.append(
             "When the user asks 每月/月度/按月/monthly, generate intent=trend_query, "
             'dimensions=[{"dimension_id":"D_MONTH"}], sort D_MONTH ascending, and limit=100.'
-        ),
-        "Use only metric_id and metric_version returned by this metric retrieval response.",
-    ]
-    if request.preprocess.time_start and request.preprocess.time_end:
-        constraints.append(
-            "If preprocess time_start/time_end conflict with warehouse_data_window or relative_time_policy, "
-            "prefer the metric retrieval time_resolution policy."
         )
     return constraints
 
@@ -282,6 +368,29 @@ def is_vector_scope_rejected(
     )
 
 
+def retrieval_runtime_diagnostics() -> dict:
+    settings = get_settings()
+    embedding_configured = settings.embedding_provider in {
+        "local_char_ngram",
+        "local_sentence_transformer",
+    } or bool(settings.dashscope_api_key.strip())
+    return {
+        "embedding_provider": settings.embedding_provider,
+        "embedding_model": settings.embedding_model,
+        "embedding_configured": embedding_configured,
+        "vector_min_positive_similarity": (
+            settings.local_sentence_transformer_min_positive_similarity
+            if settings.embedding_provider == "local_sentence_transformer"
+            else settings.vector_min_positive_similarity
+        ),
+        "reranker_enabled": settings.reranker_enabled,
+        "reranker_configured": bool(
+            settings.reranker_enabled and settings.dashscope_api_key.strip()
+        ),
+        "lexical_fallback": "BM25_CANDIDATES_REQUIRE_CLARIFICATION",
+    }
+
+
 def retrieve_metrics(
     session: Session,
     request: MetricRetrieveRequest,
@@ -289,7 +398,129 @@ def retrieve_metrics(
     trace_id: str,
 ) -> MetricRetrieveResponse:
     settings = get_settings()
+    runtime_diagnostics = retrieval_runtime_diagnostics()
+    min_positive_similarity = (
+        settings.local_sentence_transformer_min_positive_similarity
+        if settings.embedding_provider == "local_sentence_transformer"
+        else settings.vector_min_positive_similarity
+    )
     records = load_metric_records(session, request.biz_domain)
+    decision_policy = session.get(SemanticScopePolicy, request.biz_domain)
+    selection_margin = decision_policy.selection_margin if decision_policy else 0.08
+
+    staged_production_query = (
+        is_explicitly_staged_production_query(request.normalized_query)
+        or matches_unpublished_metric_name(
+            session, request.biz_domain, request.normalized_query
+        )
+    )
+    if staged_production_query:
+        return MetricRetrieveResponse(
+            request_id=request_id,
+            trace_id=trace_id,
+            gate_status="REJECT",
+            mentions=[],
+            reason_codes=[
+                "CAPABILITY_STAGED" if staged_production_query else "METRIC_OUT_OF_SCOPE"
+            ],
+            clarification_message="",
+            time_resolution=build_time_resolution_hint(request),
+            dsl_generation_constraints=build_dsl_generation_constraints(request),
+            runtime_diagnostics=runtime_diagnostics,
+        )
+
+    inherited_record = validated_inherited_metric(request, records)
+    if inherited_record is not None:
+        query_mode = (
+            "multi_fact"
+            if len(
+                expression_model_ids(
+                    inherited_record.version.expression_json,
+                    inherited_record.version.semantic_model_id,
+                )
+            ) > 1
+            else "single_model"
+        )
+        candidate = MetricCandidate(
+            metric_id=inherited_record.metric.id,
+            metric_version=inherited_record.version.version,
+            display_name=inherited_record.metric.name,
+            metric_type=inherited_record.metric.metric_type,
+            unit=inherited_record.metric.unit,
+            business_definition=inherited_record.metric.description,
+            query_mode=query_mode,
+            probability=1.0,
+            retrieval_sources=["validated_conversation_context"],
+            authorized=True,
+        )
+        return MetricRetrieveResponse(
+            request_id=request_id,
+            trace_id=trace_id,
+            gate_status="PASS",
+            mentions=[
+                MetricMentionDecision(
+                    text=request.normalized_query,
+                    selected_metric_id=candidate.metric_id,
+                    selected_metric_version=candidate.metric_version,
+                    probability=1.0,
+                    candidates=[candidate],
+                )
+            ],
+            reason_codes=["VALIDATED_CONVERSATION_CONTEXT"],
+            clarification_message="",
+            time_resolution=build_time_resolution_hint(request),
+            dsl_generation_constraints=build_dsl_generation_constraints(request),
+            runtime_diagnostics=runtime_diagnostics,
+        )
+
+    if (
+        not request.preprocess.inherit_context
+        and is_underspecified_metric_query(request.normalized_query)
+    ):
+        candidates = [
+            MetricCandidate(
+                metric_id=record.metric.id,
+                metric_version=record.version.version,
+                display_name=record.metric.name,
+                metric_type=record.metric.metric_type,
+                unit=record.metric.unit,
+                business_definition=record.metric.description,
+                query_mode=(
+                    "multi_fact"
+                    if len(
+                        expression_model_ids(
+                            record.version.expression_json,
+                            record.version.semantic_model_id,
+                        )
+                    ) > 1
+                    else "single_model"
+                ),
+                probability=0.5,
+                retrieval_sources=["underspecified_query_fallback"],
+                authorized=True,
+            )
+            for record in records[:5]
+        ]
+        return MetricRetrieveResponse(
+            request_id=request_id,
+            trace_id=trace_id,
+            gate_status="CLARIFY",
+            mentions=[
+                MetricMentionDecision(
+                    text=request.normalized_query,
+                    selected_metric_id="",
+                    selected_metric_version=None,
+                    probability=0.5 if candidates else 0.0,
+                    candidates=candidates,
+                )
+            ],
+            reason_codes=["MISSING_METRIC"],
+            clarification_message="你想查看哪个指标？请选择一个指标口径后继续。",
+            time_resolution=build_time_resolution_hint(request),
+            dsl_generation_constraints=build_dsl_generation_constraints(request),
+            runtime_diagnostics=runtime_diagnostics,
+        )
+
     mentions = infer_mentions(request, records)
     decisions: list[MetricMentionDecision] = []
     statuses: list[str] = []
@@ -313,29 +544,43 @@ def retrieve_metrics(
                 scored.append((score, sources, record))
         lexical_top = max((item[0] for item in scored), default=0.0)
         vector_used = False
+        # Operator-authored scope and ambiguity boundaries are policy gates, not
+        # retrieval fallbacks.  Evaluate them for every path so a strong lexical
+        # or BM25 false-positive cannot bypass a policy published from the UI.
+        vector_result = search_metric_vectors(session, mention, request.biz_domain)
+        vector_scores = vector_result.scores
+        top_vector_similarity = max(
+            (item.positive_similarity for item in vector_scores.values()),
+            default=0.0,
+        )
+        scope_rejected = is_vector_scope_rejected(
+            top_vector_similarity,
+            vector_result.scope_negative_similarity,
+            vector_result.scope_negative_threshold,
+            vector_result.scope_margin,
+        )
+        ambiguity_matched = is_vector_scope_rejected(
+            top_vector_similarity,
+            vector_result.ambiguity_similarity,
+            vector_result.ambiguity_threshold,
+            vector_result.ambiguity_margin,
+        )
+        specificity_matched = (
+            vector_result.specificity_similarity >= vector_result.specificity_threshold
+            and vector_result.specificity_similarity
+            >= vector_result.ambiguity_similarity + vector_result.specificity_margin
+        )
+        if scope_rejected:
+            scored = []
+            vector_scores = {}
         if lexical_top < 0.70:
-            vector_result = search_metric_vectors(session, mention, request.biz_domain)
-            vector_scores = vector_result.scores
-            top_vector_similarity = max(
-                (item.positive_similarity for item in vector_scores.values()),
-                default=0.0,
-            )
-            scope_rejected = is_vector_scope_rejected(
-                top_vector_similarity,
-                vector_result.scope_negative_similarity,
-                settings.vector_scope_negative_threshold,
-                settings.vector_scope_margin,
-            )
-            if scope_rejected:
-                scored = []
+            if not scope_rejected and top_vector_similarity < min_positive_similarity:
                 vector_scores = {}
-            elif top_vector_similarity < settings.vector_min_positive_similarity:
-                vector_scores = {}
-            else:
+            elif not scope_rejected:
                 vector_used = bool(vector_scores)
             for record_index, record in enumerate(records):
                 vector_score = vector_scores.get(record.metric.id)
-                bm25_score = bm25_scores[record_index] if vector_used else 0.0
+                bm25_score = bm25_scores[record_index] if not scope_rejected else 0.0
                 if vector_score is None and bm25_score <= 0:
                     continue
                 existing = next(
@@ -350,18 +595,27 @@ def retrieve_metrics(
                         vector_score.positive_similarity - vector_score.negative_similarity * 0.20,
                     )
                     calibrated_vector = min(0.89, 0.55 + semantic_score * 0.40)
-                calibrated_bm25 = 0.45 + bm25_score * 0.35 if bm25_score > 0 else 0.0
-                combined = max(
-                    lexical_score,
-                    calibrated_vector,
-                    calibrated_bm25,
-                    lexical_score * 0.45 + calibrated_vector * 0.35 + calibrated_bm25 * 0.20,
+                calibrated_bm25 = (
+                    0.45 + bm25_score * (0.35 if vector_used else 0.23)
+                    if bm25_score > 0
+                    else 0.0
                 )
+                if vector_used and vector_score is not None:
+                    # Once semantic retrieval clears its provider-specific quality
+                    # gate, preserve its ordering. BM25 is supporting evidence, not
+                    # a 0.8-capped override that can erase the semantic margin.
+                    combined = (
+                        calibrated_vector * 0.75
+                        + calibrated_bm25 * 0.20
+                        + lexical_score * 0.05
+                    )
+                else:
+                    combined = max(lexical_score, calibrated_bm25)
                 sources = list(existing[1]) if existing else []
                 if vector_score is not None:
                     sources.append("embedding")
                 if bm25_score > 0:
-                    sources.append("bm25")
+                    sources.append("bm25" if vector_used else "bm25_clarify_fallback")
                 merge_scored_candidate(scored, record, combined, sources)
         if vector_used:
             scored = rerank_scored_candidates(mention, scored)
@@ -376,6 +630,16 @@ def retrieve_metrics(
                 metric_type=record.metric.metric_type,
                 unit=record.metric.unit,
                 business_definition=record.metric.description,
+                query_mode=(
+                    "multi_fact"
+                    if len(
+                        expression_model_ids(
+                            record.version.expression_json,
+                            record.version.semantic_model_id,
+                        )
+                    ) > 1
+                    else "single_model"
+                ),
                 probability=score,
                 retrieval_sources=sources,
                 authorized=True,
@@ -384,14 +648,25 @@ def retrieve_metrics(
         ]
 
         if not candidates:
-            status = "REJECT"
+            # In a known business domain, an unmatched request is incomplete by
+            # default.  Only the operator-managed out-of-scope boundary may turn
+            # it into a rejection; this keeps the distinction UI-governable.
+            status = "REJECT" if scope_rejected else "CLARIFY"
             selected_id = ""
             selected_version = None
             probability = 0.0
         else:
             top = candidates[0]
             margin = top.probability - (candidates[1].probability if len(candidates) > 1 else 0)
-            if len(candidates) > 1 and margin < 0.08:
+            governed_example_match = (
+                "positive_example" in top.retrieval_sources
+                and top.probability >= 0.86
+            )
+            if ambiguity_matched and not governed_example_match and not specificity_matched:
+                status = "CLARIFY"
+                selected_id = ""
+                selected_version = None
+            elif len(candidates) > 1 and margin < selection_margin and not governed_example_match:
                 status = "CLARIFY"
                 selected_id = ""
                 selected_version = None
@@ -444,4 +719,5 @@ def retrieve_metrics(
         ),
         time_resolution=build_time_resolution_hint(request),
         dsl_generation_constraints=build_dsl_generation_constraints(request),
+        runtime_diagnostics=runtime_diagnostics,
     )

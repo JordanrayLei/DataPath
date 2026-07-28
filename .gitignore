@@ -1,4 +1,5 @@
 .venv/
+.models/
 .DS_Store
 **/.DS_Store
 __pycache__/
@@ -29,3 +30,5 @@ infra/dify/
 *.zip
 *.tar
 *.7z
+# 本地开发过程文档，不作为公开项目材料发布
+/document/development/

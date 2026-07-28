@@ -1,0 +1,102 @@
+{
+  "benchmark_id": "datapath-frontend-editable-closure-2350-v2",
+  "generated_at": "2026-07-18T04:24:40.098554+00:00",
+  "status": "SEALED_NOT_EXECUTED",
+  "source_golden_set_id": "datapath-production-native-2500-golden-v1",
+  "source_manifest_sha256": "f1bb0adb1bf1faaf7e82c0690e9d090da9497505ef5bdacb426c6824565411cc",
+  "evidence_class": "SYNTHETIC_SEMANTIC_MUTATION_NOT_REAL_USER",
+  "case_count": 2350,
+  "revised_at": "2026-07-27",
+  "excluded_categories": [
+    "dirty_data"
+  ],
+  "scope_note": "数据质量审计上下文不属于当前产品测评范围；三个 split 中原有的 150 条 dirty_data 用例已移除。",
+  "mutation_dictionary": {
+    "development": {
+      "M_PROD_ORDER_COUNT": "成交单据数",
+      "M_PROD_ORDER_GROSS_AMOUNT": "订单原始总额",
+      "M_PROD_ITEM_NET_REVENUE": "商品实得收入",
+      "M_PROD_PAYMENT_AMOUNT": "到账金额",
+      "M_PROD_REFUND_AMOUNT": "退回款额",
+      "M_PROD_SHIPMENT_COUNT": "出库包裹数",
+      "M_PROD_INVENTORY_UNITS": "在库商品件数",
+      "M_PROD_SERVICE_TICKET_COUNT": "客服请求单量",
+      "M_PROD_MARKETING_TOUCH_COUNT": "营销接触次数",
+      "M_PROD_REFUND_ADJUSTED_REVENUE": "扣除退款后的净收入",
+      "M_PROD_PAYMENT_REFUND_RATE": "收款退款占比"
+    },
+    "regression": {
+      "M_PROD_ORDER_COUNT": "下单笔数",
+      "M_PROD_ORDER_GROSS_AMOUNT": "下单总金额",
+      "M_PROD_ITEM_NET_REVENUE": "货品净销售额",
+      "M_PROD_PAYMENT_AMOUNT": "支付实收",
+      "M_PROD_REFUND_AMOUNT": "退款支出",
+      "M_PROD_SHIPMENT_COUNT": "发运件数",
+      "M_PROD_INVENTORY_UNITS": "库存单位数",
+      "M_PROD_SERVICE_TICKET_COUNT": "售后工单数",
+      "M_PROD_MARKETING_TOUCH_COUNT": "市场触达量",
+      "M_PROD_REFUND_ADJUSTED_REVENUE": "退款调整后营收",
+      "M_PROD_PAYMENT_REFUND_RATE": "实收退款比率"
+    },
+    "locked_blind": {
+      "M_PROD_ORDER_COUNT": "交易订单笔数",
+      "M_PROD_ORDER_GROSS_AMOUNT": "订单毛额",
+      "M_PROD_ITEM_NET_REVENUE": "商品净营收",
+      "M_PROD_PAYMENT_AMOUNT": "已收款金额",
+      "M_PROD_REFUND_AMOUNT": "退单返款",
+      "M_PROD_SHIPMENT_COUNT": "配送包数量",
+      "M_PROD_INVENTORY_UNITS": "现存货品量",
+      "M_PROD_SERVICE_TICKET_COUNT": "客户服务单数",
+      "M_PROD_MARKETING_TOUCH_COUNT": "推广接触数",
+      "M_PROD_REFUND_ADJUSTED_REVENUE": "返款后的实际营收",
+      "M_PROD_PAYMENT_REFUND_RATE": "已收款退回比例"
+    }
+  },
+  "mutation_dictionary_sha256": "6a693d99e142703fbf04cb6f98cbd74815313219bdc94b9c33e06fe773b68df8",
+  "allowed_remediation": {
+    "transport": "public APIs also called by the frontend",
+    "editable_fields": [
+      "name",
+      "description",
+      "aliases",
+      "positive_examples",
+      "negative_examples",
+      "owner"
+    ],
+    "forbidden": [
+      "backend code",
+      "retrieval code",
+      "test expected results",
+      "formula",
+      "semantic model",
+      "dimensions",
+      "unit",
+      "metric type"
+    ]
+  },
+  "claim_restriction": "Synthetic semantic mutations reuse 2,500 Oracle contracts; they test governed language robustness, not real-user adoption.",
+  "development_cases": 1128,
+  "development_sha256": "7a4d8da501b68dffeec710b054463be123681341ef0e06f978ac0c064df2d64e",
+  "regression_cases": 470,
+  "regression_sha256": "a2361243438f3253ce445ae7766ba11caa9c4bf5af56f62808ef07d2cf08a3a6",
+  "locked_blind_cases": 752,
+  "locked_blind_sha256": "d665abe227eb3e652831093ee4cd48a0057054f1b19328d8fc57d8c464f57e95",
+  "category_distribution": {
+    "core_metric": 500,
+    "cross_fact_join": 400,
+    "grain_and_fanout": 250,
+    "time_and_window": 250,
+    "semantic_ambiguity": 200,
+    "scope_safety": 200,
+    "multi_turn": 200,
+    "permission": 150,
+    "schema_change": 100,
+    "performance": 100
+  },
+  "status_distribution": {
+    "SUCCESS": 1500,
+    "REJECT": 300,
+    "CLARIFY": 200,
+    "BLOCKED": 350
+  }
+}
