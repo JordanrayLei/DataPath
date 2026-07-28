@@ -5,8 +5,7 @@
 DataPath 不让大模型自由生成并执行 SQL。AI 负责理解业务表达，确定性系统负责口径与执行边界，在此基础上把 AI 语义预热、可信问数、Schema 影响管理和 Bad Case 回归串成持续演进的数据闭环。
 
 [完整产品全链路](document/showcase/01-product-case-study.md) ·
-[产品介绍 PPT](document/showcase/DataPath-AI产品经理作品集.pptx) ·
-[项目展示目录](document/showcase/README.md)
+[产品介绍 PPT](document/showcase/DataPath-AI产品经理作品集.pptx)
 
 ![DataPath 成功查询全页面](document/showcase/assets/product-evidence/query-workbench-success-full.jpg)
 
@@ -40,8 +39,6 @@ DataPath 将这些风险拆成四个产品能力：
 ### 4. 概率能力与确定性边界分工
 
 AI 处理自然语言理解和有限候选消歧；指标口径、权限、Join、SQL 编译与执行由确定性系统负责。安全性不依赖模型“自觉遵守”提示词。
-
-[查看完整功能、角色流程与运行证据 →](document/showcase/README.md)
 
 ## 已实现结果
 
@@ -120,17 +117,19 @@ NO_PROXY=127.0.0.1,localhost uv run python -m scripts.smoke_chatbi_api
 
 ## 延伸文档
 
-以下材料用于进一步了解产品定义、质量机制和关键取舍，不影响快速浏览项目：
+以下材料分别展开产品定义、方案判断、流程设计和质量机制：
 
-| 文档 | 内容 |
-| --- | --- |
-| [完整产品介绍 PPT](document/showcase/DataPath-AI产品经理作品集.pptx) | 产品定位、完整功能链路、真实界面、特点与结果 |
-| [产品 Case Study](document/showcase/01-product-case-study.md) | 用户问题、产品目标、整体方案、关键取舍与项目结果 |
-| [Bad Case 自助闭环 PRD](document/showcase/02-badcase-closure-prd.md) | 用户流程、状态机、功能规则与验收标准 |
-| [指标体系与测评方法](document/showcase/03-metrics-and-evaluation.md) | 北极星指标、质量指标、评测集与结果判断 |
-| [核心产品决策](document/showcase/04-product-decisions.md) | Text-to-SQL、人工治理、失败关闭与 Golden 等关键取舍 |
-
-[查看全部项目资料 →](document/showcase/README.md)
+| 类型 | 文档 | 内容 |
+| --- | --- | --- |
+| 产品全貌 | [完整产品介绍 PPT](document/showcase/DataPath-AI产品经理作品集.pptx) | 产品定位、功能链路、真实界面、产品特点与结果 |
+| 产品定义 | [产品总体 PRD](document/showcase/09-product-prd.md) | 目标用户、产品范围、功能规则、异常状态与版本验收 |
+| 项目复盘 | [产品 Case Study](document/showcase/01-product-case-study.md) | 用户问题、整体方案、关键取舍与项目结果 |
+| 市场判断 | [竞品分析](document/showcase/05-competitive-analysis.md) | 竞争格局、能力边界、差异化切口与建设优先级 |
+| 流程设计 | [产品流程图](document/showcase/06-product-flows.md) | 产品全链路及不同角色的操作流程 |
+| 权限治理 | [权限设计](document/showcase/08-permission-design.md) | 角色、资源、数据范围、服务端门禁与审计 |
+| 数据验证 | [事件埋点方案](document/showcase/07-event-tracking-plan.md) | 事件字典、核心漏斗、指标口径与数据质量 |
+| 专题需求 | [Bad Case 自助闭环 PRD](document/showcase/02-badcase-closure-prd.md) | 状态机、功能规则、归因、回归与验收标准 |
+| 质量体系 | [指标体系与测评方法](document/showcase/03-metrics-and-evaluation.md) | 北极星指标、质量指标、评测集与结果判断 |
 
 ---
 
