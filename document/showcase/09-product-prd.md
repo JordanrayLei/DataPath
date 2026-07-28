@@ -211,6 +211,8 @@ Schema 变化作为横向控制链路：一旦底层结构变化影响模型、J
 
 ### 7.4 AI 语义预热
 
+详细需求见 [AI 语义预热 PRD](10-ai-semantic-preheat-prd.md)。
+
 #### 用户故事
 
 > 作为指标管理员，我希望在指标发布前由 AI 扩展业务表达，以便新指标在第一批用户提问前具备基础语义覆盖。
@@ -338,6 +340,8 @@ AI 可以基于 Evidence 生成业务解读，但必须检查：
 
 ### 7.9 Schema 影响管理
 
+详细需求见 [Schema 影响管理 PRD](11-schema-impact-management-prd.md)。
+
 #### 用户故事
 
 > 作为数据平台管理员，我希望在底层字段被删除、改名或改变类型时，立即看到受影响资产并阻止错误查询。
@@ -380,7 +384,7 @@ AI 可以基于 Evidence 生成业务解读，但必须检查：
 6. 验证当前问题和受影响回归；
 7. 通过门禁后发布并关闭。
 
-完整规则见[Bad Case 自助闭环 PRD](02-badcase-closure-prd.md)。
+完整规则见 [Bad Case—Golden 契约闭环 PRD](12-badcase-golden-contract-prd.md)。
 
 ### 7.11 测评监控
 
@@ -545,6 +549,8 @@ AI 可以基于 Evidence 生成业务解读，但必须检查：
 | [产品流程图](06-product-flows.md) | 展开业务流程和角色操作流程 |
 | [事件埋点方案](07-event-tracking-plan.md) | 定义使用、转化和质量数据 |
 | [权限设计](08-permission-design.md) | 定义角色、资源和数据访问边界 |
-| [Bad Case 自助闭环 PRD](02-badcase-closure-prd.md) | 展开质量闭环专题需求 |
+| [AI 语义预热 PRD](10-ai-semantic-preheat-prd.md) | 展开语义冷启动与人工审核需求 |
+| [Schema 影响管理 PRD](11-schema-impact-management-prd.md) | 展开变化传播、阻断与恢复需求 |
+| [Bad Case—Golden 契约闭环 PRD](12-badcase-golden-contract-prd.md) | 展开质量闭环专题需求 |
 | [指标体系与测评方法](03-metrics-and-evaluation.md) | 定义产品指标和测评方法 |
 | [核心产品决策记录](04-product-decisions.md) | 说明技术路线背后的产品判断 |

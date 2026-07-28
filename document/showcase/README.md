@@ -29,13 +29,15 @@ PPT 通过真实运行界面、DDL 验收证据和产品交互稿，完整介绍
 
 依次阅读：
 
-1. [竞品分析](05-competitive-analysis.md)；
+1. [可信 ChatBI 竞品研究与产品决策](05-competitive-analysis.md)；
 2. [产品流程图](06-product-flows.md)；
 3. [事件埋点方案](07-event-tracking-plan.md)；
 4. [权限设计](08-permission-design.md)；
-5. [Bad Case 自助闭环 PRD](02-badcase-closure-prd.md)；
-6. [指标体系与测评方法](03-metrics-and-evaluation.md)；
-7. [核心产品决策记录](04-product-decisions.md)。
+5. [AI 语义预热 PRD](10-ai-semantic-preheat-prd.md)；
+6. [Schema 影响管理 PRD](11-schema-impact-management-prd.md)；
+7. [Bad Case—Golden 契约闭环 PRD](12-badcase-golden-contract-prd.md)；
+8. [指标体系与测评方法](03-metrics-and-evaluation.md)；
+9. [核心产品决策记录](04-product-decisions.md)。
 
 这些文档分别展开竞争判断、质量闭环、测评体系和关键产品取舍。
 
@@ -45,27 +47,29 @@ PPT 通过真实运行界面、DDL 验收证据和产品交互稿，完整介绍
 | ---: | --- | --- | --- |
 | 1 | [完整产品介绍（PPT）](完整产品介绍.pptx) · [PDF](完整产品介绍.pdf) | 完整功能、真实界面、产品特点和结果 | 项目全貌 |
 | 2 | [产品总体 PRD](09-product-prd.md) | 产品范围、完整功能、业务规则、异常状态和版本验收 | 需求定义 |
-| 3 | [竞品分析](05-competitive-analysis.md) | 成熟产品能力、竞争边界、差异化切口与优先级 | 竞争判断 |
+| 3 | [可信 ChatBI 竞品研究与产品决策](05-competitive-analysis.md) | 行业基线、竞品机制、产品边界、取舍依据与优先级 | 竞争判断 |
 | 4 | [产品流程图](06-product-flows.md) | 产品全链路和四类角色操作流程 | 流程设计 |
 | 5 | [事件埋点方案](07-event-tracking-plan.md) | 事件字典、产品漏斗、指标口径和数据质量 | 数据验证 |
 | 6 | [权限设计](08-permission-design.md) | 角色、资源、数据范围、权限门禁与建设优先级 | 权限治理 |
-| 7 | [Bad Case 自助闭环 PRD](02-badcase-closure-prd.md) | 用户流程、状态机、功能规则、异常处理和验收标准 | 质量闭环 |
-| 8 | [指标体系与测评方法](03-metrics-and-evaluation.md) | 北极星指标、质量指标、评测集、Golden 和结果判定 | 测评体系 |
-| 9 | [核心产品决策记录](04-product-decisions.md) | Text-to-SQL、人工治理、失败关闭、Join 与版本策略 | 产品取舍 |
+| 7 | [AI 语义预热 PRD](10-ai-semantic-preheat-prd.md) | 冷启动问题、草稿生成、人机审核、AI 边界和专项评测 | 创新设计 |
+| 8 | [Schema 影响管理 PRD](11-schema-impact-management-prd.md) | Schema Diff、影响传播、失败关闭和恢复门禁 | 创新设计 |
+| 9 | [Bad Case—Golden 契约闭环 PRD](12-badcase-golden-contract-prd.md) | 现场冻结、归因、Golden、受影响回归和发布门禁 | 创新设计 |
+| 10 | [指标体系与测评方法](03-metrics-and-evaluation.md) | 北极星指标、质量指标、评测集、Golden 和结果判定 | 测评体系 |
+| 11 | [核心产品决策记录](04-product-decisions.md) | Text-to-SQL、人工治理、失败关闭、Join 与版本策略 | 产品取舍 |
 
 ## 按产品主题查看
 
 | 产品主题 | 相关内容 |
 | --- | --- |
 | 产品定位与整体方案 | 完整介绍 PPT、产品总体 PRD |
-| 竞争环境与差异化 | 竞品分析 |
+| 竞争环境与差异化 | 可信 ChatBI 竞品研究与产品决策 |
 | 产品链路与角色操作 | 产品流程图 |
 | 产品使用与价值验证 | 事件埋点方案、指标体系与测评方法 |
 | 角色、功能与数据访问边界 | 权限设计 |
-| 指标治理与 AI 语义预热 | 完整介绍 PPT、产品总体 PRD |
+| 指标治理与 AI 语义预热 | 完整介绍 PPT、AI 语义预热 PRD |
 | 可信问数与结果证据 | 完整介绍 PPT、指标体系与测评方法 |
-| Bad Case 数据闭环 | Bad Case 自助闭环 PRD、指标体系与测评方法 |
-| Schema 变化影响管理 | 完整介绍 PPT、产品总体 PRD |
+| Bad Case 数据闭环 | Bad Case—Golden 契约闭环 PRD、指标体系与测评方法 |
+| Schema 变化影响管理 | 完整介绍 PPT、Schema 影响管理 PRD |
 | 核心技术路线与产品取舍 | 核心产品决策记录 |
 
 ## 文件说明
@@ -77,11 +81,13 @@ PPT 通过真实运行界面、DDL 验收证据和产品交互稿，完整介绍
 | [`完整产品介绍.pptx`](完整产品介绍.pptx) | 当前推荐使用的完整产品介绍 PPT |
 | [`完整产品介绍.pdf`](完整产品介绍.pdf) | 无需 PowerPoint 即可查看的 PDF 版本 |
 | [`09-product-prd.md`](09-product-prd.md) | DataPath 的产品范围、模块规则、异常状态和版本验收 |
-| [`05-competitive-analysis.md`](05-competitive-analysis.md) | 竞品能力、竞争边界和差异化策略 |
+| [`05-competitive-analysis.md`](05-competitive-analysis.md) | 可信 ChatBI 竞品研究、产品边界、决策评分和差异化策略 |
 | [`06-product-flows.md`](06-product-flows.md) | 业务流程和用户操作流程 |
 | [`07-event-tracking-plan.md`](07-event-tracking-plan.md) | 事件字典、漏斗、指标口径和数据质量 |
 | [`08-permission-design.md`](08-permission-design.md) | 角色、资源、数据范围、权限规则和验收用例 |
-| [`02-badcase-closure-prd.md`](02-badcase-closure-prd.md) | 一份完整的 AI 产品质量闭环 PRD |
+| [`10-ai-semantic-preheat-prd.md`](10-ai-semantic-preheat-prd.md) | AI 语义预热创新模块详细 PRD |
+| [`11-schema-impact-management-prd.md`](11-schema-impact-management-prd.md) | Schema 影响管理创新模块详细 PRD |
+| [`12-badcase-golden-contract-prd.md`](12-badcase-golden-contract-prd.md) | Bad Case—Golden 契约闭环创新模块详细 PRD |
 | [`03-metrics-and-evaluation.md`](03-metrics-and-evaluation.md) | 产品指标和 AI 测评方法 |
 | [`04-product-decisions.md`](04-product-decisions.md) | 项目过程中的核心决策与代价 |
 

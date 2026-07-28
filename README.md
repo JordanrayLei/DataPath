@@ -123,11 +123,13 @@ NO_PROXY=127.0.0.1,localhost uv run python -m scripts.smoke_chatbi_api
 | --- | --- | --- |
 | 产品全貌 | [完整产品介绍（PPT）](document/showcase/完整产品介绍.pptx) · [PDF](document/showcase/完整产品介绍.pdf) | 产品定位、功能链路、真实界面、产品特点与结果 |
 | 产品定义 | [产品总体 PRD](document/showcase/09-product-prd.md) | 目标用户、产品范围、功能规则、异常状态与版本验收 |
-| 市场判断 | [竞品分析](document/showcase/05-competitive-analysis.md) | 竞争格局、能力边界、差异化切口与建设优先级 |
+| 市场判断 | [可信 ChatBI 竞品研究与产品决策](document/showcase/05-competitive-analysis.md) | 竞争格局、行业基线、产品边界、取舍依据与建设优先级 |
 | 流程设计 | [产品流程图](document/showcase/06-product-flows.md) | 产品全链路及不同角色的操作流程 |
 | 权限治理 | [权限设计](document/showcase/08-permission-design.md) | 角色、资源、数据范围、服务端门禁与审计 |
 | 数据验证 | [事件埋点方案](document/showcase/07-event-tracking-plan.md) | 事件字典、核心漏斗、指标口径与数据质量 |
-| 专题需求 | [Bad Case 自助闭环 PRD](document/showcase/02-badcase-closure-prd.md) | 状态机、功能规则、归因、回归与验收标准 |
+| 创新模块 | [AI 语义预热 PRD](document/showcase/10-ai-semantic-preheat-prd.md) | 冷启动诊断、AI 草稿、人机审核、评测与版本应用 |
+| 创新模块 | [Schema 影响管理 PRD](document/showcase/11-schema-impact-management-prd.md) | 变化发现、影响传播、失败关闭、复核与恢复 |
+| 创新模块 | [Bad Case—Golden 契约闭环 PRD](document/showcase/12-badcase-golden-contract-prd.md) | 现场冻结、分层归因、Golden、受影响回归与发布门禁 |
 | 质量体系 | [指标体系与测评方法](document/showcase/03-metrics-and-evaluation.md) | 北极星指标、质量指标、评测集与结果判断 |
 
 ---
