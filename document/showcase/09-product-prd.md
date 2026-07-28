@@ -541,7 +541,6 @@ AI 可以基于 Evidence 生成业务解读，但必须检查：
 
 | 文档 | 作用 |
 | --- | --- |
-| [产品 Case Study](01-product-case-study.md) | 解释项目背景、关键取舍和结果 |
 | [竞品分析](05-competitive-analysis.md) | 说明竞争边界和差异化切口 |
 | [产品流程图](06-product-flows.md) | 展开业务流程和角色操作流程 |
 | [事件埋点方案](07-event-tracking-plan.md) | 定义使用、转化和质量数据 |

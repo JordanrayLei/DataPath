@@ -4,8 +4,8 @@
 
 DataPath 不让大模型自由生成并执行 SQL。AI 负责理解业务表达，确定性系统负责口径与执行边界，在此基础上把 AI 语义预热、可信问数、Schema 影响管理和 Bad Case 回归串成持续演进的数据闭环。
 
-[完整产品全链路](document/showcase/01-product-case-study.md) ·
-[产品介绍 PPT](document/showcase/DataPath-AI产品经理作品集.pptx)
+[完整产品介绍（PPT）](document/showcase/完整产品介绍.pptx) ·
+[完整产品介绍（PDF）](document/showcase/完整产品介绍.pdf)
 
 ![DataPath 成功查询全页面](document/showcase/assets/product-evidence/query-workbench-success-full.jpg)
 
@@ -121,9 +121,8 @@ NO_PROXY=127.0.0.1,localhost uv run python -m scripts.smoke_chatbi_api
 
 | 类型 | 文档 | 内容 |
 | --- | --- | --- |
-| 产品全貌 | [完整产品介绍 PPT](document/showcase/DataPath-AI产品经理作品集.pptx) | 产品定位、功能链路、真实界面、产品特点与结果 |
+| 产品全貌 | [完整产品介绍（PPT）](document/showcase/完整产品介绍.pptx) · [PDF](document/showcase/完整产品介绍.pdf) | 产品定位、功能链路、真实界面、产品特点与结果 |
 | 产品定义 | [产品总体 PRD](document/showcase/09-product-prd.md) | 目标用户、产品范围、功能规则、异常状态与版本验收 |
-| 项目复盘 | [产品 Case Study](document/showcase/01-product-case-study.md) | 用户问题、整体方案、关键取舍与项目结果 |
 | 市场判断 | [竞品分析](document/showcase/05-competitive-analysis.md) | 竞争格局、能力边界、差异化切口与建设优先级 |
 | 流程设计 | [产品流程图](document/showcase/06-product-flows.md) | 产品全链路及不同角色的操作流程 |
 | 权限治理 | [权限设计](document/showcase/08-permission-design.md) | 角色、资源、数据范围、服务端门禁与审计 |
