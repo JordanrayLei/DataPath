@@ -23,6 +23,19 @@
 
 当前项目已具备 Bad Case、Golden、发布门禁和相关工程验证；关闭时长、复发率等属于下一阶段真实运营目标。
 
+### 1.4 指标口径
+
+| 指标 | 计算公式与分母 | 数据源 | 观察窗口 |
+| --- | --- | --- | --- |
+| 有效 Bad Case 可归因率 | 已确认主要根因的 Bad Case 数 / 已确认有效且完成调查的 Bad Case 数；`NEEDS_INFO` 不进入分母 | Bad Case 状态与归因记录 | 月、业务域 |
+| Golden 完整率 | 通过对应终态 Schema 校验的 Golden 数 / 已进入 `CONTRACTED` 的 Bad Case 数 | Golden 校验日志 | 月 |
+| 受影响回归覆盖率 | 实际执行的受影响 Active Golden 数 / 影响选择器应执行的 Golden 数 | 影响清单、`EvaluationRun` | 每次发布 |
+| 绕过验证发布次数 | 缺少有效 Golden、完整回归或安全门禁仍成功发布的次数 | 发布审计 | 实时硬门禁 |
+| 30 日复发率 | 发布后 30 日内出现同一 Golden 或同一根因签名的新 Bad Case 数 / 已发布并完成 30 日观察的 Bad Case 数 | 相似问题关联、人工确认 | 滚动 30 日 |
+| Bad Case 中位关闭时间 | `confirmed_at` 至 `closed_at` 的工作时长中位数；等待用户补充和外部冻结时间单独统计 | 状态迁移日志 | 月、严重度 |
+
+“同类问题”由同一 Golden、同一根因签名或人工合并任一条件确认。模型相似度只能推荐关联，不能自动判定复发。
+
 ## 2. 用户体验与功能
 
 ### 2.1 用户角色
@@ -85,6 +98,17 @@ Bad Case 是系统实际行为与人工确认的正确契约不一致，且能�
 - 原系统输出不能自动成为 Golden；
 - Golden 必须记录确认人、业务域、版本和生效状态。
 
+#### 四类终态的 Golden Schema
+
+| 预期终态 | 必填契约 | 主要禁止行为 |
+| --- | --- | --- |
+| `SUCCESS` | 指标 ID 与版本、时间范围、粒度、维度、过滤、排序/TopN、DSL 形态、Oracle 或性质断言 | 使用其他指标、扩大时间或数据范围、危险执行 |
+| `CLARIFY` | 歧义类型、候选集合、必须向用户确认的问题、确认后的允许分支 | 未澄清直接执行、展示无权限候选 |
+| `REJECT` | 拒绝原因码、能力边界、用户可采取的下一步 | 生成 DSL、访问数仓、用猜测答案代替拒绝 |
+| `BLOCKED` | 阻断原因码、受影响资产或权限状态、恢复前置条件、可见提示 | 绕过权限/治理状态、使用旧版本执行 |
+
+所有终态都必须包含原始问题、上下文约束、业务域、适用资产版本、确认人、确认时间和禁止行为。只有 `SUCCESS` 要求 Oracle 数值；结果受时间波动影响时，可以使用范围、行数、集合或性质断言。
+
 #### US-04：修复语义资产
 
 > 作为指标管理员，我希望在工作台修改允许范围内的语义资产，从而快速验证语义问题。
@@ -108,6 +132,31 @@ Bad Case 是系统实际行为与人工确认的正确契约不一致，且能�
 - 发布记录关联反馈、Bad Case、Golden、草稿、测评运行和审批人；
 - 发布后自动进入复发监控。
 
+#### 受影响回归选择规则
+
+影响选择器取以下集合的并集并记录每条用例的入选原因：
+
+1. 当前 Bad Case 对应 Golden；
+2. 同一正确指标和原错误指标的 Active Golden；
+3. 修改的别名、正例、反例或区分说明直接关联的 Golden；
+4. 与修改资产共享别名、相邻指标或语义冲突对的 Golden；
+5. 共享模型、维度、Join、Prompt、规则版本或检索配置的 Golden；
+6. 同期 Schema 事件标记为受影响的 Golden；
+7. 全局安全、权限、未发布资产和危险执行门禁用例。
+
+用例因版本不适用被排除时，必须记录排除原因和审核人，不能静默缩小回归范围。
+
+#### US-06：处理跨模块问题
+
+> 作为质量运营人员，我希望权限、Join、Schema、公式或代码问题与对应治理任务保持关联，从而避免转交后失去关闭标准。
+
+验收标准：
+
+- 外部任务包含模块、任务 ID、负责人、状态和目标修复版本；
+- 外部任务进行中时 Bad Case 为 `BLOCKED`，但仍保留 Golden；
+- 外部任务完成后自动触发重新验证，而不是直接关闭 Bad Case；
+- Golden 未通过时不得因外部任务已关闭而关闭 Bad Case。
+
 ### 2.4 主流程
 
 ```text
@@ -129,15 +178,37 @@ Bad Case 是系统实际行为与人工确认的正确契约不一致，且能�
 | 状态 | 含义 | 允许动作 |
 | --- | --- | --- |
 | `PENDING` | 新反馈待确认 | 确认、驳回、补充 |
+| `NEEDS_INFO` | 等待用户或系统补充 | 补充、退回、驳回 |
 | `CONFIRMED` | 已确认 Bad Case | 归因、分派、建 Golden |
+| `ASSIGNED` | 已归因并分派负责人 | 建 Golden、关联治理任务 |
 | `CONTRACTED` | Golden 已确认 | 创建修复 |
 | `FIXING` | 修复中 | 更新草稿、发起验证 |
 | `VALIDATING` | 正在回归 | 查看进度、取消 |
 | `VALIDATED` | 全部门禁通过 | 提交发布 |
-| `PUBLISHED` | 修复已发布 | 观察、关闭 |
+| `PUBLISHED` | 修复已发布 | 进入观察 |
+| `OBSERVING` | 处于复发观察期 | 关闭、重新打开 |
 | `CLOSED` | 已验证关闭 | 查看、重新打开 |
 | `REJECTED` | 非有效 Bad Case | 查看理由 |
+| `DUPLICATE` | 已合并到主 Bad Case | 查看主问题 |
 | `BLOCKED` | 等待外部治理修复 | 关联治理任务 |
+| `REOPENED` | 发布后复发 | 重新归因、修复 |
+
+#### 状态迁移
+
+| 当前状态 | 动作 | 下一状态 | 操作角色 | 服务端前置条件 |
+| --- | --- | --- | --- | --- |
+| `PENDING` | 要求补充 | `NEEDS_INFO` | 质量运营 | 缺失字段清单已记录 |
+| `PENDING` | 确认为有效问题 | `CONFIRMED` | 质量运营 | 执行现场可复现或证据充分 |
+| `PENDING` | 合并重复问题 | `DUPLICATE` | 质量运营 | 主 Bad Case 存在且关联原因已记录 |
+| `CONFIRMED` | 完成归因与分派 | `ASSIGNED` | 质量运营 | 主要根因、贡献根因和负责人已填写 |
+| `ASSIGNED` | 确认 Golden | `CONTRACTED` | Golden 审核员 | 对应终态 Schema 校验通过 |
+| `CONTRACTED/FIXING` | 发起验证 | `VALIDATING` | 修复负责人 | 修复指纹、影响范围和资产版本已冻结 |
+| `VALIDATING` | 全部通过 | `VALIDATED` | 系统 | 当前、受影响和安全用例全部 PASS |
+| `VALIDATED` | 审核发布 | `PUBLISHED` | 发布审核员 | 审核人与修复提交人分离 |
+| `PUBLISHED` | 开始观察 | `OBSERVING` | 系统 | 发布版本在线且监控已建立 |
+| `OBSERVING` | 观察期完成 | `CLOSED` | 质量运营 | 无确认复发且目标版本仍有效 |
+| `OBSERVING/CLOSED` | 确认复发 | `REOPENED` | 质量运营 | 同一 Golden、根因签名或人工关联成立 |
+| `BLOCKED` | 外部任务完成 | `VALIDATING` | 系统/质量运营 | 外部版本已发布，但仍须重新回归 |
 
 ### 2.6 异常规则
 
@@ -150,7 +221,47 @@ Bad Case 是系统实际行为与人工确认的正确契约不一致，且能�
 | Schema 事件影响修复资产 | Bad Case 转 `BLOCKED` |
 | 发布后同类问题复发 | 重新打开并关联原 Golden |
 
-### 2.7 非目标
+### 2.7 根因与优先级规则
+
+单个 Bad Case 支持多层归因：
+
+- `primary_root_cause`：对错误结果起决定作用的主要根因；
+- `contributing_causes[]`：共同导致或放大问题的次要原因；
+- `failure_stage`：输入理解、召回、裁决、上下文、DSL、Join、权限、Schema、执行或解释；
+- `owner_team`：负责修复的团队或治理角色；
+- `root_cause_signature`：由失败阶段、资产类型、规则/版本和冲突对象组成，用于复发统计。
+
+| 严重度 | 判定示例 | 首次响应目标 |
+| --- | --- | ---: |
+| P0 | 越权、危险执行、错误核心指标大范围返回 | 30 分钟 |
+| P1 | 多用户稳定复现的错误指标或结果 | 4 小时 |
+| P2 | 单业务域、存在替代路径的问题 | 1 个工作日 |
+| P3 | 解释、展示或低影响体验问题 | 2 个工作日 |
+
+### 2.8 页面状态
+
+| 页面状态 | 必须展示 |
+| --- | --- |
+| 新反馈 | 问题、反馈类型、执行现场完整度和确认入口 |
+| 待补充 | 缺失信息、请求对象、等待时长和驳回入口 |
+| 已归因 | 主要/贡献根因、负责人、严重度和相似问题 |
+| 契约编辑 | 终态对应字段、Schema 校验、确认人与版本 |
+| 外部阻断 | 关联治理任务、负责人、状态和目标版本 |
+| 验证中 | 用例范围、进度、基线和取消规则 |
+| 验证失败 | 失败用例、预期/实际、入选原因和修复入口 |
+| 观察期 | 发布版本、剩余时间、相似新问题和复发判断 |
+
+### 2.9 跨模块依赖
+
+| 方向 | 依赖或输出 | 失败处理 |
+| --- | --- | --- |
+| 上游：问数服务 | Query Run、上下文、DSL、Evidence 和结果 | 现场不足时进入 `NEEDS_INFO` |
+| 上游：Schema/权限/Join | 外部治理任务和目标版本 | 未解决时保持 `BLOCKED` |
+| 上游：AI 预热 | 生效语义资产版本与来源建议 | 用于定位问题和生成修复草稿 |
+| 下游：测评服务 | Golden、影响范围和 Oracle | 任一用例未运行或失败时禁止发布 |
+| 回流：语义资产 | 人工确认的正反例和边界 | 形成新版本，不直接修改线上资产 |
+
+### 2.10 非目标
 
 - 直接使用点赞点踩训练线上模型；
 - 自动确认 Bad Case 或 Golden；
@@ -169,7 +280,18 @@ Bad Case 是系统实际行为与人工确认的正确契约不一致，且能�
 
 AI 不得确认根因、Golden、Oracle、发布结果或安全例外。
 
-### 3.2 评测策略
+### 3.2 AI 工具与输入
+
+AI 辅助能力只能读取经过权限裁剪的：
+
+- Bad Case 执行现场与 Evidence 摘要；
+- 当前业务域的指标、语义资产和版本；
+- 人工确认的历史 Golden 与根因标签；
+- 允许比较的相似问题索引。
+
+工具调用必须返回来源 ID，不允许直接查询原始明细表。模型不可用时，人工归因、Golden、回归和发布门禁仍可完整运行。
+
+### 3.3 评测策略
 
 | 评测层 | 核心判断 |
 | --- | --- |
@@ -177,7 +299,7 @@ AI 不得确认根因、Golden、Oracle、发布结果或安全例外。
 | 受影响范围 | 当前、同指标、错误指标和冲突指标 Golden 是否覆盖 |
 | 安全门禁 | 危险执行、越权、未发布和受 Schema 影响资产是否为 0 |
 | 归因建议 | Top-3 是否包含人工确认根因，仅作为辅助指标 |
-| 修复收益 | 当前问题通过且既有严格通过率不下降 |
+| 修复收益 | 当前问题通过；Locked 与安全门禁零回退；Development 不低于冻结基线 |
 
 当前测评基线：
 
@@ -209,11 +331,13 @@ Asset Version / Audit / Recurrence Monitor
 | 实体 | 关键字段 |
 | --- | --- |
 | `Feedback` | query_run_id、type、comment、user_scope |
-| `BadCase` | status、root_cause、severity、owner、duplicate_of |
+| `BadCase` | status、primary_root_cause、contributing_causes、failure_stage、severity、owner、duplicate_of |
 | `GoldenContract` | expected_status、metric_version、dsl_shape、oracle、forbidden |
 | `FixDraft` | asset_type、before、after、fingerprint |
 | `EvaluationRun` | case_scope、results、safety_counts、baseline |
 | `FixRelease` | version、approver、published_at、rollback_to |
+
+`BadCase` 的归因字段细化为 `primary_root_cause`、`contributing_causes[]`、`failure_stage`、`owner_team` 和 `root_cause_signature`。`GoldenContract` 按终态保存不同 payload Schema，并统一保存上下文、适用版本、确认人与禁止行为。
 
 ### 4.3 集成点
 
@@ -231,6 +355,8 @@ Asset Version / Audit / Recurrence Monitor
 - Golden 审核、修复发布与回滚采用分权；
 - 所有状态迁移由服务端校验；
 - 删除用户可识别信息不影响契约和审计链完整性。
+
+执行现场默认保存 90 天；Golden、发布与审计记录按项目生命周期保留。需要删除用户可识别信息时，对用户 ID 做不可逆去标识化，但保留 query_run、契约和版本关联。
 
 ### 4.5 性能与可靠性目标
 
