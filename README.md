@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="document/showcase/assets/brand/datapath-logo-data-to-loop.gif" alt="DataPath Logo" width="180">
+</p>
+
 # DataPath
 
 **面向企业数据场景的可信 ChatBI：让业务用户自然语言问数，让每个答案都经过指标、权限、Join、Schema 与证据校验。**
