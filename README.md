@@ -1,50 +1,155 @@
 <p align="center">
-  <img src="document/showcase/assets/brand/datapath-logo-data-to-loop.gif" alt="DataPath Logo" width="180">
+  <img src="document/showcase2.0/assets/brand/datapath-logo-data-to-loop.gif" alt="DataPath Logo" width="180">
 </p>
 
 # DataPath
 
-**面向企业数据场景的可信 ChatBI：让业务用户自然语言问数，让每个答案都经过指标、权限、Join、Schema 与证据校验。**
+**面向企业数据场景的可信 AI 问数产品：以语义治理为底座，通过受约束的问数链路生成可验证、可追溯的数据答案，并用 AI 语义预热和持续质量闭环提升产品质量。**
 
-DataPath 不让大模型自由生成并执行 SQL。AI 负责理解业务表达，确定性系统负责口径与执行边界，在此基础上把 AI 语义预热、可信问数、Schema 影响管理和 Bad Case 回归串成持续演进的数据闭环。
+[产品概览](document/showcase2.0/01-datapath-product-overview.md) ·
+[核心产品 PRD](document/showcase2.0/02-constrained-trusted-ai-query-prd.md) ·
+[完整产品介绍（PDF）](document/showcase2.0/完整产品介绍.pdf)
 
-[完整产品介绍（PPT）](document/showcase/完整产品介绍.pptx) ·
-[完整产品介绍（PDF）](document/showcase/完整产品介绍.pdf)
+![DataPath 成功查询全页面](document/showcase2.0/assets/product-evidence/query-workbench-success-full.jpg)
 
-![DataPath 成功查询全页面](document/showcase/assets/product-evidence/query-workbench-success-full.jpg)
+## 为什么需要 DataPath
 
-## 它解决什么问题
+企业自然语言问数真正困难的不是生成一段可以运行的 SQL，而是让系统在真实业务环境中持续返回正确、合规且可以解释的数据答案。
 
-企业问数真正困难的不是“生成一段能运行的 SQL”，而是确保系统始终选对指标、遵守权限、正确关联数据，并在底层结构变化后及时停止错误查询。
+普通 ChatBI 的产品链路通常存在三个断点：
 
-DataPath 将这些风险拆成四个产品能力：
+| 阶段 | 关键问题 |
+| --- | --- |
+| 用户提问前 | 指标已经建设，但别名、真实问法和相邻指标边界覆盖不足 |
+| 系统回答时 | 模型可能选错指标、忽略歧义，或在权限和资产异常时继续回答 |
+| 用户反馈后 | 点踩和问题工单没有转化为可以持续运行的验证机制 |
 
-| 能力 | 解决的问题 | 产品机制 |
-| --- | --- | --- |
-| AI 语义预热 | 新业务域缺少问法数据，冷启动慢 | 根据已确认业务事实生成别名、典型问法与反例，人工审核后生效 |
-| 可信问数 | SQL 可运行，但指标、权限或 Join 可能错误 | 有限候选裁决 → Query DSL → 确定性校验与编译 → 只读执行 |
-| Schema 影响管理 | 删字段、改类型后旧逻辑继续运行 | 自动传播影响，阻断过期模型、关系和指标，复核后重新发布 |
-| Bad Case 数据闭环 | 用户点踩后，同类错误反复出现 | 保存错误现场，确认 Golden 契约，回归通过后才能发布修复 |
+DataPath 的整体解法是：**一个底座、一条主线、两个关键创新。**
 
-## DataPath 的不同
+## 产品全景
 
-### 1. AI 在用户提问前就开始工作
+```mermaid
+flowchart LR
+    A["语义治理底座<br/>指标、维度、Join、权限与资产状态"]
+    B["AI 语义预热<br/>提问前建设语言覆盖"]
+    C["受约束的可信 AI 问数<br/>理解、澄清、校验、执行与解释"]
+    D["持续质量闭环<br/>反馈、Golden、回归与发布门禁"]
 
-传统问数产品往往等待线上问题暴露后再补充语义。DataPath 在指标发布阶段先生成可审核的语言资产，使新业务域在第一批用户提问前就具备基础语义覆盖。
+    A --> B
+    A --> C
+    B --> C
+    C --> D
+    D -->|"更新语言资产与质量基线"| A
+```
 
-### 2. 错误会沉淀成可回归的产品资产
+### 一个底座：语义治理
 
-反馈不止是一条点赞或点踩记录。DataPath 将问题关联到指标版本、DSL、血缘与结果，由工作人员确认正确契约，并用 Golden 回归防止问题复发。
+语义治理定义 AI 可以查询什么、如何计算以及何时不可用。DataPath 将业务域、语义模型、指标口径、维度、Join、权限、Schema 和资产版本组织为可执行的治理资产，为问数链路提供确定性边界。
 
-### 3. 数据结构变化也是产品链路的一部分
+这部分是企业级 AI 问数成立所必需的基础能力，不作为独立创新点展开。
 
-真实数据环境持续变化。DataPath 在 Schema 变化发生时传播影响并失败关闭；即使物理字段恢复，也需要负责人复核相关语义资产后重新发布。
+### 一条主线：受约束的可信 AI 问数
 
-### 4. 概率能力与确定性边界分工
+DataPath 不让大模型自由生成并执行 SQL。AI 负责理解业务表达、处理上下文并在有限候选中裁决；确定性系统负责指标口径、权限、Join、查询结构、SQL 编译和只读执行。
 
-AI 处理自然语言理解和有限候选消歧；指标口径、权限、Join、SQL 编译与执行由确定性系统负责。安全性不依赖模型“自觉遵守”提示词。
+```text
+自然语言提问
+→ 加载身份与会话上下文
+→ 召回已治理且有权访问的指标
+→ 有限候选裁决
+→ 澄清 / 拒绝 / 继续
+→ 生成 Query DSL
+→ 确定性校验与编译
+→ 只读执行
+→ 返回答案、图表与 Evidence
+```
 
-## 已实现结果
+每次问数必须进入明确的产品终态：
+
+| 终态 | 含义 |
+| --- | --- |
+| `SUCCESS` | 指标、权限、查询结构、执行和 Evidence 均通过 |
+| `CLARIFY` | 存在合理歧义或缺少必要条件，需要用户确认 |
+| `REJECT` | 问题超出已治理范围或当前产品能力 |
+| `BLOCKED` | 权限、Join、资产状态或安全门禁不允许执行 |
+
+不确定时澄清，超出范围时拒绝，风险状态下失败关闭。产品目标不是回答所有问题，而是只交付通过约束和证据校验的答案。
+
+## 关键创新一：AI 语义预热
+
+指标建设完成，并不代表系统已经理解用户会怎样表达。传统方式通常在问数错误发生后补充别名和问法，导致新指标和新业务域存在明显的语言冷启动。
+
+DataPath 将语义建设前移到用户提问之前：
+
+```text
+读取已确认的指标事实
+→ 诊断语义完整度
+→ AI 生成别名、正向问法与反例草稿
+→ 人工审核
+→ 冲突检查
+→ 应用到检索资产
+```
+
+AI 只扩展语言表达，不修改指标公式、聚合方式和业务口径；未经人工审核的内容不能进入线上问数。
+
+![AI 语义预热](document/showcase2.0/assets/product-evidence/ai-preheat-overview.png)
+
+## 关键创新二：持续质量闭环
+
+点赞、点踩只能表达用户态度，不能定义正确答案，也不能证明问题已经解决。DataPath 将用户反馈与原始 Query Run、指标版本、Query DSL、结果和 Evidence 绑定，经人工确认后形成可执行的 Golden 契约。
+
+```text
+用户提交反馈
+→ 冻结原始运行现场
+→ 确认有效 Bad Case
+→ 分层归因
+→ 建立人工 Golden 契约
+→ 修复对应产品资产
+→ 运行受影响回归
+→ 通过发布门禁
+→ 发布并监控复发
+```
+
+修复不能只让当前问题恢复正常。只有当前 Golden、受影响回归和安全门禁全部通过，新版本才允许发布。
+
+<table>
+  <tr>
+    <th width="50%">Bad Case 工作台</th>
+    <th width="50%">测评与发布门禁</th>
+  </tr>
+  <tr>
+    <td width="50%"><img src="document/showcase2.0/assets/product-evidence/badcase-cropped.png" alt="Bad Case 工作台" width="100%"></td>
+    <td width="50%"><img src="document/showcase2.0/assets/product-evidence/evaluation-overview.png" alt="测评与发布门禁" width="100%"></td>
+  </tr>
+</table>
+
+## 一次可信问数如何完成
+
+以“2024 年每月订单量趋势”为例：
+
+1. 系统加载用户身份、业务域和会话上下文；
+2. 在已发布且有权访问的指标中召回有限候选；
+3. 候选存在歧义时要求用户澄清，不猜测业务意图；
+4. 候选明确后生成受约束的 Query DSL；
+5. 服务端校验指标、维度、时间、Join、权限和资产状态；
+6. 校验通过后确定性编译参数化 SQL，并在只读连接中执行；
+7. 页面返回趋势图，同时展示指标版本、查询范围和 Evidence；
+8. 用户发现问题时，可以将本次运行直接提交为反馈，进入质量闭环。
+
+这条链路中，AI 输出不能直接越过服务端规则进入数据执行。
+
+## 已实现范围
+
+- 数据源扫描、业务域、语义模型、共享维度和安全 Join；
+- 指标定义、版本、发布状态、权限和血缘；
+- AI 语义完整度诊断、预热草稿和人工审核；
+- 自然语言问数、多轮上下文、有限候选裁决和澄清；
+- Query DSL、权限与安全校验、确定性 SQL 编译和只读执行；
+- 结果图表、Evidence、Reflection 和四类产品终态；
+- 用户反馈、Bad Case、Golden 契约、回归测评与发布门禁；
+- 测评总览、分类结果和安全门禁证据。
+
+## 测评与验证
 
 | 项目资产 | 当前规模 |
 | --- | ---: |
@@ -55,30 +160,29 @@ AI 处理自然语言理解和有限候选消歧；指标口径、权限、Join�
 | 测评集 | 2,350 条 |
 | Development 严格通过 | 1,118 / 1,128（99.11%） |
 
-测评覆盖指标选择、查询形态、Oracle 结果、权限、安全、Evidence 与 Reflection；当前危险执行和错误指标选择均为 0。
+测评覆盖指标选择、跨事实查询、查询粒度与扇出、多轮上下文、权限、安全、Evidence 和 Reflection。当前 Development 测评中的错误指标选择和危险执行均为 0。
 
-[查看指标体系与测评方法 →](document/showcase/03-metrics-and-evaluation.md)
+这些结果用于验证受约束问数链路、确定性门禁和质量机制是否按照产品规则工作。
 
 ## 产品界面
 
-<table>
-  <tr>
-    <th width="50%">AI 语义预热</th>
-    <th width="50%">Schema 影响管理</th>
-  </tr>
-  <tr>
-    <td width="50%"><img src="document/showcase/assets/product-evidence/ai-preheat-overview.png" alt="AI 语义预热" width="100%"></td>
-    <td width="50%"><img src="document/showcase/assets/product-evidence/schema-impact-overview.png" alt="Schema 影响管理" width="100%"></td>
-  </tr>
-  <tr>
-    <th width="50%">Bad Case 工作台</th>
-    <th width="50%">测评监控</th>
-  </tr>
-  <tr>
-    <td width="50%"><img src="document/showcase/assets/product-evidence/badcase-cropped.png" alt="Bad Case 工作台" width="100%"></td>
-    <td width="50%"><img src="document/showcase/assets/product-evidence/evaluation-overview.png" alt="测评监控" width="100%"></td>
-  </tr>
-</table>
+| 核心页面 | 展示内容 |
+| --- | --- |
+| 问数工作台 | 自然语言提问、结果图表、上下文和执行 Evidence |
+| AI 语义预热 | 语义完整度、AI 草稿、人工审核与版本应用 |
+| Bad Case 工作台 | 反馈现场、问题归因、Golden 和修复任务 |
+| 测评监控 | 用例结果、安全门禁、发布证据和质量趋势 |
+
+## 核心作品集文档
+
+| 阅读目的 | 文档 |
+| --- | --- |
+| 理解整体产品 | [DataPath 产品概览](document/showcase2.0/01-datapath-product-overview.md) |
+| 理解核心使用链路 | [受约束的可信 AI 问数 PRD](document/showcase2.0/02-constrained-trusted-ai-query-prd.md) |
+| 理解提问前创新 | [AI 语义预热 PRD](document/showcase2.0/03-ai-semantic-preheat-prd.md) |
+| 理解反馈后创新 | [持续质量闭环 PRD](document/showcase2.0/04-continuous-quality-loop-prd.md) |
+| 理解竞品判断与产品取舍 | [竞品研究与产品决策](document/showcase2.0/05-competitive-research-and-product-decisions.md) |
+| 查看完整功能和产品界面 | [完整产品介绍（PPT）](document/showcase2.0/完整产品介绍.pptx) · [PDF](document/showcase2.0/完整产品介绍.pdf) |
 
 ## 技术架构
 
@@ -87,7 +191,7 @@ AI 处理自然语言理解和有限候选消歧；指标口径、权限、Join�
         ↓
 问数工作台 / 指标中心 / 质量运营
         ↓
-FastAPI：权限、治理状态、DSL、Evidence、闭环门禁
+FastAPI：身份、权限、治理状态、Query DSL、Evidence、质量门禁
         ↓
 PostgreSQL：语义资产与版本    ClickHouse：只读分析执行
         ↓
@@ -118,23 +222,6 @@ uv run pytest
 uv run python -m scripts.validate_contracts
 NO_PROXY=127.0.0.1,localhost uv run python -m scripts.smoke_chatbi_api
 ```
-
-## 延伸文档
-
-以下材料分别展开产品定义、方案判断、流程设计和质量机制：
-
-| 类型 | 文档 | 内容 |
-| --- | --- | --- |
-| 产品全貌 | [完整产品介绍（PPT）](document/showcase/完整产品介绍.pptx) · [PDF](document/showcase/完整产品介绍.pdf) | 产品定位、功能链路、真实界面、产品特点与结果 |
-| 产品定义 | [产品总体 PRD](document/showcase/09-product-prd.md) | 目标用户、产品范围、功能规则、异常状态与版本验收 |
-| 市场判断 | [可信 ChatBI 竞品研究与产品决策](document/showcase/05-competitive-analysis.md) | 竞争格局、行业基线、产品边界、取舍依据与建设优先级 |
-| 流程设计 | [产品流程图](document/showcase/06-product-flows.md) | 产品全链路及不同角色的操作流程 |
-| 权限治理 | [权限设计](document/showcase/08-permission-design.md) | 角色、资源、数据范围、服务端门禁与审计 |
-| 数据验证 | [事件埋点方案](document/showcase/07-event-tracking-plan.md) | 事件字典、核心漏斗、指标口径与数据质量 |
-| 创新模块 | [AI 语义预热 PRD](document/showcase/10-ai-semantic-preheat-prd.md) | 冷启动诊断、AI 草稿、人机审核、评测与版本应用 |
-| 创新模块 | [Schema 影响管理 PRD](document/showcase/11-schema-impact-management-prd.md) | 变化发现、影响传播、失败关闭、复核与恢复 |
-| 创新模块 | [Bad Case—Golden 契约闭环 PRD](document/showcase/12-badcase-golden-contract-prd.md) | 现场冻结、分层归因、Golden、受影响回归与发布门禁 |
-| 质量体系 | [指标体系与测评方法](document/showcase/03-metrics-and-evaluation.md) | 北极星指标、质量指标、评测集与结果判断 |
 
 ---
 

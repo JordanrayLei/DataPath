@@ -1,0 +1,289 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2800" height="1340" viewBox="0 0 2800 1340" role="img" aria-labelledby="title desc">
+  <title id="title">DataPath 受约束的可信 AI 问数工作流</title>
+  <desc id="desc">以清晰的主链路、局部澄清和降级支路、统一失败出口展示可信 AI 问数节点。</desc>
+  <defs>
+    <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
+      <path d="M30 0H0V30" fill="none" stroke="#263249" stroke-width="1" opacity=".55"/>
+    </pattern>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="9" flood-color="#020617" flood-opacity=".42"/>
+    </filter>
+    <marker id="arrow-main" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 0L10 5 0 10Z" fill="#2dd4bf"/>
+    </marker>
+    <marker id="arrow-branch" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 0L10 5 0 10Z" fill="#a78bfa"/>
+    </marker>
+    <marker id="arrow-error" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 0L10 5 0 10Z" fill="#fb7185"/>
+    </marker>
+    <marker id="arrow-neutral" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0 0L10 5 0 10Z" fill="#8190aa"/>
+    </marker>
+    <style>
+      .title{font:700 34px -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;fill:#f8fafc}
+      .subtitle{font:400 17px -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;fill:#94a3b8}
+      .lane{font:700 15px -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;letter-spacing:1px;fill:#94a3b8}
+      .idx{font:700 13px -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;fill:#dbeafe}
+      .nt{font:700 20px -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;fill:#f8fafc}
+      .nb{font:400 14px -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;fill:#cbd5e1}
+      .label{font:600 13px -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;fill:#cbd5e1}
+      .legend{font:500 14px -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;fill:#cbd5e1}
+      .main{fill:none;stroke:#2dd4bf;stroke-width:4;marker-end:url(#arrow-main)}
+      .branch{fill:none;stroke:#a78bfa;stroke-width:3;stroke-dasharray:9 8;marker-end:url(#arrow-branch)}
+      .error{fill:none;stroke:#fb7185;stroke-width:3;marker-end:url(#arrow-error)}
+      .neutral{fill:none;stroke:#8190aa;stroke-width:3;marker-end:url(#arrow-neutral)}
+      .bus{fill:none;stroke:#fb7185;stroke-width:3;stroke-dasharray:8 7}
+      .port{stroke:#dbeafe;stroke-width:2}
+    </style>
+  </defs>
+
+  <rect width="2800" height="1340" fill="#0b1020"/>
+  <rect width="2800" height="1340" fill="url(#grid)"/>
+
+  <text x="64" y="58" class="title">受约束的可信 AI 问数 · 工作流编排</text>
+  <text x="64" y="89" class="subtitle">主链路单向推进；澄清和降级在触发节点附近闭合；执行、证据或可信校验失败统一进入失败关闭。</text>
+
+  <rect x="46" y="120" width="2708" height="230" rx="22" fill="#11182b" stroke="#263249"/>
+  <text x="72" y="151" class="lane">A · 理解与候选收敛</text>
+  <rect x="46" y="380" width="2708" height="180" rx="22" fill="#11182b" stroke="#263249"/>
+  <text x="72" y="411" class="lane">B · 局部决策支路</text>
+  <rect x="46" y="590" width="2708" height="245" rx="22" fill="#11182b" stroke="#263249"/>
+  <text x="72" y="621" class="lane">C · 确定性执行、证据与结果</text>
+  <rect x="46" y="865" width="2708" height="300" rx="22" fill="#11182b" stroke="#263249"/>
+  <text x="72" y="896" class="lane">D · 统一错误出口与反馈闭环</text>
+
+  <!-- Top main path -->
+  <path class="main" d="M350 245H470"/>
+  <path class="main" d="M770 245H890"/>
+  <path class="main" d="M1190 245H1310"/>
+  <path class="main" d="M1610 245H1730"/>
+  <path class="main" d="M2030 245H2150"/>
+  <path class="main" d="M2450 245H2570"/>
+  <text x="2472" y="226" class="label">SELECT</text>
+
+  <!-- turn into second main row -->
+  <path class="main" d="M2720 305V705H2450"/>
+  <path class="main" d="M2150 705H2030"/>
+  <path class="main" d="M1730 705H1610"/>
+  <path class="main" d="M1310 705H1190"/>
+  <path class="main" d="M890 705H770"/>
+  <path class="main" d="M470 705H350"/>
+
+  <!-- retrieval degradation: local loop -->
+  <path class="branch" d="M1040 305V405"/>
+  <text x="1056" y="371" class="label">向量服务异常</text>
+  <path class="branch" d="M1040 515V545C1040 565 1120 570 1120 335C1120 318 1105 305 1088 305"/>
+  <text x="1090" y="535" class="label">词法降级后重试</text>
+
+  <!-- adjudication local branches -->
+  <path class="branch" d="M1460 305V405"/>
+  <text x="1477" y="371" class="label">CLARIFY</text>
+  <path class="branch" d="M1430 515V542C1430 560 1510 565 1510 335C1510 318 1495 305 1478 305"/>
+  <text x="1220" y="541" class="label">用户选择后重新验证</text>
+  <path class="error" d="M1540 305C1540 348 1690 355 1810 405"/>
+  <text x="1635" y="355" class="label">REJECT</text>
+
+  <!-- local error drops to common bus -->
+  <path class="error" d="M2300 305V940"/>
+  <text x="2318" y="370" class="label">门禁失败</text>
+  <path class="error" d="M2300 765V940"/>
+  <path class="error" d="M1880 765V940"/>
+  <path class="error" d="M1460 765V940"/>
+  <path class="error" d="M1040 765V940"/>
+  <text x="1900" y="900" class="label">执行失败</text>
+  <text x="1480" y="900" class="label">Evidence 失败</text>
+  <text x="1060" y="900" class="label">Reflection 失败</text>
+  <path class="bus" d="M1040 940H2500"/>
+  <path class="error" d="M2500 940V1015"/>
+  <text x="2320" y="925" class="label">统一失败总线</text>
+
+  <!-- success to feedback loop -->
+  <path class="neutral" d="M200 765V1015"/>
+  <path class="neutral" d="M200 1075H500"/>
+  <text x="220" y="988" class="label">采用 / 追问 / 反馈</text>
+  <path class="neutral" d="M800 1075H950"/>
+  <text x="815" y="1058" class="label">绑定 Query Run</text>
+
+  <!-- top nodes -->
+  <g filter="url(#shadow)">
+    <rect x="50" y="185" width="300" height="120" rx="18" fill="#123449" stroke="#22d3ee" stroke-width="2"/>
+    <circle cx="78" cy="211" r="10" fill="#22d3ee"/><text x="98" y="216" class="idx">START</text>
+    <text x="78" y="251" class="nt">用户提问</text>
+    <text x="78" y="278" class="nb">问题 · 会话 · 身份</text>
+    <circle cx="350" cy="245" r="6" fill="#22d3ee" class="port"/>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="470" y="185" width="300" height="120" rx="18" fill="#102c38" stroke="#2dd4bf" stroke-width="2"/>
+    <text x="498" y="216" class="idx">01 · 确定性节点</text>
+    <text x="498" y="251" class="nt">身份与上下文</text>
+    <text x="498" y="278" class="nb">权限裁剪 · 条件继承</text>
+    <circle cx="470" cy="245" r="6" fill="#2dd4bf" class="port"/>
+    <circle cx="770" cy="245" r="6" fill="#2dd4bf" class="port"/>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="890" y="185" width="300" height="120" rx="18" fill="#162b4c" stroke="#60a5fa" stroke-width="2"/>
+    <text x="918" y="216" class="idx">02 · 检索节点</text>
+    <text x="918" y="251" class="nt">授权候选召回</text>
+    <text x="918" y="278" class="nb">词法 · 别名 · 反例 · 向量</text>
+    <circle cx="890" cy="245" r="6" fill="#60a5fa" class="port"/>
+    <circle cx="1190" cy="245" r="6" fill="#60a5fa" class="port"/>
+    <circle cx="1040" cy="305" r="6" fill="#60a5fa" class="port"/>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="1310" y="185" width="300" height="120" rx="18" fill="#2b2050" stroke="#a78bfa" stroke-width="2"/>
+    <text x="1338" y="216" class="idx">03 · AI 有限裁决</text>
+    <text x="1338" y="251" class="nt">选择 / 澄清 / 拒绝</text>
+    <text x="1338" y="278" class="nb">只能使用服务端签名候选</text>
+    <circle cx="1310" cy="245" r="6" fill="#a78bfa" class="port"/>
+    <circle cx="1610" cy="245" r="6" fill="#a78bfa" class="port"/>
+    <circle cx="1460" cy="305" r="6" fill="#a78bfa" class="port"/>
+    <circle cx="1540" cy="305" r="6" fill="#fb7185" class="port"/>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="1730" y="185" width="300" height="120" rx="18" fill="#102c38" stroke="#2dd4bf" stroke-width="2"/>
+    <text x="1758" y="216" class="idx">04 · 结构化节点</text>
+    <text x="1758" y="251" class="nt">Query DSL</text>
+    <text x="1758" y="278" class="nb">指标 · 时间 · 维度 · 筛选</text>
+    <circle cx="1730" cy="245" r="6" fill="#2dd4bf" class="port"/>
+    <circle cx="2030" cy="245" r="6" fill="#2dd4bf" class="port"/>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="2150" y="185" width="300" height="120" rx="18" fill="#102c38" stroke="#2dd4bf" stroke-width="2"/>
+    <text x="2178" y="216" class="idx">05 · 确定性门禁</text>
+    <text x="2178" y="251" class="nt">执行前校验</text>
+    <text x="2178" y="278" class="nb">权限 · 关系 · 成本 · 安全</text>
+    <circle cx="2150" cy="245" r="6" fill="#2dd4bf" class="port"/>
+    <circle cx="2450" cy="245" r="6" fill="#2dd4bf" class="port"/>
+    <circle cx="2300" cy="305" r="6" fill="#fb7185" class="port"/>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="2570" y="185" width="150" height="120" rx="18" fill="#3b2b16" stroke="#f59e0b" stroke-width="2"/>
+    <text x="2595" y="216" class="idx">06</text>
+    <text x="2595" y="251" class="nt">编译</text>
+    <text x="2595" y="278" class="nb">参数化 SQL</text>
+    <circle cx="2570" cy="245" r="6" fill="#f59e0b" class="port"/>
+    <circle cx="2720" cy="305" r="6" fill="#f59e0b" class="port"/>
+  </g>
+
+  <!-- local branch nodes -->
+  <g filter="url(#shadow)">
+    <rect x="900" y="405" width="280" height="110" rx="18" fill="#162b4c" stroke="#60a5fa" stroke-width="2"/>
+    <text x="928" y="436" class="idx">DEGRADED</text>
+    <text x="928" y="471" class="nt">检索降级</text>
+    <text x="928" y="497" class="nb">名称 + 别名 + 词法</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="1290" y="405" width="280" height="110" rx="18" fill="#2b2050" stroke="#a78bfa" stroke-width="2"/>
+    <text x="1318" y="436" class="idx">CLARIFY</text>
+    <text x="1318" y="471" class="nt">用户澄清</text>
+    <text x="1318" y="497" class="nb">有限候选 · 单一问题</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="1810" y="405" width="280" height="110" rx="18" fill="#442238" stroke="#fb7185" stroke-width="2"/>
+    <text x="1838" y="436" class="idx">REJECT</text>
+    <text x="1838" y="471" class="nt">能力边界</text>
+    <text x="1838" y="497" class="nb">无治理候选 · 改写建议</text>
+  </g>
+
+  <!-- second main row, right to left -->
+  <g filter="url(#shadow)">
+    <rect x="2150" y="645" width="300" height="120" rx="18" fill="#3b2b16" stroke="#f59e0b" stroke-width="2"/>
+    <text x="2178" y="676" class="idx">07 · 数仓节点</text>
+    <text x="2178" y="711" class="nt">只读执行</text>
+    <text x="2178" y="738" class="nb">令牌 · 超时 · 扫描量限制</text>
+    <circle cx="2450" cy="705" r="6" fill="#f59e0b" class="port"/>
+    <circle cx="2150" cy="705" r="6" fill="#f59e0b" class="port"/>
+    <circle cx="2300" cy="765" r="6" fill="#fb7185" class="port"/>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="1730" y="645" width="300" height="120" rx="18" fill="#102c38" stroke="#2dd4bf" stroke-width="2"/>
+    <text x="1758" y="676" class="idx">08 · 运行记录</text>
+    <text x="1758" y="711" class="nt">冻结 Query Run</text>
+    <text x="1758" y="738" class="nb">DSL · SQL · 结果 · 版本</text>
+    <circle cx="2030" cy="705" r="6" fill="#2dd4bf" class="port"/>
+    <circle cx="1730" cy="705" r="6" fill="#2dd4bf" class="port"/>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="1310" y="645" width="300" height="120" rx="18" fill="#102c38" stroke="#2dd4bf" stroke-width="2"/>
+    <text x="1338" y="676" class="idx">09 · 证据节点</text>
+    <text x="1338" y="711" class="nt">Evidence</text>
+    <text x="1338" y="738" class="nb">指标 · 范围 · 结果 · 关系</text>
+    <circle cx="1610" cy="705" r="6" fill="#2dd4bf" class="port"/>
+    <circle cx="1310" cy="705" r="6" fill="#2dd4bf" class="port"/>
+    <circle cx="1460" cy="765" r="6" fill="#fb7185" class="port"/>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="890" y="645" width="300" height="120" rx="18" fill="#2b2050" stroke="#a78bfa" stroke-width="2"/>
+    <text x="918" y="676" class="idx">10 · AI 表达与校验</text>
+    <text x="918" y="711" class="nt">解读 + Reflection</text>
+    <text x="918" y="738" class="nb">数字 · 趋势 · 维度 · 因果</text>
+    <circle cx="1190" cy="705" r="6" fill="#a78bfa" class="port"/>
+    <circle cx="890" cy="705" r="6" fill="#a78bfa" class="port"/>
+    <circle cx="1040" cy="765" r="6" fill="#fb7185" class="port"/>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="470" y="645" width="300" height="120" rx="18" fill="#123d34" stroke="#34d399" stroke-width="2"/>
+    <text x="498" y="676" class="idx">SUCCESS</text>
+    <text x="498" y="711" class="nt">可信答案</text>
+    <text x="498" y="738" class="nb">图表 · 口径 · Evidence</text>
+    <circle cx="770" cy="705" r="6" fill="#34d399" class="port"/>
+    <circle cx="470" cy="705" r="6" fill="#34d399" class="port"/>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="80" y="645" width="270" height="120" rx="18" fill="#123449" stroke="#22d3ee" stroke-width="2"/>
+    <text x="108" y="676" class="idx">USER ACTION</text>
+    <text x="108" y="711" class="nt">采用 / 追问 / 反馈</text>
+    <text x="108" y="738" class="nb">保留当前 Query Run</text>
+    <circle cx="350" cy="705" r="6" fill="#22d3ee" class="port"/>
+    <circle cx="200" cy="765" r="6" fill="#22d3ee" class="port"/>
+  </g>
+
+  <!-- bottom -->
+  <g filter="url(#shadow)">
+    <rect x="500" y="1015" width="300" height="120" rx="18" fill="#123449" stroke="#22d3ee" stroke-width="2"/>
+    <text x="528" y="1046" class="idx">FEEDBACK RECORD</text>
+    <text x="528" y="1081" class="nt">冻结反馈现场</text>
+    <text x="528" y="1108" class="nb">问题 · 候选 · DSL · 结果</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="950" y="1015" width="360" height="120" rx="18" fill="#1a3340" stroke="#22d3ee" stroke-width="2"/>
+    <text x="978" y="1046" class="idx">CONTINUOUS QUALITY LOOP</text>
+    <text x="978" y="1081" class="nt">持续质量闭环</text>
+    <text x="978" y="1108" class="nb">Bad Case · Golden · 回归 · 发布门禁</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <rect x="2350" y="1015" width="300" height="120" rx="18" fill="#442238" stroke="#fb7185" stroke-width="2"/>
+    <text x="2378" y="1046" class="idx">BLOCKED</text>
+    <text x="2378" y="1081" class="nt">失败关闭</text>
+    <text x="2378" y="1108" class="nb">停止执行 · 原因码 · 审计</text>
+  </g>
+
+  <!-- legend -->
+  <rect x="64" y="1210" width="2672" height="72" rx="16" fill="#11182b" stroke="#263249"/>
+  <circle cx="108" cy="1246" r="9" fill="#a78bfa"/><text x="130" y="1252" class="legend">AI 判断 / 表达</text>
+  <circle cx="350" cy="1246" r="9" fill="#2dd4bf"/><text x="372" y="1252" class="legend">确定性校验</text>
+  <circle cx="590" cy="1246" r="9" fill="#60a5fa"/><text x="612" y="1252" class="legend">检索服务</text>
+  <circle cx="790" cy="1246" r="9" fill="#f59e0b"/><text x="812" y="1252" class="legend">编译与执行</text>
+  <circle cx="1020" cy="1246" r="9" fill="#34d399"/><text x="1042" y="1252" class="legend">成功终态</text>
+  <circle cx="1210" cy="1246" r="9" fill="#fb7185"/><text x="1232" y="1252" class="legend">拒绝 / 阻断</text>
+  <line x1="1440" y1="1246" x2="1510" y2="1246" class="main"/><text x="1530" y="1252" class="legend">主成功链路</text>
+  <line x1="1730" y1="1246" x2="1800" y2="1246" class="branch"/><text x="1820" y="1252" class="legend">局部澄清 / 降级</text>
+  <line x1="2070" y1="1246" x2="2140" y2="1246" class="error"/><text x="2160" y="1252" class="legend">失败关闭</text>
+  <line x1="2380" y1="1246" x2="2450" y2="1246" class="neutral"/><text x="2470" y="1252" class="legend">反馈闭环</text>
+</svg>

@@ -32,3 +32,8 @@ infra/dify/
 *.7z
 # 本地开发过程文档，不作为公开项目材料发布
 /document/development/
+
+# 已归档的旧版作品集，仅保留在本地
+/document/showcase/
+/document/ai-product-portfolio/
+/document/latest-prd/
