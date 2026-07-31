@@ -8,6 +8,8 @@
 
 [产品概览](document/showcase2.0/01-datapath-product-overview.md)
 
+![DataPath 问数工作台](document/showcase2.0/assets/product-evidence/page-01-query-workbench.png)
+
 ## 为什么需要 DataPath
 
 企业自然语言问数真正困难的不是生成一段可以运行的 SQL，而是让系统在真实业务环境中持续返回正确、合规且可以解释的数据答案。
