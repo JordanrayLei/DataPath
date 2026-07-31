@@ -8,8 +8,6 @@
 
 [产品概览](document/showcase2.0/01-datapath-product-overview.md)
 
-![DataPath 成功查询全页面](document/showcase2.0/assets/product-evidence/query-workbench-success-full.jpg)
-
 ## 为什么需要 DataPath
 
 企业自然语言问数真正困难的不是生成一段可以运行的 SQL，而是让系统在真实业务环境中持续返回正确、合规且可以解释的数据答案。
@@ -94,8 +92,6 @@ AI 只扩展语言表达，不修改指标公式、聚合方式和业务口径�
 
 [查看 AI 语义预热 PRD](document/showcase2.0/03-ai-semantic-preheat-prd.md)
 
-![AI 语义预热](document/showcase2.0/assets/product-evidence/ai-preheat-overview.png)
-
 ## 关键创新二：持续质量闭环
 
 点赞、点踩只能表达用户态度，不能定义正确答案，也不能证明问题已经解决。DataPath 将用户反馈与原始 Query Run、指标版本、Query DSL、结果和 Evidence 绑定，经人工确认后形成可执行的 Golden 契约。
@@ -115,17 +111,6 @@ AI 只扩展语言表达，不修改指标公式、聚合方式和业务口径�
 修复不能只让当前问题恢复正常。只有当前 Golden、受影响回归和安全门禁全部通过，新版本才允许发布。
 
 [查看持续质量闭环 PRD](document/showcase2.0/04-continuous-quality-loop-prd.md)
-
-<table>
-  <tr>
-    <th width="50%">Bad Case 工作台</th>
-    <th width="50%">测评与发布门禁</th>
-  </tr>
-  <tr>
-    <td width="50%"><img src="document/showcase2.0/assets/product-evidence/badcase-cropped.png" alt="Bad Case 工作台" width="100%"></td>
-    <td width="50%"><img src="document/showcase2.0/assets/product-evidence/evaluation-overview.png" alt="测评与发布门禁" width="100%"></td>
-  </tr>
-</table>
 
 ## 一次可信问数如何完成
 
@@ -170,12 +155,20 @@ AI 只扩展语言表达，不修改指标公式、聚合方式和业务口径�
 
 ## 产品界面
 
-| 核心页面 | 展示内容 |
-| --- | --- |
-| 问数工作台 | 自然语言提问、结果图表、上下文和执行 Evidence |
-| AI 语义预热 | 语义完整度、AI 草稿、人工审核与版本应用 |
-| Bad Case 工作台 | 反馈现场、问题归因、Golden 和修复任务 |
-| 测评监控 | 用例结果、安全门禁、发布证据和质量趋势 |
+| 产品部分 | 页面 | 主要功能 |
+| --- | --- | --- |
+| 语义治理底座 | 数据资产 | 配置数据源、扫描物理结构、查看 Schema 变化及影响范围 |
+| 语义治理底座 | 业务域 | 划分业务边界，选择业务表，维护域内模型、开放字段、维度和语义策略 |
+| 语义治理底座 | Join 治理 | 发现、验证并发布模型关系，控制跨事实查询和 Fanout 风险 |
+| 语义治理底座 | 指标中心 | 检索指标，查看口径、公式、版本、维度、血缘和发布状态 |
+| 语义治理底座 | 指标治理与发布 | 创建指标草稿，配置公式与维度，完成 AI 语义预热、冲突检查和版本发布 |
+| 可信 AI 问数 | 问数工作台 | 自然语言提问、多轮追问、指标澄清、结果图表、数据表和上下文记忆 |
+| 持续质量闭环 | 查询漏斗与运行指标 | 查看成功、澄清、拒绝和阻断分布，以及执行、Reflection、延迟和采用情况 |
+| 持续质量闭环 | Bad Case 工作台 | 保存原运行现场，确认问题、分层归因并创建修复任务 |
+| 持续质量闭环 | Golden 与回归 | 将确认问题沉淀为 Golden，重放目标用例和相关回归 |
+| 持续质量闭环 | 测评监控 | 查看分类结果、安全门禁、冻结证据和发布状态 |
+
+[查看产品页面截图](document/showcase2.0/06-product-page-gallery.md)
 
 ## 核心作品集文档
 
@@ -186,6 +179,7 @@ AI 只扩展语言表达，不修改指标公式、聚合方式和业务口径�
 | 理解提问前创新 | [AI 语义预热 PRD](document/showcase2.0/03-ai-semantic-preheat-prd.md) |
 | 理解反馈后创新 | [持续质量闭环 PRD](document/showcase2.0/04-continuous-quality-loop-prd.md) |
 | 理解竞品判断与产品取舍 | [竞品研究与产品决策](document/showcase2.0/05-competitive-research-and-product-decisions.md) |
+| 查看产品页面 | [产品页面截图](document/showcase2.0/06-product-page-gallery.md) |
 | 查看完整功能和产品界面 | [完整产品介绍（PPT）](document/showcase2.0/完整产品介绍.pptx) · [PDF](document/showcase2.0/完整产品介绍.pdf) |
 
 ## 技术架构

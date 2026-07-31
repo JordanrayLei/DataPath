@@ -23,6 +23,7 @@ AI 语义预热
 | [AI 语义预热 PRD](03-ai-semantic-preheat-prd.md) | 指标进入问数前的语言准备流程，包括完整度诊断、AI 草稿、正反例、人工审核、冲突检查和版本发布 |
 | [持续质量闭环 PRD](04-continuous-quality-loop-prd.md) | 用户反馈如何转化为 Bad Case、Golden 契约、受影响回归和发布门禁 |
 | [竞品研究与产品决策](05-competitive-research-and-product-decisions.md) | FineChatBI、Quick BI、Power BI、Looker 和 ThoughtSpot 的产品机制，以及这些观察如何影响 DataPath 的范围与取舍 |
+| [产品页面截图](06-product-page-gallery.md) | 集中展示语义治理、可信问数与质量闭环的 10 个主要产品页面 |
 
 ## 阅读顺序
 
