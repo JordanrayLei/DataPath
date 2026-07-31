@@ -182,7 +182,6 @@ AI 只扩展语言表达，不修改指标公式、聚合方式和业务口径�
 | 理解反馈后创新 | [持续质量闭环 PRD](document/showcase2.0/04-continuous-quality-loop-prd.md) |
 | 理解竞品判断与产品取舍 | [竞品研究与产品决策](document/showcase2.0/05-competitive-research-and-product-decisions.md) |
 | 查看产品页面 | [产品页面截图](document/showcase2.0/06-product-page-gallery.md) |
-| 查看完整功能和产品界面 | [完整产品介绍（PPT）](document/showcase2.0/完整产品介绍.pptx) · [PDF](document/showcase2.0/完整产品介绍.pdf) |
 
 ## 技术架构
 

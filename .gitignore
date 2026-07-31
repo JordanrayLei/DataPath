@@ -37,3 +37,7 @@ infra/dify/
 /document/showcase/
 /document/ai-product-portfolio/
 /document/latest-prd/
+
+# 完整产品介绍文件仅保留在本地
+/document/showcase2.0/完整产品介绍.pptx
+/document/showcase2.0/完整产品介绍.pdf
