@@ -6,9 +6,7 @@
 
 **面向企业数据场景的可信 AI 问数产品：以语义治理为底座，通过受约束的问数链路生成可验证、可追溯的数据答案，并用 AI 语义预热和持续质量闭环提升产品质量。**
 
-[产品概览](document/showcase2.0/01-datapath-product-overview.md) ·
-[核心产品 PRD](document/showcase2.0/02-constrained-trusted-ai-query-prd.md) ·
-[完整产品介绍（PDF）](document/showcase2.0/完整产品介绍.pdf)
+[产品概览](document/showcase2.0/01-datapath-product-overview.md)
 
 ![DataPath 成功查询全页面](document/showcase2.0/assets/product-evidence/query-workbench-success-full.jpg)
 
@@ -75,6 +73,8 @@ DataPath 不让大模型自由生成并执行 SQL。AI 负责理解业务表达�
 
 不确定时澄清，超出范围时拒绝，风险状态下失败关闭。产品目标不是回答所有问题，而是只交付通过约束和证据校验的答案。
 
+[查看受约束的可信 AI 问数 PRD](document/showcase2.0/02-constrained-trusted-ai-query-prd.md)
+
 ## 关键创新一：AI 语义预热
 
 指标建设完成，并不代表系统已经理解用户会怎样表达。传统方式通常在问数错误发生后补充别名和问法，导致新指标和新业务域存在明显的语言冷启动。
@@ -91,6 +91,8 @@ DataPath 将语义建设前移到用户提问之前：
 ```
 
 AI 只扩展语言表达，不修改指标公式、聚合方式和业务口径；未经人工审核的内容不能进入线上问数。
+
+[查看 AI 语义预热 PRD](document/showcase2.0/03-ai-semantic-preheat-prd.md)
 
 ![AI 语义预热](document/showcase2.0/assets/product-evidence/ai-preheat-overview.png)
 
@@ -111,6 +113,8 @@ AI 只扩展语言表达，不修改指标公式、聚合方式和业务口径�
 ```
 
 修复不能只让当前问题恢复正常。只有当前 Golden、受影响回归和安全门禁全部通过，新版本才允许发布。
+
+[查看持续质量闭环 PRD](document/showcase2.0/04-continuous-quality-loop-prd.md)
 
 <table>
   <tr>
