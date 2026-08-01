@@ -62,6 +62,10 @@ DataPath 不让大模型自由生成并执行 SQL。AI 负责理解业务表达�
 → 返回答案、图表与 Evidence
 ```
 
+![DataPath 受约束的可信 AI 问数工作流](document/showcase2.0/assets/trusted-ai-query-workflow.svg)
+
+[查看 AI 工作流的节点分工、输入输出与异常分支](document/showcase2.0/02-ai-workflow-design.md)
+
 每次问数必须进入明确的产品终态：
 
 | 终态 | 含义 |
@@ -171,6 +175,7 @@ AI 只扩展语言表达，不修改指标公式、聚合方式和业务口径�
 | 阅读目的 | 文档 |
 | --- | --- |
 | 理解整体产品 | [DataPath 产品概览](document/showcase2.0/01-datapath-product-overview.md) |
+| 理解 AI 工作流如何落地 | [AI 工作流设计](document/showcase2.0/02-ai-workflow-design.md) |
 | 理解竞品判断与产品取舍 | [竞品研究与产品决策](document/showcase2.0/06-competitive-research-and-product-decisions.md) |
 | 查看产品页面 | [产品页面截图](document/showcase2.0/07-product-page-gallery.md) |
 
