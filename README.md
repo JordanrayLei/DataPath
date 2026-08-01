@@ -73,8 +73,6 @@ DataPath 不让大模型自由生成并执行 SQL。AI 负责理解业务表达�
 
 不确定时澄清，超出范围时拒绝，风险状态下失败关闭。产品目标不是回答所有问题，而是只交付通过约束和证据校验的答案。
 
-[查看受约束的可信 AI 问数 PRD](document/showcase2.0/02-constrained-trusted-ai-query-prd.md)
-
 ## 关键创新一：AI 语义预热
 
 指标建设完成，并不代表系统已经理解用户会怎样表达。传统方式通常在问数错误发生后补充别名和问法，导致新指标和新业务域存在明显的语言冷启动。
@@ -91,8 +89,6 @@ DataPath 将语义建设前移到用户提问之前：
 ```
 
 AI 只扩展语言表达，不修改指标公式、聚合方式和业务口径；未经人工审核的内容不能进入线上问数。
-
-[查看 AI 语义预热 PRD](document/showcase2.0/03-ai-semantic-preheat-prd.md)
 
 ## 关键创新二：持续质量闭环
 
@@ -111,8 +107,6 @@ AI 只扩展语言表达，不修改指标公式、聚合方式和业务口径�
 ```
 
 修复不能只让当前问题恢复正常。只有当前 Golden、受影响回归和安全门禁全部通过，新版本才允许发布。
-
-[查看持续质量闭环 PRD](document/showcase2.0/04-continuous-quality-loop-prd.md)
 
 ## 一次可信问数如何完成
 
@@ -170,18 +164,15 @@ AI 只扩展语言表达，不修改指标公式、聚合方式和业务口径�
 | 持续质量闭环 | Golden 与回归 | 将确认问题沉淀为 Golden，重放目标用例和相关回归 |
 | 持续质量闭环 | 测评监控 | 查看分类结果、安全门禁、冻结证据和发布状态 |
 
-[查看产品页面截图](document/showcase2.0/06-product-page-gallery.md)
+[查看产品页面截图](document/showcase2.0/07-product-page-gallery.md)
 
 ## 核心作品集文档
 
 | 阅读目的 | 文档 |
 | --- | --- |
 | 理解整体产品 | [DataPath 产品概览](document/showcase2.0/01-datapath-product-overview.md) |
-| 理解核心使用链路 | [受约束的可信 AI 问数 PRD](document/showcase2.0/02-constrained-trusted-ai-query-prd.md) |
-| 理解提问前创新 | [AI 语义预热 PRD](document/showcase2.0/03-ai-semantic-preheat-prd.md) |
-| 理解反馈后创新 | [持续质量闭环 PRD](document/showcase2.0/04-continuous-quality-loop-prd.md) |
-| 理解竞品判断与产品取舍 | [竞品研究与产品决策](document/showcase2.0/05-competitive-research-and-product-decisions.md) |
-| 查看产品页面 | [产品页面截图](document/showcase2.0/06-product-page-gallery.md) |
+| 理解竞品判断与产品取舍 | [竞品研究与产品决策](document/showcase2.0/06-competitive-research-and-product-decisions.md) |
+| 查看产品页面 | [产品页面截图](document/showcase2.0/07-product-page-gallery.md) |
 
 ## 技术架构
 

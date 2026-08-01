@@ -41,3 +41,7 @@ infra/dify/
 # 完整产品介绍文件仅保留在本地
 /document/showcase2.0/完整产品介绍.pptx
 /document/showcase2.0/完整产品介绍.pdf
+
+# 产品 PRD 与技术附录仅保留在本地，不作为公开展示材料
+/document/showcase2.0/*-prd.md
+/document/showcase2.0/*-technical-appendix.md
